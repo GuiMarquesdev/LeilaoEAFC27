@@ -6,8 +6,9 @@ import {
 } from 'lucide-react';
 
 import { LeagueState, UserProfile, WSMessage, Player, UserSquad } from './types';
-import { INITIAL_FORMATIONS } from './data/initialPlayers';
+import { INITIAL_FORMATIONS, INITIAL_PLAYERS } from './data/initialPlayers';
 import { isCompatiblePosition } from './utils/formatters';
+import { apiUrl, getWebSocketUrl } from './utils/api';
 import { Navbar } from './components/Navbar';
 import { LiveAuctionSection } from './components/LiveAuctionSection';
 import { SquadPlannerSection } from './components/SquadPlannerSection';
@@ -31,9 +32,55 @@ export default function App() {
   const [adminInitialTab, setAdminInitialTab] = useState<'auction' | 'players' | 'users' | 'danger' | 'report'>('auction');
   const [soundActive, setSoundActive] = useState(isSoundEnabled());
   const [wsConnected, setWsConnected] = useState(false);
+  const [backendOffline, setBackendOffline] = useState(false);
 
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wsFailuresRef = useRef<number>(0);
+
+  const getFallbackInitialState = (): LeagueState => ({
+    users: [
+      {
+        id: 'user-admin-default',
+        email: 'guimarquesbrito@gmail.com',
+        name: 'Guilherme Pereira',
+        teamName: 'Pereira Galácticos FC',
+        role: 'ADMIN',
+        adminTitle: 'Diretor',
+        budget: 300000000,
+        spent: 0,
+        createdAt: Date.now(),
+      },
+      {
+        id: 'user-admin-tourinho',
+        email: 'guilhermebtourinho@gmail.com',
+        name: 'Guilherme Tourinho',
+        teamName: 'Tourinho Galácticos FC',
+        role: 'ADMIN',
+        adminTitle: 'Presidente',
+        budget: 300000000,
+        spent: 0,
+        createdAt: Date.now(),
+      },
+    ],
+    players: INITIAL_PLAYERS.map((p) => ({ ...p, status: 'AVAILABLE' as const })),
+    auction: {
+      status: 'IDLE',
+      currentPlayer: null,
+      currentBid: null,
+      bidHistory: [],
+      timerRemaining: 20,
+      nominationTurnUserId: 'user-admin-default',
+      nominationTimerRemaining: 30,
+      isFreeNominationMode: false,
+      minimumBidIncrement: 1000000,
+      auctionDay: 'ALL',
+      anonymousBidding: true,
+      lastUpdated: Date.now(),
+    },
+    squads: {},
+    defaultBudget: 300000000,
+  });
 
   const handleOpenAdmin = (tab: 'auction' | 'players' | 'users' | 'danger' | 'report' = 'auction') => {
     setAdminInitialTab(tab);
@@ -58,12 +105,13 @@ export default function App() {
   // Fetch full state from REST
   const fetchState = useCallback(async () => {
     try {
-      const res = await fetch('/api/state');
+      const res = await fetch(apiUrl('/api/state'));
       const contentType = res.headers.get('content-type');
       if (res.ok && contentType && contentType.includes('application/json')) {
         const json = await res.json();
         if (json.success && json.data) {
           setLeagueState(json.data);
+          setBackendOffline(false);
 
           // Restore user from storage if needed
           const storedUserId = localStorage.getItem(AUTH_STORAGE_KEY);
@@ -73,11 +121,26 @@ export default function App() {
               setCurrentUser(matched);
             }
           }
+          return;
         }
       }
+      // If endpoint returned 404 (e.g. running statically on Vercel without backend server)
+      setLeagueState((prev) => {
+        if (!prev) {
+          setBackendOffline(true);
+          return getFallbackInitialState();
+        }
+        return prev;
+      });
     } catch (err) {
-      // Graceful error logging during initial server boot
       console.warn('Notice syncing league state:', err);
+      setLeagueState((prev) => {
+        if (!prev) {
+          setBackendOffline(true);
+          return getFallbackInitialState();
+        }
+        return prev;
+      });
     }
   }, []);
 
@@ -87,8 +150,7 @@ export default function App() {
       socketRef.current.close();
     }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}`;
+    const wsUrl = getWebSocketUrl();
 
     try {
       const ws = new WebSocket(wsUrl);
@@ -96,6 +158,8 @@ export default function App() {
 
       ws.onopen = () => {
         setWsConnected(true);
+        setBackendOffline(false);
+        wsFailuresRef.current = 0;
       };
 
       ws.onmessage = (event) => {
@@ -192,8 +256,10 @@ export default function App() {
 
       ws.onclose = () => {
         setWsConnected(false);
-        // auto reconnect after 3 seconds
-        reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
+        wsFailuresRef.current += 1;
+        // Backoff if server unreachable to avoid flooding console on static hosts like Vercel
+        const delay = wsFailuresRef.current > 3 ? 12000 : 3000;
+        reconnectTimeoutRef.current = setTimeout(connectWebSocket, delay);
       };
 
       ws.onerror = () => {
@@ -229,7 +295,7 @@ export default function App() {
   // Auth: Login existing user
   const handleLogin = async (email: string, password?: string, authProvider?: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, authProvider }),
@@ -258,7 +324,7 @@ export default function App() {
     authProvider?: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch(apiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, name, teamName, password, authProvider }),
@@ -286,7 +352,7 @@ export default function App() {
     avatarUrl?: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const res = await fetch('/api/auth/google', {
+      const res = await fetch(apiUrl('/api/auth/google'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, name, teamName, avatarUrl }),
@@ -312,7 +378,7 @@ export default function App() {
     newPassword: string
   ): Promise<{ success: boolean; error?: string; message?: string }> => {
     try {
-      const res = await fetch('/api/auth/reset-password', {
+      const res = await fetch(apiUrl('/api/auth/reset-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, newPassword }),
@@ -337,7 +403,7 @@ export default function App() {
   ): Promise<{ success: boolean; error?: string }> => {
     if (!currentUser) return { success: false, error: 'Usuário não autenticado.' };
     try {
-      const res = await fetch('/api/auth/update-profile', {
+      const res = await fetch(apiUrl('/api/auth/update-profile'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUser.id, name, teamName, password }),
@@ -372,7 +438,7 @@ export default function App() {
     }
 
     try {
-      const res = await fetch('/api/auction/bid', {
+      const res = await fetch(apiUrl('/api/auction/bid'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUser.id, amount }),
@@ -398,7 +464,7 @@ export default function App() {
     }
 
     try {
-      const res = await fetch('/api/auction/nominate', {
+      const res = await fetch(apiUrl('/api/auction/nominate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUser.id, playerId }),
@@ -421,7 +487,7 @@ export default function App() {
   const handlePassTurn = async (): Promise<boolean> => {
     if (!currentUser) return false;
     try {
-      const res = await fetch('/api/auction/pass-turn', {
+      const res = await fetch(apiUrl('/api/auction/pass-turn'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUser.id }),
@@ -449,7 +515,7 @@ export default function App() {
   ) => {
     if (!currentUser) return;
     try {
-      await fetch('/api/squad/save', {
+      await fetch(apiUrl('/api/squad/save'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -540,7 +606,7 @@ export default function App() {
   const handleAdminAuctionAction = async (action: string, value?: unknown) => {
     if (!currentUser) return;
     try {
-      await fetch('/api/admin/auction/action', {
+      await fetch(apiUrl('/api/admin/auction/action'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -562,7 +628,7 @@ export default function App() {
   }): Promise<boolean> => {
     if (!currentUser) return false;
     try {
-      const res = await fetch('/api/admin/player/create', {
+      const res = await fetch(apiUrl('/api/admin/player/create'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -581,7 +647,7 @@ export default function App() {
   const handleAdminUpdatePrice = async (playerId: string, initialPrice: number): Promise<boolean> => {
     if (!currentUser) return false;
     try {
-      const res = await fetch('/api/admin/player/update-price', {
+      const res = await fetch(apiUrl('/api/admin/player/update-price'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -600,7 +666,7 @@ export default function App() {
   const handleAdminDeletePlayer = async (playerId: string): Promise<boolean> => {
     if (!currentUser) return false;
     try {
-      const res = await fetch('/api/admin/player/delete', {
+      const res = await fetch(apiUrl('/api/admin/player/delete'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -619,7 +685,7 @@ export default function App() {
   const handleAdminReleasePlayer = async (playerId: string): Promise<boolean> => {
     if (!currentUser) return false;
     try {
-      const res = await fetch('/api/admin/player/release-to-market', {
+      const res = await fetch(apiUrl('/api/admin/player/release-to-market'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -642,7 +708,7 @@ export default function App() {
   const handleAdminUpdateUserRole = async (targetUserId: string, role: 'ADMIN' | 'PARTICIPANT'): Promise<boolean> => {
     if (!currentUser) return false;
     try {
-      const res = await fetch('/api/admin/user/role', {
+      const res = await fetch(apiUrl('/api/admin/user/role'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -661,7 +727,7 @@ export default function App() {
   const handleAdminUpdateUserBudget = async (targetUserId: string, budget: number): Promise<boolean> => {
     if (!currentUser) return false;
     try {
-      const res = await fetch('/api/admin/user/budget', {
+      const res = await fetch(apiUrl('/api/admin/user/budget'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -680,7 +746,7 @@ export default function App() {
   const handleAdminResetUser = async (targetUserId: string): Promise<boolean> => {
     if (!currentUser) return false;
     try {
-      const res = await fetch('/api/admin/user/reset', {
+      const res = await fetch(apiUrl('/api/admin/user/reset'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -699,7 +765,7 @@ export default function App() {
   const handleAdminResetLeague = async (): Promise<boolean> => {
     if (!currentUser) return false;
     try {
-      const res = await fetch('/api/admin/reset-league', {
+      const res = await fetch(apiUrl('/api/admin/reset-league'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -741,7 +807,15 @@ export default function App() {
   // Tela de Autenticação de Usuário exibida antes das telas do site
   if (!currentUser && !guestMode) {
     return (
-      <div className="min-h-screen bg-slate-950 font-['Plus_Jakarta_Sans',sans-serif]">
+      <div className="min-h-screen bg-slate-950 font-['Plus_Jakarta_Sans',sans-serif] flex flex-col">
+        {backendOffline && (
+          <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-medium flex items-center justify-center gap-2 z-30 shadow-sm border-b border-amber-600 text-center">
+            <AlertCircle className="w-4 h-4 shrink-0 text-slate-950" />
+            <span>
+              <strong>Atenção:</strong> Servidor backend em tempo real não detectado nesta URL. Para leilão e login funcionarem em produção, hospede no <strong>Render</strong> ou <strong>Railway</strong> (Node.js completo) ou configure <code className="bg-amber-400 px-1 py-0.5 rounded font-mono">VITE_BACKEND_URL</code>.
+            </span>
+          </div>
+        )}
         <AuthScreen
           auction={leagueState.auction}
           playersCount={leagueState.players?.length || 125}
@@ -761,6 +835,18 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Backend Server Offline Notice Banner */}
+      {backendOffline && (
+        <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-medium flex items-center justify-between z-30 shadow-sm border-b border-amber-600">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-slate-950" />
+            <span>
+              <strong>Atenção:</strong> Servidor backend em tempo real não detectado nesta URL. Para o leilão ao vivo funcionar, hospede a aplicação no <strong>Render</strong> ou <strong>Railway</strong> (Node.js completo), ou aponte a variável <code className="bg-amber-400 px-1 py-0.5 rounded font-mono">VITE_BACKEND_URL</code>.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Guest Mode Indicator Banner */}
       {guestMode && !currentUser && (
         <div className="bg-slate-900 text-slate-200 border-b border-slate-800 px-4 py-2 text-xs flex items-center justify-between z-20">

@@ -7,7 +7,7 @@ import { createServer as createViteServer } from 'vite';
 import { INITIAL_PLAYERS } from './src/data/initialPlayers.js';
 import { LeagueState, Player, UserProfile, Bid, UserSquad, WSMessage } from './src/types.js';
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'league_db.json');
 const DEFAULT_BUDGET = 300000000; // €300.000.000 (300 Milhões de Euros fixos e inegociáveis conforme Ata Oficial)
