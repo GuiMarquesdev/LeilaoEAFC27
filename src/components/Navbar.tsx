@@ -36,15 +36,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between h-16">
           {/* Logo Brand */}
           <div className="flex items-center gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-['Outfit',sans-serif] font-extrabold text-lg tracking-tight text-slate-900">
-                  KHEDIRA LEAGUE
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 font-medium">
-                Leilão Virtual & Mercado
-              </p>
+            <div className="flex items-center gap-2">
+              <span className="font-['Outfit',sans-serif] font-extrabold text-lg tracking-tight text-slate-900">
+                KHEDIRA LEAGUE
+              </span>
             </div>
           </div>
 
