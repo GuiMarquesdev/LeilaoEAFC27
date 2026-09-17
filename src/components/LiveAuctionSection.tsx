@@ -5,20 +5,27 @@ import {
   Flame, CheckCircle2, ChevronRight, Search, 
   AlertCircle, Shield, Plus, Crown, Volume2, SkipForward,
   Play, Square, Sparkles, Trophy, Users as UsersIcon, RotateCcw,
-  Lock, Unlock, FileText, ShieldAlert, ShieldCheck, Calendar
+  Lock, Unlock, FileText, ShieldAlert, ShieldCheck, Calendar, Star,
+  ListOrdered, Trash2
 } from 'lucide-react';
 import { AuctionState, Player, UserProfile, Bid } from '../types';
-import { formatCurrency, getPositionBadge, getDayLabel, isPositionAllowedForDay, getUserRoleBadge } from '../utils/formatters';
+import { formatCurrency, getPositionBadge, getDayLabel, isPositionAllowedForDay, getUserRoleBadge, formatAuctionTimer } from '../utils/formatters';
 import { playBidSound, playHammerSound, playTickSound } from '../utils/sound';
 import { JudgeGavelIcon } from './JudgeGavelIcon';
+import { WatchlistRadarWidget } from './WatchlistRadarWidget';
 
 interface LiveAuctionSectionProps {
   auction: AuctionState;
   currentUser: UserProfile | null;
   players: Player[];
   users: UserProfile[];
+  watchedPlayerIds?: string[];
+  onToggleWatch?: (playerId: string) => void;
+  onOpenWatchlist?: () => void;
   onBid: (amount: number) => Promise<boolean>;
   onNominate: (playerId: string) => Promise<boolean>;
+  onRemoveFromQueue?: (playerId: string) => Promise<boolean>;
+  onStartFromQueue?: (playerId: string) => Promise<boolean>;
   onPassTurn: () => Promise<boolean>;
   onOpenAuth: () => void;
   onOpenAdmin: () => void;
@@ -32,8 +39,13 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
   currentUser,
   players,
   users,
+  watchedPlayerIds = [],
+  onToggleWatch,
+  onOpenWatchlist,
   onBid,
   onNominate,
+  onRemoveFromQueue,
+  onStartFromQueue,
   onPassTurn,
   onOpenAuth,
   onOpenAdmin,
@@ -49,6 +61,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
   const [isPassingTurn, setIsPassingTurn] = useState<boolean>(false);
   const [isStartingAuction, setIsStartingAuction] = useState<boolean>(false);
   const [isEndingAuction, setIsEndingAuction] = useState<boolean>(false);
+  const [isQuickPostOpen, setIsQuickPostOpen] = useState<boolean>(false);
 
   const isAuctionActive = auction.status === 'ACTIVE';
   const isAuctionNotStarted = auction.status === 'NOT_STARTED';
@@ -56,6 +69,11 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
   const currentPlayer = auction.currentPlayer;
   const currentBid = auction.currentBid;
   const isAdmin = currentUser?.role === 'ADMIN';
+
+  const userWonPlayersCount = currentUser
+    ? players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === currentUser.id).length
+    : 0;
+  const isUserSquadFull = userWonPlayersCount >= 23;
 
   // Sound triggers on state changes
   useEffect(() => {
@@ -191,11 +209,11 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
     }
   };
 
-  // Timer color and percentage
-  const timerMax = 30;
+  // Timer color and percentage (24 hours = 86,400s per auction round)
+  const timerMax = 86400;
   const timerPercent = Math.min(100, Math.max(0, (auction.timerRemaining / timerMax) * 100));
-  const isUrgentTimer = auction.timerRemaining <= 5;
-  const isWarningTimer = auction.timerRemaining <= 10;
+  const isUrgentTimer = auction.timerRemaining <= 600; // Last 10 minutes
+  const isWarningTimer = auction.timerRemaining <= 3600; // Last 1 hour
 
   return (
     <div className="space-y-6">
@@ -246,14 +264,10 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                     O leilão oficial da Khedira League foi encerrado pelo administrador.
                   </span>
                 ) : isAuctionActive ? (
-                  <>Disputa ao vivo por <span className="text-emerald-600">{currentPlayer?.name}</span></>
-                ) : isMyTurnToNominate ? (
-                  <span className="text-emerald-700 font-extrabold">
-                    🎯 É A SUA VEZ de anunciar um jogador para o leilão!
-                  </span>
+                  <>Disputa ao vivo por <span className="text-emerald-600">{currentPlayer?.name}</span> • Propostas por 24 horas</>
                 ) : (
-                  <span>
-                    Aguardando indicação de: <strong className="text-slate-800">{nominatorUser ? `${nominatorUser.name} (${nominatorUser.teamName})` : 'Membro da Liga'}</strong>
+                  <span className="text-emerald-700 font-extrabold">
+                    ⚽ Leilão Aberto: Qualquer participante pode postar jogadores de interesse!
                   </span>
                 )}
               </h3>
@@ -319,36 +333,11 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                 </button>
               )}
 
-              {!isAuctionActive && (
-                <>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-xl text-xs font-semibold text-slate-700">
-                    <Clock className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Tempo para anunciar:</span>
-                    <span className="font-extrabold text-slate-900 text-sm">
-                      {auction.nominationTimerRemaining}s
-                    </span>
-                  </div>
-
-                  {(isMyTurnToNominate || isAdmin) && (
-                    <button
-                      onClick={async () => {
-                        if (isPassingTurn) return;
-                        setIsPassingTurn(true);
-                        try {
-                          await onPassTurn();
-                        } finally {
-                          setIsPassingTurn(false);
-                        }
-                      }}
-                      disabled={isPassingTurn}
-                      className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 shadow-2xs"
-                      title="Passar vez para o próximo participante da liga"
-                    >
-                      <SkipForward className={`w-3.5 h-3.5 text-slate-600 ${isPassingTurn ? 'animate-pulse' : ''}`} />
-                      <span>{isPassingTurn ? 'Passando...' : 'Passar Vez'}</span>
-                    </button>
-                  )}
-                </>
+              {auction.nominationQueue && auction.nominationQueue.length > 0 && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-800">
+                  <ListOrdered className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Fila: {auction.nominationQueue.length} {auction.nominationQueue.length === 1 ? 'craque' : 'craques'}</span>
+                </div>
               )}
             </div>
           )}
@@ -577,6 +566,17 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
         </div>
       </div>
 
+      {/* 1.6. Radar de Observação de Jogadores (Todas as 3 Fases) */}
+      <WatchlistRadarWidget
+        watchedPlayerIds={watchedPlayerIds}
+        players={players}
+        auction={auction}
+        currentUser={currentUser}
+        onToggleWatch={onToggleWatch || (() => {})}
+        onOpenFullWatchlist={onOpenWatchlist || (() => {})}
+        onNominate={onNominate}
+      />
+
       {/* 2. Main Auction Stage & Right Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: The Live Auction Arena or Not Started Lobby or Nomination Box */}
@@ -757,14 +757,14 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                 {/* Big Visual Countdown Timer */}
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-extrabold ${
                   isUrgentTimer
-                    ? 'bg-rose-50 text-rose-700 border-rose-200 animate-bounce'
+                    ? 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse'
                     : isWarningTimer
                       ? 'bg-amber-50 text-amber-700 border-amber-200'
                       : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 }`}>
                   <Clock className="w-4 h-4" />
-                  <span>{auction.timerRemaining}s</span>
-                  <span className="text-xs font-medium opacity-80">restantes</span>
+                  <span>{formatAuctionTimer(auction.timerRemaining)}</span>
+                  <span className="text-xs font-medium opacity-80">restantes (Janela de 24h)</span>
                 </div>
               </div>
 
@@ -782,22 +782,56 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                 />
               </div>
 
+              {/* Watched Player Notification Banner */}
+              {watchedPlayerIds.includes(currentPlayer.id) && (
+                <div className="mb-4 p-3 bg-amber-50/90 border border-amber-300 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-950 font-semibold shadow-2xs animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-500 shrink-0" />
+                    <span>
+                      <strong>Radar de Observação Ativo:</strong> Você marcou este jogador para acompanhar os lances!
+                    </span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-900 shrink-0">
+                    Na Sua Lista
+                  </span>
+                </div>
+              )}
+
               {/* Player Presentation */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white flex flex-col items-center justify-center font-black shadow-md border border-slate-700">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white flex flex-col items-center justify-center font-black shadow-md border border-slate-700 shrink-0">
                     <span className="text-xs text-amber-400 font-extrabold uppercase">EAFC 27</span>
                     <span className="text-lg tracking-wider">{currentPlayer.position}</span>
                   </div>
 
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className={`px-2 py-0.5 text-xs font-extrabold rounded-md ${getPositionBadge(currentPlayer.position).bgClass} ${getPositionBadge(currentPlayer.position).textClass}`}>
                         {currentPlayer.position}
                       </span>
                       <span className="text-xs font-semibold text-slate-500">
                         {currentPlayer.nationality}
                       </span>
+                      {onToggleWatch && (
+                        <button
+                          type="button"
+                          onClick={() => onToggleWatch(currentPlayer.id)}
+                          className={`ml-1 px-2 py-0.5 rounded-md text-[11px] font-bold border transition-colors flex items-center gap-1 cursor-pointer ${
+                            watchedPlayerIds.includes(currentPlayer.id)
+                              ? 'bg-amber-100 text-amber-900 border-amber-300'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200'
+                          }`}
+                          title={
+                            watchedPlayerIds.includes(currentPlayer.id)
+                              ? 'Remover este jogador do Radar de Observação'
+                              : 'Adicionar este jogador ao Radar de Observação'
+                          }
+                        >
+                          <Star className={`w-3 h-3 ${watchedPlayerIds.includes(currentPlayer.id) ? 'fill-amber-500 text-amber-500' : 'text-slate-400'}`} />
+                          <span>{watchedPlayerIds.includes(currentPlayer.id) ? 'Em Observação' : 'Observar'}</span>
+                        </button>
+                      )}
                     </div>
                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                       {currentPlayer.name}
@@ -867,6 +901,20 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                       </div>
                     )}
 
+                    {isUserSquadFull && (
+                      <div className="p-3.5 bg-amber-50 border-2 border-amber-300 rounded-xl flex items-start gap-3 text-xs text-amber-900 font-medium animate-in fade-in">
+                        <UsersIcon className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <strong className="block font-black text-amber-950 uppercase tracking-wide">
+                            ⚠️ Limite de Elenco Atingido (23/23 Atletas)
+                          </strong>
+                          <p className="leading-relaxed">
+                            Seu clube já atingiu o teto máximo de <strong>23 jogadores</strong> permitido pelo regulamento oficial. Novos lances e compras estão desabilitados para a sua equipe.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {bidError && (
                       <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs font-medium text-rose-700 animate-shake">
                         <AlertCircle className="w-4 h-4 shrink-0" />
@@ -876,13 +924,22 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
                     {/* Quick increment buttons */}
                     <div>
-                      <span className="text-xs font-bold text-slate-600 block mb-2">
-                        Lances Rápidos:
-                      </span>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-600 block">
+                          Lances Rápidos:
+                        </span>
+                        {currentUser && (
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                            isUserSquadFull ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'
+                          }`}>
+                            Elenco: {userWonPlayersCount} / 23 jogadores
+                          </span>
+                        )}
+                      </div>
                       <div className="grid grid-cols-3 gap-2.5">
                         <button
                           onClick={() => handleQuickBid(1000000)}
-                          disabled={submittingBid || (currentBid?.userId === currentUser.id) || !isCurrentPlayerAllowedToday}
+                          disabled={submittingBid || (currentBid?.userId === currentUser.id) || !isCurrentPlayerAllowedToday || isUserSquadFull}
                           className="p-2.5 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-800 rounded-xl font-extrabold text-xs transition-colors flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -890,7 +947,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                         </button>
                         <button
                           onClick={() => handleQuickBid(2000000)}
-                          disabled={submittingBid || (currentBid?.userId === currentUser.id) || !isCurrentPlayerAllowedToday}
+                          disabled={submittingBid || (currentBid?.userId === currentUser.id) || !isCurrentPlayerAllowedToday || isUserSquadFull}
                           className="p-2.5 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-800 rounded-xl font-extrabold text-xs transition-colors flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -898,7 +955,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                         </button>
                         <button
                           onClick={() => handleQuickBid(5000000)}
-                          disabled={submittingBid || (currentBid?.userId === currentUser.id) || !isCurrentPlayerAllowedToday}
+                          disabled={submittingBid || (currentBid?.userId === currentUser.id) || !isCurrentPlayerAllowedToday || isUserSquadFull}
                           className="p-2.5 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-800 rounded-xl font-extrabold text-xs transition-colors flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -913,8 +970,14 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                         <DollarSign className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                         <input
                           type="text"
-                          disabled={!isCurrentPlayerAllowedToday}
-                          placeholder={!isCurrentPlayerAllowedToday ? 'Lances bloqueados para esta posição' : `Mínimo: ${formatCurrency(minRequiredBid)}`}
+                          disabled={!isCurrentPlayerAllowedToday || isUserSquadFull}
+                          placeholder={
+                            isUserSquadFull 
+                              ? 'Limite de 23 jogadores atingido (elenco completo)' 
+                              : !isCurrentPlayerAllowedToday 
+                              ? 'Lances bloqueados para esta posição' 
+                              : `Mínimo: ${formatCurrency(minRequiredBid)}`
+                          }
                           value={customBidAmount}
                           onChange={(e) => setCustomBidAmount(e.target.value)}
                           className="w-full pl-8 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold disabled:opacity-50 disabled:bg-slate-100"
@@ -922,7 +985,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                       </div>
                       <button
                         type="submit"
-                        disabled={submittingBid || !customBidAmount || !isCurrentPlayerAllowedToday}
+                        disabled={submittingBid || !customBidAmount || !isCurrentPlayerAllowedToday || isUserSquadFull}
                         className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
                       >
                         Enviar Lance
@@ -960,27 +1023,25 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                 <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mb-3 p-1.5 shadow-xs">
                   <JudgeGavelIcon className="w-full h-full drop-shadow-xs" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  {isMyTurnToNominate ? 'Anuncie o Próximo Jogador' : 'Aguardando Indicação de Jogador'}
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 font-['Outfit',sans-serif]">
+                  Poste um Jogador de Interesse
                 </h3>
-                <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
-                  {isMyTurnToNominate
-                    ? 'Escolha uma das estrelas disponíveis no mercado do EAFC 27 para iniciar a disputa com os outros participantes!'
-                    : `É a vez de ${nominatorUser ? nominatorUser.name : 'outro participante'} anunciar quem vai para o leilão agora.`}
+                <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto mt-1 leading-relaxed">
+                  São os próprios participantes que postam os jogadores de interesse! Todos os membros podem postar atletas a partir da lista oficial de jogadores registrados. O jogador postado terá propostas abertas por <strong>24 horas</strong>.
                 </p>
               </div>
 
               {/* Quick Nomination Box */}
               <div className="pt-5 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <span className="text-xs font-bold text-slate-700">
-                    Jogadores Disponíveis para Indicação Rápida:
+                    Jogadores Registrados Disponíveis para Iniciar Disputa (24h):
                   </span>
-                  <div className="relative w-48 sm:w-64">
+                  <div className="relative w-full sm:w-64">
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
                     <input
                       type="text"
-                      placeholder="Buscar por nome ou clube..."
+                      placeholder="Buscar por nome, clube ou posição..."
                       value={searchNominate}
                       onChange={(e) => setSearchNominate(e.target.value)}
                       className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
@@ -988,10 +1049,11 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[460px] overflow-y-auto pr-1">
                   {filteredAvailablePlayers.map((player) => {
                     const badge = getPositionBadge(player.position);
                     const isAllowedToday = isPositionAllowedForDay(player.position, auction.auctionDay || 'ALL');
+                    const isQueued = auction.nominationQueue?.some((q) => q.player.id === player.id);
 
                     return (
                       <div
@@ -1022,35 +1084,241 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                           )}
                         </div>
 
-                        {isMyTurnToNominate ? (
+                        {isQueued ? (
+                          <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                            📋 Na Fila
+                          </span>
+                        ) : isUserSquadFull ? (
+                          <span
+                            title="Seu clube já atingiu o limite máximo de 23 jogadores no elenco"
+                            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-200 text-slate-500 shrink-0 cursor-not-allowed"
+                          >
+                            Elenco 23/23
+                          </span>
+                        ) : currentUser ? (
                           <button
                             onClick={() => handleSelectNominate(player.id)}
                             disabled={nominateLoading || !isAllowedToday}
-                            title={!isAllowedToday ? `Posição ${player.position} não liberada na fase de hoje` : 'Anunciar no leilão'}
+                            title={!isAllowedToday ? `Posição ${player.position} não liberada na fase de hoje` : 'Postar jogador no leilão (24h de propostas)'}
                             className={`px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-colors shadow-2xs ${
                               isAllowedToday
                                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
                                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                             } disabled:opacity-50`}
                           >
-                            Anunciar
+                            Postar (24h)
                           </button>
                         ) : (
-                          <span className="text-[11px] text-slate-400 italic">Disponível</span>
+                          <button
+                            onClick={onOpenAuth}
+                            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors cursor-pointer shrink-0"
+                          >
+                            Entrar p/ Postar
+                          </button>
                         )}
                       </div>
                     );
                   })}
                 </div>
 
-                {!isMyTurnToNominate && (
+                {!currentUser && (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-center text-xs text-amber-900">
-                    Você poderá anunciar um jogador quando chegar a sua vez no cronômetro ou se o administrador liberar o modo livre.
+                    Faça login com seu time para postar qualquer jogador de interesse da lista oficial!
                   </div>
                 )}
               </div>
             </div>
           )}
+
+          {/* Quick Post Drawer when Auction is ACTIVE */}
+          {isAuctionActive && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg shrink-0">
+                    <Plus className="w-4 h-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+                      Tem interesse em outro jogador registrado?
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Poste na fila para abrir disputa de 24 horas assim que a rodada atual terminar!
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsQuickPostOpen(!isQuickPostOpen)}
+                  className="w-full sm:w-auto px-4 py-2.5 sm:px-3 sm:py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition-colors shrink-0 cursor-pointer flex items-center justify-center gap-1.5 min-h-[40px] sm:min-h-0"
+                >
+                  {isQuickPostOpen ? 'Fechar Busca' : 'Postar na Fila'}
+                </button>
+              </div>
+
+              {isQuickPostOpen && (
+                <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nome ou clube para postar na fila..."
+                      value={searchNominate}
+                      onChange={(e) => setSearchNominate(e.target.value)}
+                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                    {filteredAvailablePlayers.slice(0, 10).map((player) => {
+                      const badge = getPositionBadge(player.position);
+                      const isAllowedToday = isPositionAllowedForDay(player.position, auction.auctionDay || 'ALL');
+                      const isQueued = auction.nominationQueue?.some((q) => q.player.id === player.id);
+
+                      return (
+                        <div
+                          key={player.id}
+                          className="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1">
+                              <span className={`px-1 py-0.2 text-[9px] font-bold rounded ${badge.bgClass} ${badge.textClass}`}>
+                                {player.position}
+                              </span>
+                              <span className="text-xs font-bold text-slate-800 truncate">
+                                {player.name}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-500 truncate block">
+                              {player.club} • {formatCurrency(player.initialPrice, true)}
+                            </span>
+                          </div>
+
+                          {isQueued ? (
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shrink-0">
+                              Na Fila
+                            </span>
+                          ) : isUserSquadFull ? (
+                            <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded shrink-0">
+                              Elenco 23/23
+                            </span>
+                          ) : currentUser ? (
+                            <button
+                              onClick={() => handleSelectNominate(player.id)}
+                              disabled={nominateLoading || !isAllowedToday}
+                              className={`px-2.5 py-1.5 sm:px-2 sm:py-1 text-xs sm:text-[11px] font-bold rounded-lg shrink-0 transition-colors ${
+                                isAllowedToday
+                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+                                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                              }`}
+                            >
+                              Postar
+                            </button>
+                          ) : (
+                            <button
+                              onClick={onOpenAuth}
+                              className="px-2.5 py-1.5 sm:px-2 sm:py-1 text-xs sm:text-[11px] font-bold rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 shrink-0 cursor-pointer"
+                            >
+                              Entrar
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Fila de Jogadores de Interesse (Próximas Disputas de 24 Horas) */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-2 mb-4 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center font-bold shrink-0">
+                  <ListOrdered className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <span>Fila de Jogadores de Interesse</span>
+                    <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
+                      Próximas Disputas de 24h
+                    </span>
+                  </h4>
+                  <p className="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
+                    Jogadores postados pelos próprios participantes. Entram em leilão de 24h automaticamente em ordem de postagem.
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-bold rounded-xl sm:rounded-full bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 text-slate-700 border border-slate-200/90 transition-all duration-150 shrink-0 self-start sm:self-center select-none shadow-2xs whitespace-nowrap cursor-default">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse"></span>
+                <span>{auction.nominationQueue?.length || 0} na fila</span>
+              </span>
+            </div>
+
+            {auction.nominationQueue && auction.nominationQueue.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {auction.nominationQueue.map((item, index) => {
+                  const badge = getPositionBadge(item.player.position);
+                  const canRemove = currentUser && (currentUser.id === item.nominatedByUserId || isAdmin);
+
+                  return (
+                    <div
+                      key={`${item.player.id}-${index}`}
+                      className="p-3.5 rounded-xl border border-slate-200/90 bg-slate-50 hover:bg-white hover:border-slate-300 transition-all flex flex-col justify-between gap-3 shadow-2xs"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-amber-100 text-amber-800 border border-amber-200">
+                            #{index + 1} na fila
+                          </span>
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${badge.bgClass} ${badge.textClass}`}>
+                            {item.player.position}
+                          </span>
+                        </div>
+                        <h5 className="font-bold text-slate-900 text-sm">{item.player.name}</h5>
+                        <p className="text-xs text-slate-500">{item.player.club}</p>
+                        <div className="mt-2 text-xs">
+                          <span className="text-slate-400">Lance Inicial: </span>
+                          <strong className="text-slate-800 font-bold">{formatCurrency(item.player.initialPrice, true)}</strong>
+                        </div>
+                      </div>
+
+                      <div className="pt-2.5 border-t border-slate-200/60 flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-[11px] text-slate-500 truncate" title={`Postado por ${item.nominatedByUserName} (${item.nominatedByTeamName})`}>
+                          Por: <strong className="text-slate-700">{item.nominatedByUserName}</strong>
+                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isAdmin && (
+                            <button
+                              onClick={() => onStartFromQueue?.(item.player.id)}
+                              className="px-2.5 py-1.5 sm:px-2 sm:py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-[11px] font-bold rounded-lg cursor-pointer transition-colors min-h-[32px] sm:min-h-0 flex items-center justify-center"
+                              title="Iniciar este leilão imediatamente"
+                            >
+                              Iniciar
+                            </button>
+                          )}
+                          {canRemove && (
+                            <button
+                              onClick={() => onRemoveFromQueue?.(item.player.id)}
+                              className="p-2 sm:p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer min-h-[32px] sm:min-h-0 flex items-center justify-center"
+                              title="Remover jogador da fila"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-6 px-4 bg-slate-50/70 border border-dashed border-slate-200 rounded-xl">
+                <p className="text-xs text-slate-500">
+                  Nenhum jogador na fila de espera no momento. Navegue na lista ou use o campo de postagem para adicionar craques de seu interesse para as próximas rodadas de 24 horas!
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Bid History of Current Auction */}
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">

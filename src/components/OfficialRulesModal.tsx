@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, FileText, ShieldCheck, CheckCircle2, DollarSign, Calendar, Lock, PlusCircle, AlertCircle } from 'lucide-react';
+import { X, FileText, ShieldCheck, CheckCircle2, DollarSign, Calendar, Lock, PlusCircle, AlertCircle, Clock, Sparkles, Users } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 
 interface OfficialRulesModalProps {
@@ -62,24 +62,54 @@ export const OfficialRulesModal: React.FC<OfficialRulesModalProps> = ({ isOpen, 
               <span>1. Estrutura e Formato do Leilão</span>
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="p-3.5 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-1.5">
                 <span className="text-xs font-bold text-emerald-900 block flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  Orçamento Inicial Recorde
+                  Orçamento de € 300M
                 </span>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Cada clube iniciará o leilão com um orçamento fixo e inegociável de <strong className="text-emerald-800 font-bold">€ 300 Milhões de Euros</strong> (300.000.000 €). Este é o valor recorde dentre todas as edições do campeonato.
+                  Cada clube tem orçamento inicial recorde de <strong className="text-emerald-800 font-bold">€ 300 Milhões</strong> (300.000.000 €).
                 </p>
               </div>
 
               <div className="p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl space-y-1.5">
                 <span className="text-xs font-bold text-blue-900 block flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-blue-600" />
-                  Sigilo de Lances (Lances Anônimos)
+                  Sigilo de Lances
                 </span>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Os participantes enviam seus lances em formato confidencial durante toda a disputa. Os valores ofertados são atualizados em tempo real, mas a identidade dos clubes concorrentes permanece oculta para garantir máxima estratégia.
+                  Lances confidenciais em tempo real, garantindo máxima competitividade e estratégia sigilosa.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1.5">
+                <span className="text-xs font-bold text-amber-900 block flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-amber-600" />
+                  Propostas por 24 Horas
+                </span>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Em cada rodada de leilão, as propostas pelo jogador ficam disponíveis pelo período ininterrupto de <strong className="text-amber-800 font-bold">24 horas</strong>.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-purple-50/50 border border-purple-200 rounded-xl space-y-1.5">
+                <span className="text-xs font-bold text-purple-900 block flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  Postagem pelos Usuários
+                </span>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  São os próprios usuários que postam os jogadores de seu interesse da lista registrada, alimentando a fila de leilão automaticamente.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-emerald-50/70 border border-emerald-300 rounded-xl space-y-1.5 sm:col-span-2 lg:col-span-4">
+                <span className="text-xs font-black text-emerald-950 block flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-emerald-700" />
+                  Limite de Elenco: Exatamente 23 Jogadores por Time
+                </span>
+                <p className="text-xs text-slate-700 leading-relaxed">
+                  Cada equipe é estritamente limitada a um teto máximo de <strong className="text-emerald-900 font-bold">23 jogadores</strong> (11 titulares no campinho tático e até 12 reservas). Clubes que atingirem a marca de 23 atletas arrematados ficam automaticamente impedidos de enviar novos lances de compra ou postar novos atletas.
                 </p>
               </div>
             </div>

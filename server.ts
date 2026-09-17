@@ -18,6 +18,8 @@ const PEREIRA_EMAIL = 'guimarquesbrito@gmail.com';
 const TOURINHO_EMAIL = 'guilhermebtourinho@gmail.com';
 const TOURINHO_PASSWORD = 'fifakhedira2015';
 
+const MAX_SQUAD_PLAYERS = 23;
+
 function isPositionAllowedForDay(position: string, day: 1 | 2 | 3 | 'ALL'): boolean {
   if (day === 'ALL') return true;
   if (day === 1) return ['GOL', 'ZAG', 'LE', 'LD'].includes(position);
@@ -70,9 +72,10 @@ function getInitialState(): LeagueState {
       currentBid: null,
       bidHistory: [],
       timerRemaining: 0,
-      nominationTurnUserId: 'user-admin-default',
-      nominationTimerRemaining: 45,
-      isFreeNominationMode: false,
+      nominationTurnUserId: null,
+      nominationTimerRemaining: 0,
+      isFreeNominationMode: true,
+      nominationQueue: [],
       minimumBidIncrement: 1000000,
       auctionDay: 1, // Dia 1 - Sistema Defensivo
       anonymousBidding: true, // Sigilo de Lances obrigatório conforme Ata Oficial
@@ -202,7 +205,52 @@ try {
       if (leagueState.auction.anonymousBidding === undefined) {
         leagueState.auction.anonymousBidding = true;
       }
+      if (!leagueState.auction.nominationQueue) {
+        leagueState.auction.nominationQueue = [];
+      }
+      leagueState.auction.isFreeNominationMode = true;
     }
+
+    // Synchronize players with official INITIAL_PLAYERS and update initialPrices
+    const existingPlayersMap = new Map<string, Player>();
+    (leagueState.players || []).forEach((p) => {
+      existingPlayersMap.set(p.id, p);
+      existingPlayersMap.set(p.name.toLowerCase().trim(), p);
+    });
+
+    const updatedPlayers: Player[] = INITIAL_PLAYERS.map((initP) => {
+      const existing = existingPlayersMap.get(initP.id) || existingPlayersMap.get(initP.name.toLowerCase().trim());
+      if (existing) {
+        return {
+          ...initP,
+          id: initP.id,
+          name: initP.name,
+          position: initP.position,
+          club: initP.club,
+          nationality: initP.nationality,
+          initialPrice: initP.initialPrice,
+          currentPrice: existing.status === 'AVAILABLE' ? initP.initialPrice : existing.currentPrice,
+          status: existing.status || 'AVAILABLE',
+          soldTo: existing.soldTo,
+          nominatedBy: existing.nominatedBy,
+          isManualExtra: existing.isManualExtra
+        };
+      }
+      return {
+        ...initP,
+        status: 'AVAILABLE'
+      };
+    });
+
+    // Retain any manual extra players added via admin if any
+    (leagueState.players || []).forEach((p) => {
+      if (p.isManualExtra && !updatedPlayers.some((up) => up.id === p.id || up.name.toLowerCase().trim() === p.name.toLowerCase().trim())) {
+        updatedPlayers.push(p);
+      }
+    });
+
+    leagueState.players = updatedPlayers;
+    fs.writeFileSync(DB_FILE, JSON.stringify(leagueState, null, 2));
   } else {
     leagueState = getInitialState();
     fs.writeFileSync(DB_FILE, JSON.stringify(leagueState, null, 2));
@@ -349,15 +397,49 @@ function finalizeAuction() {
     });
   }
 
-  // Reset auction state & advance nominator turn
+  // Reset auction state
   leagueState.auction.status = 'IDLE';
   leagueState.auction.currentPlayer = null;
   leagueState.auction.currentBid = null;
   leagueState.auction.bidHistory = [];
   leagueState.auction.timerRemaining = 0;
 
-  advanceNominationTurn();
+  // Se houver jogadores postados na fila de interesse, inicia automaticamente o próximo para 24h
+  if (leagueState.auction.nominationQueue && leagueState.auction.nominationQueue.length > 0) {
+    const nextItem = leagueState.auction.nominationQueue.shift()!;
+    const nextPlayer = leagueState.players.find((p) => p.id === nextItem.player.id);
+    if (nextPlayer && nextPlayer.status === 'AVAILABLE') {
+      nextPlayer.status = 'IN_AUCTION';
+      nextPlayer.nominatedBy = nextItem.nominatedByUserId;
+
+      leagueState.auction.status = 'ACTIVE';
+      leagueState.auction.currentPlayer = nextPlayer;
+      leagueState.auction.currentBid = null;
+      leagueState.auction.bidHistory = [];
+      leagueState.auction.timerRemaining = 86400; // 24 hours
+      leagueState.auction.lastUpdated = Date.now();
+
+      broadcast({
+        type: 'AUCTION_STARTED',
+        data: {
+          player: nextPlayer,
+          auction: leagueState.auction
+        }
+      });
+
+      broadcast({
+        type: 'CHAT_NOTIFICATION',
+        data: {
+          message: `📢 Próximo jogador da fila de interesse: ${nextPlayer.name} (${nextPlayer.position} - ${nextPlayer.club}), postado por ${nextItem.nominatedByUserName} (${nextItem.nominatedByTeamName})! Propostas abertas por 24 horas.`,
+          timestamp: Date.now(),
+          type: 'info'
+        }
+      });
+    }
+  }
+
   saveState();
+  broadcastState();
 }
 
 // Server ticker for live countdowns
@@ -370,6 +452,54 @@ setInterval(() => {
       leagueState.auction.timerRemaining -= 1;
       leagueState.auction.lastUpdated = Date.now();
       stateChanged = true;
+
+      // 12 hours warning
+      if (leagueState.auction.timerRemaining === 43200) {
+        broadcast({
+          type: 'CHAT_NOTIFICATION',
+          data: {
+            message: `⏳ Restam 12 horas para o término das propostas por ${leagueState.auction.currentPlayer?.name}!`,
+            timestamp: Date.now(),
+            type: 'info'
+          }
+        });
+      }
+
+      // 1 hour warning
+      if (leagueState.auction.timerRemaining === 3600) {
+        broadcast({
+          type: 'CHAT_NOTIFICATION',
+          data: {
+            message: `⏳ Resta 1 hora para o encerramento da rodada de leilão de ${leagueState.auction.currentPlayer?.name}!`,
+            timestamp: Date.now(),
+            type: 'alert'
+          }
+        });
+      }
+
+      // 10m warning
+      if (leagueState.auction.timerRemaining === 600) {
+        broadcast({
+          type: 'CHAT_NOTIFICATION',
+          data: {
+            message: `⚠️ Atenção! Restam 10 minutos para as propostas finais de ${leagueState.auction.currentPlayer?.name}!`,
+            timestamp: Date.now(),
+            type: 'alert'
+          }
+        });
+      }
+
+      // 1m warning
+      if (leagueState.auction.timerRemaining === 60) {
+        broadcast({
+          type: 'CHAT_NOTIFICATION',
+          data: {
+            message: `🚨 Último minuto! Restam 60 segundos para definir o vencedor de ${leagueState.auction.currentPlayer?.name}!`,
+            timestamp: Date.now(),
+            type: 'alert'
+          }
+        });
+      }
 
       // 10s warning
       if (leagueState.auction.timerRemaining === 10) {
@@ -398,16 +528,40 @@ setInterval(() => {
       finalizeAuction();
       return;
     }
-  } else if (leagueState.auction.status === 'IDLE' && !leagueState.auction.isFreeNominationMode) {
-    // Nomination countdown
-    if (leagueState.auction.nominationTimerRemaining > 0) {
-      leagueState.auction.nominationTimerRemaining -= 1;
-      leagueState.auction.lastUpdated = Date.now();
-      stateChanged = true;
-    } else {
-      // Nomination time expired: automatically pass turn to next
-      advanceNominationTurn();
-      return;
+  } else if (leagueState.auction.status === 'IDLE') {
+    // Se estiver IDLE e houver jogadores na fila de interesse, inicia automaticamente a rodada de 24h
+    if (leagueState.auction.nominationQueue && leagueState.auction.nominationQueue.length > 0) {
+      const nextItem = leagueState.auction.nominationQueue.shift()!;
+      const nextPlayer = leagueState.players.find((p) => p.id === nextItem.player.id);
+      if (nextPlayer && nextPlayer.status === 'AVAILABLE') {
+        nextPlayer.status = 'IN_AUCTION';
+        nextPlayer.nominatedBy = nextItem.nominatedByUserId;
+
+        leagueState.auction.status = 'ACTIVE';
+        leagueState.auction.currentPlayer = nextPlayer;
+        leagueState.auction.currentBid = null;
+        leagueState.auction.bidHistory = [];
+        leagueState.auction.timerRemaining = 86400;
+        leagueState.auction.lastUpdated = Date.now();
+
+        broadcast({
+          type: 'AUCTION_STARTED',
+          data: {
+            player: nextPlayer,
+            auction: leagueState.auction
+          }
+        });
+
+        broadcast({
+          type: 'CHAT_NOTIFICATION',
+          data: {
+            message: `📢 Próximo jogador da fila: ${nextPlayer.name} (${nextPlayer.position} - ${nextPlayer.club}), postado por ${nextItem.nominatedByUserName}! Propostas abertas por 24 horas.`,
+            timestamp: Date.now(),
+            type: 'info'
+          }
+        });
+        stateChanged = true;
+      }
     }
   }
 
@@ -729,22 +883,27 @@ async function startServer() {
     res.json({ success: true, user, message: 'Perfil atualizado com sucesso!' });
   });
 
-  // 3. Nominate player for auction
+  // 3. Nominate / Post player for auction (Todos os usuários podem postar jogadores de interesse)
   app.post('/api/auction/nominate', (req: Request, res: Response) => {
     const { userId, playerId } = req.body;
     const user = leagueState.users.find((u) => u.id === userId);
     if (!user) {
-      res.status(401).json({ success: false, error: 'Usuário não encontrado' });
+      res.status(401).json({ success: false, error: 'Faça login para postar um jogador de interesse no leilão' });
       return;
     }
 
     // Check if the overall auction is started by the admin
     if (leagueState.auction.status === 'NOT_STARTED') {
-      res.status(400).json({ 
-        success: false, 
-        error: 'Leilão ainda não iniciado, participantes se preparem para logo em breve darmos inicio ao leilão' 
-      });
-      return;
+      if (user.role === 'ADMIN') {
+        // Se o próprio administrador estiver postando, inicia a liga diretamente
+        leagueState.auction.status = 'IDLE';
+      } else {
+        res.status(400).json({ 
+          success: false, 
+          error: 'O leilão oficial ainda não foi aberto pelo comissário. Assim que aberto, qualquer participante poderá postar jogadores livremente!' 
+        });
+        return;
+      }
     }
 
     if (leagueState.auction.status === 'ENDED') {
@@ -755,30 +914,30 @@ async function startServer() {
       return;
     }
 
-    // Check if auction is currently active
-    if (leagueState.auction.status === 'ACTIVE') {
-      res.status(400).json({ success: false, error: 'Já existe um leilão em andamento!' });
-      return;
-    }
-
-    // Check nomination turn permissions (allowed if user's turn, or admin, or free mode)
-    const isUserTurn = leagueState.auction.nominationTurnUserId === user.id;
-    const isAdmin = user.role === 'ADMIN';
-    const isFree = leagueState.auction.isFreeNominationMode;
-
-    if (!isUserTurn && !isAdmin && !isFree) {
-      res.status(403).json({ success: false, error: 'Aguarde a sua vez de anunciar um jogador!' });
-      return;
-    }
-
     const player = leagueState.players.find((p) => p.id === playerId);
     if (!player) {
-      res.status(404).json({ success: false, error: 'Jogador não encontrado' });
+      res.status(404).json({ success: false, error: 'Jogador não encontrado na lista oficial de jogadores registrados da Khedira League.' });
+      return;
+    }
+
+    const userPlayersCount = leagueState.players.filter(
+      (p) => p.status === 'SOLD' && p.soldTo?.userId === user.id
+    ).length;
+    if (userPlayersCount >= MAX_SQUAD_PLAYERS) {
+      res.status(400).json({
+        success: false,
+        error: `Seu clube já atingiu o limite regulamentar de ${MAX_SQUAD_PLAYERS} jogadores no elenco! Não é permitido postar novos jogadores para compra.`
+      });
       return;
     }
 
     if (player.status === 'SOLD') {
-      res.status(400).json({ success: false, error: 'Este jogador já foi vendido!' });
+      res.status(400).json({ success: false, error: 'Este jogador já foi arrematado por um clube da liga!' });
+      return;
+    }
+
+    if (player.status === 'IN_AUCTION' || leagueState.auction.currentPlayer?.id === player.id) {
+      res.status(400).json({ success: false, error: 'Este jogador já está no leilão ao vivo com propostas abertas de 24 horas!' });
       return;
     }
 
@@ -792,12 +951,55 @@ async function startServer() {
 
       res.status(400).json({
         success: false,
-        error: `Conforme o Regulamento Oficial da Khedira League, a disputa atual é restrita ao ${dayDesc}. A posição ${player.position} não está habilitada para hoje.`
+        error: `Conforme o Regulamento Oficial da Khedira League, a disputa atual é restrita ao ${dayDesc}. O atleta ${player.name} (${player.position}) pertence a outra fase.`
       });
       return;
     }
 
-    // Start auction for nominated player
+    if (!leagueState.auction.nominationQueue) {
+      leagueState.auction.nominationQueue = [];
+    }
+
+    // Se já existe um leilão em andamento, insere o jogador na Fila de Jogadores de Interesse
+    if (leagueState.auction.status === 'ACTIVE' && leagueState.auction.currentPlayer) {
+      if (leagueState.auction.nominationQueue.some((q) => q.player.id === player.id)) {
+        res.status(400).json({ 
+          success: false, 
+          error: `O atleta ${player.name} já foi postado e já está na fila de espera para os próximos leilões de 24h!` 
+        });
+        return;
+      }
+
+      leagueState.auction.nominationQueue.push({
+        player,
+        nominatedByUserId: user.id,
+        nominatedByUserName: user.name,
+        nominatedByTeamName: user.teamName,
+        nominatedAt: Date.now()
+      });
+
+      saveState();
+      broadcastState();
+      broadcast({
+        type: 'CHAT_NOTIFICATION',
+        data: {
+          message: `📋 ${user.name} (${user.teamName}) postou ${player.name} (${player.position} - ${player.club})! Adicionado à fila de interesse (#${leagueState.auction.nominationQueue.length}).`,
+          timestamp: Date.now(),
+          type: 'info'
+        }
+      });
+
+      res.json({ 
+        success: true, 
+        queued: true,
+        queuePosition: leagueState.auction.nominationQueue.length,
+        message: `${player.name} adicionado à fila de interesse! Abrirá propostas de 24h logo que a rodada atual terminar.`,
+        auction: leagueState.auction 
+      });
+      return;
+    }
+
+    // Se leilão está IDLE, abre imediatamente a rodada de 24h para o jogador
     player.status = 'IN_AUCTION';
     player.nominatedBy = user.id;
 
@@ -805,7 +1007,7 @@ async function startServer() {
     leagueState.auction.currentPlayer = player;
     leagueState.auction.currentBid = null;
     leagueState.auction.bidHistory = [];
-    leagueState.auction.timerRemaining = 30; // 30s initial auction timer
+    leagueState.auction.timerRemaining = 86400; // 24 hours per round (86400s)
     leagueState.auction.lastUpdated = Date.now();
 
     saveState();
@@ -821,13 +1023,101 @@ async function startServer() {
     broadcast({
       type: 'CHAT_NOTIFICATION',
       data: {
-        message: `📢 ${user.name} anunciou ${player.name} (${player.position} - ${player.club}) por lance inicial de € ${(player.initialPrice / 1000000).toFixed(1)}M!`,
+        message: `📢 ${user.name} (${user.teamName}) postou ${player.name} (${player.position} - ${player.club}) por lance inicial de € ${(player.initialPrice / 1000000).toFixed(1)}M! Propostas abertas por 24 horas.`,
         timestamp: Date.now(),
         type: 'info'
       }
     });
 
     broadcastState();
+    res.json({ success: true, queued: false, auction: leagueState.auction });
+  });
+
+  // Remover jogador da fila de interesse
+  app.post('/api/auction/queue/remove', (req: Request, res: Response) => {
+    const { userId, playerId } = req.body;
+    const user = leagueState.users.find((u) => u.id === userId);
+    if (!user) {
+      res.status(401).json({ success: false, error: 'Usuário não encontrado' });
+      return;
+    }
+
+    if (!leagueState.auction.nominationQueue) {
+      leagueState.auction.nominationQueue = [];
+    }
+
+    const itemIndex = leagueState.auction.nominationQueue.findIndex((q) => q.player.id === playerId);
+    if (itemIndex === -1) {
+      res.status(404).json({ success: false, error: 'Jogador não está na fila' });
+      return;
+    }
+
+    const item = leagueState.auction.nominationQueue[itemIndex];
+    if (item.nominatedByUserId !== user.id && user.role !== 'ADMIN') {
+      res.status(403).json({ success: false, error: 'Apenas quem postou ou o administrador pode remover da fila' });
+      return;
+    }
+
+    leagueState.auction.nominationQueue.splice(itemIndex, 1);
+    saveState();
+    broadcastState();
+    res.json({ success: true, auction: leagueState.auction });
+  });
+
+  // Forçar início de jogador da fila (Admin ou quando IDLE)
+  app.post('/api/auction/queue/start-now', (req: Request, res: Response) => {
+    const { userId, playerId } = req.body;
+    const user = leagueState.users.find((u) => u.id === userId);
+    if (!user || user.role !== 'ADMIN') {
+      res.status(403).json({ success: false, error: 'Apenas administradores podem forçar início imediato da fila' });
+      return;
+    }
+
+    if (!leagueState.auction.nominationQueue) {
+      leagueState.auction.nominationQueue = [];
+    }
+
+    const itemIndex = leagueState.auction.nominationQueue.findIndex((q) => q.player.id === playerId);
+    if (itemIndex === -1) {
+      res.status(404).json({ success: false, error: 'Jogador não encontrado na fila' });
+      return;
+    }
+
+    const [item] = leagueState.auction.nominationQueue.splice(itemIndex, 1);
+    const targetPlayer = leagueState.players.find((p) => p.id === item.player.id);
+    if (!targetPlayer || targetPlayer.status !== 'AVAILABLE') {
+      res.status(400).json({ success: false, error: 'Jogador indisponível' });
+      return;
+    }
+
+    // Se já houver alguém ativo, finaliza sem vencedor ou substitui
+    if (leagueState.auction.currentPlayer) {
+      const prev = leagueState.players.find((p) => p.id === leagueState.auction.currentPlayer?.id);
+      if (prev && prev.status === 'IN_AUCTION') {
+        prev.status = 'AVAILABLE';
+      }
+    }
+
+    targetPlayer.status = 'IN_AUCTION';
+    targetPlayer.nominatedBy = item.nominatedByUserId;
+
+    leagueState.auction.status = 'ACTIVE';
+    leagueState.auction.currentPlayer = targetPlayer;
+    leagueState.auction.currentBid = null;
+    leagueState.auction.bidHistory = [];
+    leagueState.auction.timerRemaining = 86400; // 24 horas
+    leagueState.auction.lastUpdated = Date.now();
+
+    saveState();
+    broadcastState();
+    broadcast({
+      type: 'AUCTION_STARTED',
+      data: {
+        player: targetPlayer,
+        auction: leagueState.auction
+      }
+    });
+
     res.json({ success: true, auction: leagueState.auction });
   });
 
@@ -887,6 +1177,18 @@ async function startServer() {
       return;
     }
 
+    // Validar limite de elenco: máximo de 23 jogadores por clube
+    const userPlayersCount = leagueState.players.filter(
+      (p) => p.status === 'SOLD' && p.soldTo?.userId === user.id
+    ).length;
+    if (userPlayersCount >= MAX_SQUAD_PLAYERS) {
+      res.status(400).json({
+        success: false,
+        error: `Limite de elenco atingido! Seu clube já possui o teto máximo de ${MAX_SQUAD_PLAYERS} jogadores permitidos pelo regulamento.`
+      });
+      return;
+    }
+
     // Do not allow bidding against yourself
     if (leagueState.auction.currentBid && leagueState.auction.currentBid.userId === user.id) {
       res.status(400).json({ success: false, error: 'Você já possui o maior lance atual!' });
@@ -912,9 +1214,9 @@ async function startServer() {
     leagueState.auction.bidHistory.unshift(newBid);
     player.currentPrice = bidAmount;
 
-    // Reset countdown timer if under 15 seconds to give other bidders fair reaction time
-    if (leagueState.auction.timerRemaining < 15) {
-      leagueState.auction.timerRemaining = 15;
+    // Anti-snipe rule: If timer < 300s (5 minutes), extend to 300s to allow counter-bids
+    if (leagueState.auction.timerRemaining < 300) {
+      leagueState.auction.timerRemaining = 300;
     }
     leagueState.auction.lastUpdated = Date.now();
 
@@ -1006,6 +1308,18 @@ async function startServer() {
     const { userId, formationId, starterSlots, benchPlayerIds } = req.body;
     if (!userId) {
       res.status(400).json({ success: false, error: 'ID do usuário é obrigatório' });
+      return;
+    }
+
+    // Garantir limite de 23 jogadores no elenco (11 titulares + até 12 reservas)
+    const validStarters = Object.values(starterSlots || {}).filter(Boolean) as string[];
+    const validBench = (benchPlayerIds || []) as string[];
+    const allSelectedUnique = Array.from(new Set([...validStarters, ...validBench]));
+    if (allSelectedUnique.length > MAX_SQUAD_PLAYERS) {
+      res.status(400).json({
+        success: false,
+        error: `O limite de jogadores por time é de ${MAX_SQUAD_PLAYERS} atletas (11 titulares + até 12 reservas).`
+      });
       return;
     }
 
@@ -1443,7 +1757,7 @@ async function startServer() {
         }
         break;
       case 'RESET_TIMER':
-        leagueState.auction.timerRemaining = Number(value) || 25;
+        leagueState.auction.timerRemaining = Number(value) || 86400;
         break;
       case 'CANCEL_AUCTION':
         if (leagueState.auction.currentPlayer) {

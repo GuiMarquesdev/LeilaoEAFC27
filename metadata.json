@@ -1,6 +1,6 @@
 {
   "name": "Khedira League - Leilão Virtual EAFC 27",
-  "description": "Sistema de leilão em tempo real da Khedira League com lances ao vivo, prancheta tática e banco de dados de jogadores EAFC 27.",
+  "description": "Sistema de leilão em tempo real da Khedira League com lances ao vivo, Radar de Observação multi-fases, prancheta tática e mercado de jogadores EAFC 27.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

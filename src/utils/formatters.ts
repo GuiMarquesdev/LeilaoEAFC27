@@ -36,6 +36,12 @@ export function isPositionAllowedForDay(position: string, day: 1 | 2 | 3 | 'ALL'
   return true;
 }
 
+export function getPlayerAuctionDay(position: string): 1 | 2 | 3 {
+  if (['GOL', 'ZAG', 'LE', 'LD'].includes(position)) return 1;
+  if (['VOL', 'MC', 'MEI'].includes(position)) return 2;
+  return 3;
+}
+
 export function getDayLabel(day: 1 | 2 | 3 | 'ALL'): { title: string; subtitle: string; positions: string[] } {
   switch (day) {
     case 1:
@@ -95,7 +101,16 @@ export function getPositionBadge(position: PlayerPosition): {
     case 'MD':
     case 'ME':
       return {
-        label: position === 'VOL' ? 'Volante' : position === 'MEI' ? 'Meia Ofensivo' : 'Meio-Campo',
+        label:
+          position === 'VOL'
+            ? 'Volante'
+            : position === 'MEI'
+            ? 'Meia Ofensivo'
+            : position === 'MD'
+            ? 'Meia Direita'
+            : position === 'ME'
+            ? 'Meia Esquerda'
+            : 'Meio-Campo',
         bgClass: 'bg-emerald-50',
         textClass: 'text-emerald-800',
         borderClass: 'border-emerald-200'
@@ -201,5 +216,20 @@ export function getPlayerAuctionPhase(player: { position: string; soldTo?: { auc
   if (['VOL', 'MC', 'MEI'].includes(player.position)) return 2;
   if (['ATA', 'PD', 'PE', 'MD', 'ME', 'SA'].includes(player.position)) return 3;
   return 1;
+}
+
+export function formatAuctionTimer(totalSeconds: number): string {
+  if (totalSeconds <= 0) return '0s';
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+  }
+  return `${seconds}s`;
 }
 

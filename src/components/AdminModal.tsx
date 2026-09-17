@@ -5,7 +5,7 @@ import {
   Calendar, Lock, Unlock, FileText, Wallet, CheckCircle2, RefreshCw
 } from 'lucide-react';
 import { Player, UserProfile, AuctionState, PlayerPosition } from '../types';
-import { formatCurrency, getPositionBadge, getDayLabel, getUserRoleBadge } from '../utils/formatters';
+import { formatCurrency, getPositionBadge, getDayLabel, getUserRoleBadge, formatAuctionTimer } from '../utils/formatters';
 import { AdminSigningsReportSection } from './AdminSigningsReportSection';
 
 interface AdminModalProps {
@@ -354,7 +354,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   </div>
 
                   <span className="text-xs font-bold text-slate-600">
-                    Cronômetro: <strong>{auction.timerRemaining}s</strong>
+                    Cronômetro: <strong>{formatAuctionTimer(auction.timerRemaining)}</strong>
                   </span>
                 </div>
               </div>
@@ -388,14 +388,46 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   <span>Bater Martelo (Finalizar)</span>
                 </button>
 
-                <button
-                  onClick={() => onAdminAuctionAction('RESET_TIMER', 25)}
-                  disabled={auction.status === 'IDLE'}
-                  className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-40 cursor-pointer"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>Resetar Timer (25s)</span>
-                </button>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => onAdminAuctionAction('RESET_TIMER', 86400)}
+                    disabled={auction.status === 'IDLE'}
+                    className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-40 cursor-pointer w-full"
+                    title="Ajusta o cronômetro para 24 horas (padrão oficial)"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Resetar Timer (24h)</span>
+                  </button>
+                  {auction.status !== 'IDLE' && (
+                    <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-slate-500">
+                      <span>Presets:</span>
+                      <button 
+                        onClick={() => onAdminAuctionAction('RESET_TIMER', 86400)} 
+                        className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
+                      >
+                        24h
+                      </button>
+                      <button 
+                        onClick={() => onAdminAuctionAction('RESET_TIMER', 3600)} 
+                        className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
+                      >
+                        1h
+                      </button>
+                      <button 
+                        onClick={() => onAdminAuctionAction('RESET_TIMER', 600)} 
+                        className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
+                      >
+                        10m
+                      </button>
+                      <button 
+                        onClick={() => onAdminAuctionAction('RESET_TIMER', 60)} 
+                        className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
+                      >
+                        1m
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 <button
                   onClick={() => onAdminAuctionAction('CANCEL_AUCTION')}

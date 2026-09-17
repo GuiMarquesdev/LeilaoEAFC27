@@ -57,6 +57,14 @@ export interface UserProfile {
   createdAt: number;
 }
 
+export interface NominationQueueItem {
+  player: Player;
+  nominatedByUserId: string;
+  nominatedByUserName: string;
+  nominatedByTeamName: string;
+  nominatedAt: number;
+}
+
 export interface AuctionState {
   status: 'NOT_STARTED' | 'IDLE' | 'NOMINATING' | 'ACTIVE' | 'PAUSED' | 'FINALIZING' | 'ENDED';
   currentPlayer: Player | null;
@@ -66,6 +74,7 @@ export interface AuctionState {
   nominationTurnUserId: string | null;
   nominationTimerRemaining: number; // in seconds
   isFreeNominationMode: boolean; // if true, any participant can nominate
+  nominationQueue?: NominationQueueItem[]; // Fila de jogadores de interesse postados pelos participantes
   minimumBidIncrement: number; // e.g., 1000000 (€1M)
   auctionDay: 1 | 2 | 3 | 'ALL'; // Dia 1: Defesa (GOL/ZAG/LE/LD), Dia 2: Meio (VOL/MC/MEI), Dia 3: Ataque (ATA/ME/MD/PE/PD/SA), 'ALL': Todas
   anonymousBidding: boolean; // Sigilo de Lances obrigatório conforme Ata Oficial
@@ -93,6 +102,8 @@ export interface UserSquad {
   starterSlots: { [slotId: string]: string | null }; // slotId -> playerId
   benchPlayerIds: string[]; // reserve players
 }
+
+export const MAX_SQUAD_PLAYERS = 23;
 
 export interface LeagueState {
   users: UserProfile[];

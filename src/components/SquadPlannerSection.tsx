@@ -508,44 +508,64 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
 
         {/* Financial & Squad Stats Summary */}
         {currentUser ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-100">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                Saldo Restante
-              </span>
-              <span className="text-base font-extrabold text-emerald-600 font-['Outfit',sans-serif]">
-                {formatCurrency(currentUser.budget)}
-              </span>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-100">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                  Saldo Restante
+                </span>
+                <span className="text-base font-extrabold text-emerald-600 font-['Outfit',sans-serif]">
+                  {formatCurrency(currentUser.budget)}
+                </span>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                  Gasto no Leilão
+                </span>
+                <span className="text-base font-extrabold text-slate-800 font-['Outfit',sans-serif]">
+                  {formatCurrency(currentUser.spent)}
+                </span>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                    Elenco do Clube
+                  </span>
+                  <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${
+                    ownedPlayers.length >= 23 
+                      ? 'bg-amber-100 text-amber-800' 
+                      : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {ownedPlayers.length >= 23 ? '23/23 Cheio' : `${23 - ownedPlayers.length} vagas`}
+                  </span>
+                </div>
+                <span className="text-base font-extrabold text-slate-800 flex items-center gap-1 font-['Outfit',sans-serif]">
+                  <Lock className="w-3.5 h-3.5 text-emerald-600" />
+                  {ownedPlayers.length} / 23 jogadores
+                </span>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                  Titulares Definidos
+                </span>
+                <span className="text-base font-extrabold text-slate-800 font-['Outfit',sans-serif]">
+                  {startersCount} / 11
+                </span>
+              </div>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                Gasto no Leilão
-              </span>
-              <span className="text-base font-extrabold text-slate-800 font-['Outfit',sans-serif]">
-                {formatCurrency(currentUser.spent)}
-              </span>
-            </div>
-
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                Comprados no Leilão
-              </span>
-              <span className="text-base font-extrabold text-slate-800 flex items-center gap-1 font-['Outfit',sans-serif]">
-                <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                {ownedPlayers.length} jogadores
-              </span>
-            </div>
-
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                Titulares Definidos
-              </span>
-              <span className="text-base font-extrabold text-slate-800 font-['Outfit',sans-serif]">
-                {startersCount} / 11
-              </span>
-            </div>
-          </div>
+            {ownedPlayers.length >= 23 && (
+              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2.5 text-xs text-amber-950 font-medium">
+                <Users className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>
+                  <strong>Limite de 23 jogadores atingido:</strong> Seu elenco atingiu a cota máxima permitida pela Khedira League (11 titulares + 12 reservas). Novos lances de compra estão bloqueados.
+                </span>
+              </div>
+            )}
+          </>
         ) : (
           <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between text-xs">
             <span className="text-amber-900 font-medium">

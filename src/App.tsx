@@ -7,7 +7,7 @@ import {
 
 import { LeagueState, UserProfile, WSMessage, Player, UserSquad } from './types';
 import { INITIAL_FORMATIONS, INITIAL_PLAYERS } from './data/initialPlayers';
-import { isCompatiblePosition } from './utils/formatters';
+import { isCompatiblePosition, formatCurrency } from './utils/formatters';
 import { apiUrl, getWebSocketUrl } from './utils/api';
 import { Navbar } from './components/Navbar';
 import { LiveAuctionSection } from './components/LiveAuctionSection';
@@ -16,8 +16,10 @@ import { PlayerCatalogSection } from './components/PlayerCatalogSection';
 import { AuthModal } from './components/AuthModal';
 import { AuthScreen } from './components/AuthScreen';
 import { AdminModal } from './components/AdminModal';
+import { WatchlistModal } from './components/WatchlistModal';
 import { NotificationFeed, LeagueNotification } from './components/NotificationFeed';
 import { isSoundEnabled, toggleSound, playBidSound, playHammerSound } from './utils/sound';
+import { getWatchlist, toggleWatchlistPlayer } from './utils/watchlist';
 
 const AUTH_STORAGE_KEY = 'khedira_league_user_id';
 
@@ -29,10 +31,22 @@ export default function App() {
   const [notifications, setNotifications] = useState<LeagueNotification[]>([]);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
   const [adminInitialTab, setAdminInitialTab] = useState<'auction' | 'players' | 'users' | 'danger' | 'report'>('auction');
   const [soundActive, setSoundActive] = useState(isSoundEnabled());
   const [wsConnected, setWsConnected] = useState(false);
   const [backendOffline, setBackendOffline] = useState(false);
+
+  // Watchlist state (persistent per user in localStorage)
+  const [watchedPlayerIds, setWatchedPlayerIds] = useState<string[]>(() => {
+    const savedUserId = typeof window !== 'undefined' ? localStorage.getItem(AUTH_STORAGE_KEY) : null;
+    return getWatchlist(savedUserId);
+  });
+  const watchedPlayerIdsRef = useRef<string[]>(watchedPlayerIds);
+  watchedPlayerIdsRef.current = watchedPlayerIds;
+
+  const currentUserRef = useRef<UserProfile | null>(currentUser);
+  currentUserRef.current = currentUser;
 
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -69,7 +83,7 @@ export default function App() {
       currentPlayer: null,
       currentBid: null,
       bidHistory: [],
-      timerRemaining: 20,
+      timerRemaining: 86400,
       nominationTurnUserId: 'user-admin-default',
       nominationTimerRemaining: 30,
       isFreeNominationMode: false,
@@ -180,14 +194,30 @@ export default function App() {
             case 'NEW_BID':
               setLeagueState((prev) => (prev ? { ...prev, auction: msg.data.auction } : prev));
               playBidSound();
+              if (msg.data.auction.currentPlayer && watchedPlayerIdsRef.current.includes(msg.data.auction.currentPlayer.id)) {
+                const isMyBid = currentUserRef.current?.id === msg.data.auction.currentBid?.userId;
+                if (!isMyBid && msg.data.auction.currentBid) {
+                  addNotification(
+                    `⭐ RADAR ALERTA: Novo lance de ${formatCurrency(msg.data.auction.currentBid.amount)} em ${msg.data.auction.currentPlayer.name}!`,
+                    'urgent'
+                  );
+                }
+              }
               break;
 
             case 'AUCTION_STARTED':
               setLeagueState((prev) => (prev ? { ...prev, auction: msg.data.auction } : prev));
-              addNotification(
-                `📢 Leilão iniciado para ${msg.data.player.name} (${msg.data.player.position})!`,
-                'info'
-              );
+              if (watchedPlayerIdsRef.current.includes(msg.data.player.id)) {
+                addNotification(
+                  `⭐ RADAR: ${msg.data.player.name} (${msg.data.player.position}) ENTROU EM LEILÃO AGORA!`,
+                  'urgent'
+                );
+              } else {
+                addNotification(
+                  `📢 Leilão iniciado para ${msg.data.player.name} (${msg.data.player.position})!`,
+                  'info'
+                );
+              }
               break;
 
             case 'AUCTION_HAMMER':
@@ -285,6 +315,30 @@ export default function App() {
       if (socketRef.current) socketRef.current.close();
     };
   }, [fetchState, connectWebSocket]);
+
+  // Keep watchedPlayerIds in sync when user logs in, out, or changes
+  useEffect(() => {
+    const currentList = getWatchlist(currentUser?.id);
+    setWatchedPlayerIds(currentList);
+  }, [currentUser?.id]);
+
+  // Toggle watchlist player
+  const handleToggleWatch = useCallback((playerId: string) => {
+    const { isWatched, playerIds } = toggleWatchlistPlayer(currentUser?.id, playerId);
+    setWatchedPlayerIds(playerIds);
+    const player = leagueState?.players.find((p) => p.id === playerId);
+    if (isWatched) {
+      addNotification(
+        `⭐ ${player ? player.name : 'Jogador'} adicionado ao seu Radar de Observação!`,
+        'info'
+      );
+    } else {
+      addNotification(
+        `${player ? player.name : 'Jogador'} removido do Radar de Observação.`,
+        'info'
+      );
+    }
+  }, [currentUser?.id, leagueState?.players, addNotification]);
 
   // Toggle Sound
   const handleToggleSound = () => {
@@ -472,13 +526,63 @@ export default function App() {
       const data = await res.json();
       if (data.success) {
         setActiveTab('auction'); // jump to live auction tab!
+        if (data.queued) {
+          addNotification(`📋 ${data.message || 'Jogador adicionado à fila de interesse!'}`, 'success');
+        } else {
+          addNotification('📢 Jogador postado no leilão! Propostas abertas por 24 horas.', 'success');
+        }
+        await fetchState();
         return true;
       } else {
-        alert(data.error || 'Erro ao anunciar jogador');
+        alert(data.error || 'Erro ao postar jogador');
         return false;
       }
     } catch (err) {
       console.error('Nominate error:', err);
+      return false;
+    }
+  };
+
+  // Auction: Remove from Queue
+  const handleRemoveFromQueue = async (playerId: string): Promise<boolean> => {
+    if (!currentUser) return false;
+    try {
+      const res = await fetch(apiUrl('/api/auction/queue/remove'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id, playerId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addNotification('Jogador removido da fila de interesse.', 'info');
+        await fetchState();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Remove from queue error:', err);
+      return false;
+    }
+  };
+
+  // Auction: Start from Queue (Admin)
+  const handleStartFromQueue = async (playerId: string): Promise<boolean> => {
+    if (!currentUser || currentUser.role !== 'ADMIN') return false;
+    try {
+      const res = await fetch(apiUrl('/api/auction/queue/start-now'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id, playerId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addNotification('Jogador da fila iniciado imediatamente!', 'success');
+        await fetchState();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Start from queue error:', err);
       return false;
     }
   };
@@ -869,6 +973,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         currentUser={currentUser}
         auction={leagueState.auction}
+        watchedCount={watchedPlayerIds.length}
+        onOpenWatchlist={() => setIsWatchlistOpen(true)}
         onOpenAuth={() => {
           if (!currentUser) {
             setGuestMode(false);
@@ -891,8 +997,13 @@ export default function App() {
             currentUser={currentUser}
             players={leagueState.players}
             users={leagueState.users}
+            watchedPlayerIds={watchedPlayerIds}
+            onToggleWatch={handleToggleWatch}
+            onOpenWatchlist={() => setIsWatchlistOpen(true)}
             onBid={handleBid}
             onNominate={handleNominate}
+            onRemoveFromQueue={handleRemoveFromQueue}
+            onStartFromQueue={handleStartFromQueue}
             onPassTurn={handlePassTurn}
             onOpenAuth={() => {
               if (!currentUser) {
@@ -929,6 +1040,9 @@ export default function App() {
             currentUser={currentUser}
             userSquad={userSquad}
             auction={leagueState.auction}
+            watchedPlayerIds={watchedPlayerIds}
+            onToggleWatch={handleToggleWatch}
+            onOpenWatchlist={() => setIsWatchlistOpen(true)}
             onNominate={handleNominate}
             onViewPreview={handleViewPreview}
             onOpenAuth={() => {
@@ -956,6 +1070,25 @@ export default function App() {
       </footer>
 
       {/* Modals & Live Notification Feed */}
+      <WatchlistModal
+        isOpen={isWatchlistOpen}
+        onClose={() => setIsWatchlistOpen(false)}
+        watchedPlayerIds={watchedPlayerIds}
+        players={leagueState.players}
+        auction={leagueState.auction}
+        currentUser={currentUser}
+        onToggleWatch={handleToggleWatch}
+        onNominate={handleNominate}
+        onNavigateToAuction={() => {
+          setIsWatchlistOpen(false);
+          setActiveTab('auction');
+        }}
+        onNavigateToCatalog={() => {
+          setIsWatchlistOpen(false);
+          setActiveTab('catalog');
+        }}
+      />
+
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}

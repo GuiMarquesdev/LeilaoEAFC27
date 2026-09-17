@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Shield, ShieldCheck, User, Users, Flame, LayoutGrid, DollarSign, FileText, UserPlus, LogOut } from 'lucide-react';
+import { Volume2, VolumeX, Shield, ShieldCheck, User, Users, Flame, LayoutGrid, DollarSign, FileText, UserPlus, LogOut, Star } from 'lucide-react';
 import { UserProfile, AuctionState } from '../types';
 import { formatCurrency, getUserRoleBadge } from '../utils/formatters';
 
@@ -8,6 +8,8 @@ interface NavbarProps {
   setActiveTab: (tab: 'auction' | 'squad' | 'catalog') => void;
   currentUser: UserProfile | null;
   auction: AuctionState;
+  watchedCount?: number;
+  onOpenWatchlist?: () => void;
   onOpenAuth: () => void;
   onLogout?: () => void;
   onOpenAdmin: () => void;
@@ -21,6 +23,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   currentUser,
   auction,
+  watchedCount = 0,
+  onOpenWatchlist,
   onOpenAuth,
   onLogout,
   onOpenAdmin,
@@ -98,10 +102,28 @@ export const Navbar: React.FC<NavbarProps> = ({
               id="btn-toggle-sound"
               onClick={onToggleSound}
               title={soundActive ? 'Desativar Sons' : 'Ativar Sons'}
-              className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
             >
               {soundActive ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
+
+            {/* Watchlist / Radar Button */}
+            {onOpenWatchlist && (
+              <button
+                id="btn-navbar-watchlist"
+                onClick={onOpenWatchlist}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/90 text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-2xs"
+                title="Abrir Radar de Observação: Acompanhe seus atletas favoritos das 3 fases"
+              >
+                <Star className={`w-3.5 h-3.5 ${watchedCount > 0 ? 'fill-amber-400 text-amber-500' : 'text-slate-400'}`} />
+                <span className="hidden sm:inline">Radar</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                  watchedCount > 0 ? 'bg-amber-200 text-amber-950' : 'bg-slate-200 text-slate-700'
+                }`}>
+                  {watchedCount}
+                </span>
+              </button>
+            )}
 
             {/* Admin Report Button - Exclusivo ADMs */}
             {currentUser?.role === 'ADMIN' && onOpenAdminReport && (

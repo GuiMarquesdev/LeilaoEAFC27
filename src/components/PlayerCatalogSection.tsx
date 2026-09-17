@@ -1,16 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Search, Filter, ArrowUpDown, Flame, Gavel, 
-  CheckCircle2, Lock, Sparkles, ExternalLink, Plus, X, ShieldAlert, ShieldCheck, Calendar
+  CheckCircle2, Lock, Sparkles, ExternalLink, Plus, X, ShieldAlert, ShieldCheck, Calendar, Star, Eye
 } from 'lucide-react';
 import { Player, UserProfile, AuctionState, UserSquad } from '../types';
-import { formatCurrency, getPositionBadge, getPositionCategory, isPositionAllowedForDay, getDayLabel } from '../utils/formatters';
+import { formatCurrency, getPositionBadge, getPositionCategory, isPositionAllowedForDay, getDayLabel, getPlayerAuctionDay } from '../utils/formatters';
 
 interface PlayerCatalogSectionProps {
   players: Player[];
   currentUser: UserProfile | null;
   userSquad?: UserSquad | null;
   auction: AuctionState;
+  watchedPlayerIds?: string[];
+  onToggleWatch?: (playerId: string) => void;
+  onOpenWatchlist?: () => void;
   onNominate: (playerId: string) => Promise<boolean>;
   onViewPreview: (player: Player) => Promise<void> | void;
   onOpenAuth: () => void;
@@ -23,6 +26,9 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
   currentUser,
   userSquad,
   auction,
+  watchedPlayerIds = [],
+  onToggleWatch,
+  onOpenWatchlist,
   onNominate,
   onViewPreview,
   onOpenAuth,
@@ -30,6 +36,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
   onNavigateToSquad,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewScope, setViewScope] = useState<'DAY_ONLY' | 'WATCHED_ONLY' | 'ALL_PHASES'>('DAY_ONLY');
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'GOL' | 'DEF' | 'MEI' | 'ATA'>('ALL');
   const [exactPositionFilter, setExactPositionFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'AVAILABLE' | 'SOLD' | 'IN_AUCTION'>('ALL');
@@ -41,10 +48,26 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
   const currentAuctionDay = auction.auctionDay || 1;
   const currentDayInfo = getDayLabel(currentAuctionDay);
 
+  const userWonPlayersCount = currentUser
+    ? players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === currentUser.id).length
+    : 0;
+  const isUserSquadFull = userWonPlayersCount >= 23;
+
   // Total players allowed for the active day
   const dayPlayers = useMemo(() => {
     return players.filter((p) => isPositionAllowedForDay(p.position, currentAuctionDay));
   }, [players, currentAuctionDay]);
+
+  // Scoped players based on view mode (Day Only vs Watched Only vs All Phases)
+  const scopedPlayers = useMemo(() => {
+    if (viewScope === 'WATCHED_ONLY') {
+      return players.filter((p) => watchedPlayerIds.includes(p.id));
+    }
+    if (viewScope === 'ALL_PHASES') {
+      return players;
+    }
+    return dayPlayers;
+  }, [players, viewScope, watchedPlayerIds, dayPlayers]);
 
   const handleFilterByPosition = (pos: string) => {
     if (exactPositionFilter === pos) {
@@ -56,9 +79,9 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
     }
   };
 
-  // Filter & sort logic - O MERCADO SÓ DISPONIBILIZA OS JOGADORES DA POSIÇÃO DO DIA
+  // Filter & sort logic
   const filteredPlayers = useMemo(() => {
-    return dayPlayers
+    return scopedPlayers
       .filter((player) => {
         // Exact position filter if clicked directly
         if (exactPositionFilter && player.position !== exactPositionFilter) {
@@ -101,7 +124,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
         }
         return sortOrder === 'asc' ? comp : -comp;
       });
-  }, [dayPlayers, searchTerm, categoryFilter, exactPositionFilter, statusFilter, sortField, sortOrder]);
+  }, [scopedPlayers, searchTerm, categoryFilter, exactPositionFilter, statusFilter, sortField, sortOrder]);
 
   const totalPages = Math.ceil(filteredPlayers.length / itemsPerPage) || 1;
   const paginatedPlayers = filteredPlayers.slice(
@@ -120,13 +143,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
   };
 
   const isAuctionIdle = auction.status === 'IDLE';
-  const canNominate = Boolean(
-    currentUser &&
-      isAuctionIdle &&
-      (auction.nominationTurnUserId === currentUser.id ||
-        currentUser.role === 'ADMIN' ||
-        auction.isFreeNominationMode)
-  );
+  const isAuctionActive = auction.status === 'ACTIVE';
 
   const isPlayerInSquad = (playerId: string): boolean => {
     if (!userSquad) return false;
@@ -184,6 +201,92 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
         </div>
       </div>
 
+      {/* View Scope Tabs: Fase Atual vs Meu Radar vs Todas as 3 Fases */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2 bg-slate-100 rounded-2xl border border-slate-200">
+        <div className="flex items-center gap-1.5 overflow-x-auto text-xs font-bold">
+          <button
+            type="button"
+            onClick={() => {
+              setViewScope('DAY_ONLY');
+              setCategoryFilter('ALL');
+              setExactPositionFilter(null);
+              setCurrentPage(1);
+            }}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+              viewScope === 'DAY_ONLY'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-700 hover:bg-slate-200/80'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Fase Ativa: {currentDayInfo.title}</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+              viewScope === 'DAY_ONLY' ? 'bg-emerald-800 text-white' : 'bg-slate-200 text-slate-700'
+            }`}>
+              {dayPlayers.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setViewScope('WATCHED_ONLY');
+              setCategoryFilter('ALL');
+              setExactPositionFilter(null);
+              setCurrentPage(1);
+            }}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+              viewScope === 'WATCHED_ONLY'
+                ? 'bg-amber-500 text-slate-950 shadow-xs ring-2 ring-amber-300'
+                : 'text-slate-700 hover:bg-slate-200/80'
+            }`}
+          >
+            <Star className={`w-4 h-4 ${watchedPlayerIds.length > 0 ? 'fill-amber-400 text-amber-950' : 'text-slate-500'}`} />
+            <span>Meu Radar de Observação</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+              viewScope === 'WATCHED_ONLY' ? 'bg-amber-700 text-white' : 'bg-slate-200 text-slate-700'
+            }`}>
+              {watchedPlayerIds.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setViewScope('ALL_PHASES');
+              setCategoryFilter('ALL');
+              setExactPositionFilter(null);
+              setCurrentPage(1);
+            }}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+              viewScope === 'ALL_PHASES'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-700 hover:bg-slate-200/80'
+            }`}
+          >
+            <Eye className="w-4 h-4" />
+            <span>Todas as 3 Fases (Explorar & Monitorar)</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+              viewScope === 'ALL_PHASES' ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-700'
+            }`}>
+              {players.length}
+            </span>
+          </button>
+        </div>
+
+        {onOpenWatchlist && (
+          <button
+            type="button"
+            onClick={onOpenWatchlist}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300/80 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-2xs"
+            title="Abrir Central do Radar com filtros por fase"
+          >
+            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+            <span>Abrir Painel do Radar</span>
+          </button>
+        )}
+      </div>
+
       {/* Header & Stats Banner */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -193,11 +296,19 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                 Seção 3
               </span>
               <h2 className="text-lg font-bold text-slate-900">
-                Mercado de Craques (EAFC 27) — {currentDayInfo.title}
+                {viewScope === 'WATCHED_ONLY'
+                  ? 'Meu Radar de Observação — Jogadores Selecionados'
+                  : viewScope === 'ALL_PHASES'
+                  ? 'Catálogo Geral — Todas as 3 Fases (125+ Jogadores)'
+                  : `Mercado de Craques (EAFC 27) — ${currentDayInfo.title}`}
               </h2>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Consulte os craques da posição do dia, preços de abertura para lance inicial e situação no leilão.
+              {viewScope === 'WATCHED_ONLY'
+                ? 'Monitore os atletas que você marcou como favoritos. Fique de olho nos lances e nas fases de cada um.'
+                : viewScope === 'ALL_PHASES'
+                ? 'Explore e marque atletas das 3 fases para colocar em observação com antecedência.'
+                : 'Consulte os craques da posição do dia, preços de abertura para lance inicial e situação no leilão.'}
             </p>
           </div>
 
@@ -219,7 +330,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             <input
               type="text"
-              placeholder={`Buscar em ${dayPlayers.length} atletas da fase...`}
+              placeholder={`Buscar em ${scopedPlayers.length} atletas...`}
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -417,6 +528,9 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-600 select-none">
+                <th className="py-3.5 px-3 w-10 text-center">
+                  <span title="Radar de Observação">⭐</span>
+                </th>
                 <th
                   onClick={() => toggleSort('name')}
                   className="py-3.5 px-4 cursor-pointer hover:bg-slate-100 transition-colors"
@@ -434,6 +548,9 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                     <span>Posição</span>
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
+                </th>
+                <th className="py-3.5 px-3">
+                  <span>Fase</span>
                 </th>
                 <th
                   onClick={() => toggleSort('initialPrice')}
@@ -463,18 +580,46 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                   const isAvailable = player.status === 'AVAILABLE';
                   const isInAuction = player.status === 'IN_AUCTION';
                   const isSold = player.status === 'SOLD';
+                  const isWatched = watchedPlayerIds.includes(player.id);
+                  const playerDay = getPlayerAuctionDay(player.position);
+                  const isAllowedToday = isPositionAllowedForDay(player.position, currentAuctionDay);
 
                   return (
                     <tr
                       key={player.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isInAuction ? 'bg-amber-50/40' : ''
+                        isInAuction 
+                          ? 'bg-amber-50/60' 
+                          : isWatched 
+                          ? 'bg-amber-50/20' 
+                          : ''
                       }`}
                     >
+                      {/* Watchlist Star Toggle */}
+                      <td className="py-3.5 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => onToggleWatch && onToggleWatch(player.id)}
+                          className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                            isWatched
+                              ? 'text-amber-500 hover:bg-amber-100'
+                              : 'text-slate-300 hover:text-amber-400 hover:bg-slate-100'
+                          }`}
+                          title={isWatched ? 'Remover do Radar de Observação' : 'Adicionar ao Radar de Observação (Todas as 3 fases)'}
+                        >
+                          <Star className={`w-4 h-4 ${isWatched ? 'fill-amber-400 text-amber-500' : ''}`} />
+                        </button>
+                      </td>
+
                       {/* Name */}
                       <td className="py-3.5 px-4 font-bold text-slate-900 text-sm">
                         <div className="flex items-center gap-2">
                           <span>{player.name}</span>
+                          {isWatched && (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-100 text-amber-800 border border-amber-300/80">
+                              Radar
+                            </span>
+                          )}
                           {isInAuction && (
                             <span className="flex h-2 w-2 relative">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
@@ -482,6 +627,9 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                             </span>
                           )}
                         </div>
+                        <span className="text-[11px] text-slate-400 font-normal block">
+                          {player.club} • {player.nationality}
+                        </span>
                       </td>
 
                       {/* Position Badge */}
@@ -500,11 +648,29 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                         </button>
                       </td>
 
+                      {/* Phase Badge */}
+                      <td className="py-3.5 px-3 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                          playerDay === currentAuctionDay
+                            ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                            : 'bg-slate-100 text-slate-600 border border-slate-200'
+                        }`}>
+                          Fase {playerDay}
+                        </span>
+                      </td>
+
                       {/* Initial Price */}
                       <td className="py-3.5 px-4 text-right">
                         <span className="text-sm font-extrabold text-slate-800 block">
-                          {formatCurrency(player.initialPrice)}
+                          {isInAuction && auction.currentBid
+                            ? formatCurrency(auction.currentBid.amount)
+                            : formatCurrency(player.initialPrice)}
                         </span>
+                        {isInAuction && auction.currentBid && (
+                          <span className="text-[10px] font-black text-rose-600 block animate-pulse">
+                            Maior lance ao vivo
+                          </span>
+                        )}
                         {isSold && player.soldTo && (
                           <span className="text-[11px] font-bold text-emerald-600 block">
                             Final: {formatCurrency(player.soldTo.amount)}
@@ -565,20 +731,61 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                             <span>Ver Prévia</span>
                           </button>
 
-                          {isAvailable && canNominate && (
-                            <button
-                              onClick={() => {
-                                if (!currentUser) {
-                                  onOpenAuth();
-                                  return;
-                                }
-                                onNominate(player.id);
-                              }}
-                              className="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-colors cursor-pointer"
-                              title="Anunciar jogador no leilão ao vivo"
-                            >
-                              Anunciar
-                            </button>
+                          {isAvailable && (
+                            (() => {
+                              const queueIndex = auction.nominationQueue?.findIndex((q) => q.player.id === player.id) ?? -1;
+                              const isQueued = queueIndex !== -1;
+                              const queueItem = isQueued && auction.nominationQueue ? auction.nominationQueue[queueIndex] : null;
+
+                              if (isQueued && queueItem) {
+                                return (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-amber-50 text-amber-700 border border-amber-200"
+                                    title={`Postado por ${queueItem.nominatedByUserName} (${queueItem.nominatedByTeamName})`}
+                                  >
+                                    <span>Fila #{queueIndex + 1}</span>
+                                  </span>
+                                );
+                              }
+
+                              if (isUserSquadFull) {
+                                return (
+                                  <span
+                                    className="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed"
+                                    title="Seu clube já atingiu o limite de 23 jogadores no elenco"
+                                  >
+                                    Elenco 23/23
+                                  </span>
+                                );
+                              }
+
+                              if (!isAllowedToday) {
+                                return (
+                                  <span
+                                    className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+                                    title={`Indicações bloqueadas: Jogador pertence à Fase ${playerDay}`}
+                                  >
+                                    🔒 Fase {playerDay}
+                                  </span>
+                                );
+                              }
+
+                              return (
+                                <button
+                                  onClick={() => {
+                                    if (!currentUser) {
+                                      onOpenAuth();
+                                      return;
+                                    }
+                                    onNominate(player.id);
+                                  }}
+                                  className="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 transition-colors cursor-pointer"
+                                  title={isAuctionActive ? "Postar este jogador na fila de interesse do leilão (24h)" : "Iniciar leilão de 24 horas para este jogador"}
+                                >
+                                  {isAuctionActive ? "Postar na Fila" : "Postar no Leilão (24h)"}
+                                </button>
+                              );
+                            })()
                           )}
                         </div>
                       </td>
@@ -587,8 +794,10 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
-                    Nenhum jogador encontrado com os filtros atuais.
+                  <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
+                    {viewScope === 'WATCHED_ONLY'
+                      ? 'Nenhum jogador em observação no momento. Clique na estrela ⭐ ao lado de qualquer atleta para monitorar.'
+                      : 'Nenhum jogador encontrado com os filtros atuais.'}
                   </td>
                 </tr>
               )}
