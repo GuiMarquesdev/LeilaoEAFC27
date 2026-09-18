@@ -669,7 +669,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <div>
                     <span className="font-extrabold text-emerald-800 block">Orçamento Inicial Garantido:</span>
                     <span className="text-[11px] text-emerald-700 font-medium">
-                      Cada novo clube recebe <strong>€ 300.000.000 (€ 300M)</strong> automaticamente no cadastro para o leilão!
+                      Cada novo clube recebe <strong>€ 400.000.000 (€ 400M)</strong> automaticamente no cadastro para o leilão!
                     </span>
                   </div>
                 </div>

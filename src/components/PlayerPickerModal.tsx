@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Search, Check, Lock, Sparkles } from 'lucide-react';
 import { Player, FormationSlot } from '../types';
-import { formatCurrency, getPositionBadge, isCompatiblePosition } from '../utils/formatters';
+import { formatCurrency, getPositionBadge, isCompatiblePosition, matchesPlayerSearch } from '../utils/formatters';
 
 interface PlayerPickerModalProps {
   isOpen: boolean;
@@ -53,15 +53,7 @@ export const PlayerPickerModal: React.FC<PlayerPickerModalProps> = ({
   // Filter and sort players
   const filteredPlayers = players
     .filter((player) => {
-      const term = search.toLowerCase().trim();
-      const matchesSearch =
-        !term ||
-        player.name.toLowerCase().includes(term) ||
-        player.club.toLowerCase().includes(term) ||
-        player.position.toLowerCase().includes(term) ||
-        player.nationality.toLowerCase().includes(term);
-
-      if (!matchesSearch) return false;
+      if (search.trim() && !matchesPlayerSearch(player, search)) return false;
 
       if (filterMode === 'EXACT') {
         return player.position === slot.role;
@@ -93,6 +85,8 @@ export const PlayerPickerModal: React.FC<PlayerPickerModalProps> = ({
       // 3. Higher price / rating first
       return b.initialPrice - a.initialPrice;
     });
+
+  const displayedPlayers = filteredPlayers.slice(0, 100);
 
   const slotBadge = getPositionBadge(slot.role as any);
 
@@ -220,8 +214,13 @@ export const PlayerPickerModal: React.FC<PlayerPickerModalProps> = ({
 
         {/* Player List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2 divide-y divide-slate-100">
-          {filteredPlayers.length > 0 ? (
-            filteredPlayers.map((player) => {
+          {filteredPlayers.length > 100 && (
+            <div className="pb-2 text-center text-[11px] text-slate-500 font-medium">
+              Exibindo os primeiros 100 de <strong className="text-slate-700">{filteredPlayers.length}</strong> atletas. Digite o nome para refinar.
+            </div>
+          )}
+          {displayedPlayers.length > 0 ? (
+            displayedPlayers.map((player) => {
               const isOwnedByMe = ownedPlayerIds.includes(player.id);
               const isSelected = player.id === currentAssignedPlayerId;
               const badge = getPositionBadge(player.position);

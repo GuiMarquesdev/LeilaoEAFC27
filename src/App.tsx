@@ -61,7 +61,7 @@ export default function App() {
         teamName: 'Pereira Galácticos FC',
         role: 'ADMIN',
         adminTitle: 'Diretor',
-        budget: 300000000,
+        budget: 400000000,
         spent: 0,
         createdAt: Date.now(),
       },
@@ -72,7 +72,7 @@ export default function App() {
         teamName: 'Tourinho Galácticos FC',
         role: 'ADMIN',
         adminTitle: 'Presidente',
-        budget: 300000000,
+        budget: 400000000,
         spent: 0,
         createdAt: Date.now(),
       },
@@ -93,7 +93,7 @@ export default function App() {
       lastUpdated: Date.now(),
     },
     squads: {},
-    defaultBudget: 300000000,
+    defaultBudget: 400000000,
   });
 
   const handleOpenAdmin = (tab: 'auction' | 'players' | 'users' | 'danger' | 'report' = 'auction') => {
@@ -322,6 +322,17 @@ export default function App() {
     setWatchedPlayerIds(currentList);
   }, [currentUser?.id]);
 
+  useEffect(() => {
+    const handleWatchlistUpdated = (e: Event) => {
+      const custom = e as CustomEvent<{ userId?: string; playerIds?: string[] }>;
+      if (custom.detail?.playerIds) {
+        setWatchedPlayerIds(custom.detail.playerIds);
+      }
+    };
+    window.addEventListener('watchlist-updated', handleWatchlistUpdated);
+    return () => window.removeEventListener('watchlist-updated', handleWatchlistUpdated);
+  }, []);
+
   // Toggle watchlist player
   const handleToggleWatch = useCallback((playerId: string) => {
     const { isWatched, playerIds } = toggleWatchlistPlayer(currentUser?.id, playerId);
@@ -387,7 +398,7 @@ export default function App() {
       if (data.success && data.user) {
         setCurrentUser(data.user);
         localStorage.setItem(AUTH_STORAGE_KEY, data.user.id);
-        addNotification(`🎉 Bem-vindo à Khedira League, ${data.user.name}! Clube ${data.user.teamName} cadastrado com € 300M!`, 'success');
+        addNotification(`🎉 Bem-vindo à Khedira League, ${data.user.name}! Clube ${data.user.teamName} cadastrado com € 400M!`, 'success');
         await fetchState();
         return { success: true };
       }
@@ -1023,6 +1034,10 @@ export default function App() {
             currentUser={currentUser}
             players={leagueState.players}
             userSquad={userSquad}
+            watchedPlayerIds={watchedPlayerIds}
+            onToggleWatch={handleToggleWatch}
+            onOpenWatchlist={() => setIsWatchlistOpen(true)}
+            onNavigateToAuction={() => setActiveTab('auction')}
             onSaveSquad={handleSaveSquad}
             onOpenAuth={() => {
               if (!currentUser) {

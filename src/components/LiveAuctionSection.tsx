@@ -353,7 +353,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                 Ata Oficial • Khedira League
               </span>
               <span className="text-xs font-bold text-amber-300">
-                Orçamento: € 300.0M por Clube
+                Orçamento: € 400.0M por Clube
               </span>
               {auction.anonymousBidding !== false ? (
                 <span className="text-[11px] font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-800/80 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -649,7 +649,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                         Checklist do Participante para o Início:
                       </h4>
                       <ul className="text-[11px] text-slate-600 mt-1 space-y-1 list-disc list-inside">
-                        <li>Seu orçamento inicial fixo e recorde está garantido em <strong className="text-emerald-800">€ 300.0M</strong>.</li>
+                        <li>Seu orçamento inicial fixo e recorde está garantido em <strong className="text-emerald-800">€ 400.0M</strong>.</li>
                         <li>O leilão seguirá a divisão em 3 dias por posições (Dia 1 Defesa, Dia 2 Meio, Dia 3 Ataque).</li>
                         <li>Os lances contarão com sigilo (lances anônimos) para máxima estratégia.</li>
                         <li>Explore os craques disponíveis na aba <strong>3. Todos os Jogadores</strong> e adicione extras se desejar (mín. € 10M).</li>
@@ -1475,7 +1475,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
             </div>
             <ul className="space-y-1.5 list-disc list-inside text-[11px] text-slate-600 leading-relaxed">
               <li>Diretoria & Presidência: <strong>Guilherme Pereira</strong> (Diretor) e <strong>Guilherme Tourinho</strong> (Presidente).</li>
-              <li>Orçamento fixo e inegociável de <strong className="text-emerald-800 font-bold">€ 300 Milhões</strong> por clube.</li>
+              <li>Orçamento fixo e inegociável de <strong className="text-emerald-800 font-bold">€ 400 Milhões</strong> por clube.</li>
               <li>Cronograma de 3 dias por posições: <strong>Dia 1 Defesa</strong>, <strong>Dia 2 Meio</strong>, <strong>Dia 3 Ataque</strong>.</li>
               <li>Sigilo de Lances obrigatório para estratégia das propostas.</li>
               <li>Inclusão de jogadores extras sob demanda com lance mínimo obrigatório de <strong className="text-amber-800 font-bold">€ 10M</strong>.</li>

@@ -1,172 +1,14356 @@
 import { Player, TacticalFormation } from '../types';
 
-export const INITIAL_PLAYERS: Omit<Player, 'status'>[] = [
-  // GOLEIROS (GOL) - 14 atletas
-  { id: 'p-1', name: 'Gianluigi Donnarumma', position: 'GOL', club: 'Paris Saint-Germain', nationality: 'Itália', initialPrice: 40000000, currentPrice: 40000000 },
-  { id: 'p-2', name: 'Thibaut Courtois', position: 'GOL', club: 'Real Madrid', nationality: 'Bélgica', initialPrice: 40000000, currentPrice: 40000000 },
-  { id: 'p-3', name: 'David Raya', position: 'GOL', club: 'Arsenal', nationality: 'Espanha', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-4', name: 'Jan Oblak', position: 'GOL', club: 'Atlético de Madrid', nationality: 'Eslovênia', initialPrice: 30000000, currentPrice: 30000000 },
-  { id: 'p-5', name: 'Alisson', position: 'GOL', club: 'Liverpool', nationality: 'Brasil', initialPrice: 30000000, currentPrice: 30000000 },
-  { id: 'p-6', name: 'Diogo Costa', position: 'GOL', club: 'Porto', nationality: 'Portugal', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-7', name: 'Gregor Kobel', position: 'GOL', club: 'Borussia Dortmund', nationality: 'Suíça', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-8', name: 'Joan García', position: 'GOL', club: 'Espanyol', nationality: 'Espanha', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-9', name: 'Marco Carnesecchi', position: 'GOL', club: 'Atalanta', nationality: 'Itália', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-10', name: 'Mike Maignan', position: 'GOL', club: 'Milan', nationality: 'França', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-11', name: 'Manuel Neuer', position: 'GOL', club: 'Bayern de Munique', nationality: 'Alemanha', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-12', name: 'Jordan Pickford', position: 'GOL', club: 'Everton', nationality: 'Inglaterra', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-13', name: 'Emiliano Martínez', position: 'GOL', club: 'Aston Villa', nationality: 'Argentina', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-14', name: 'Unai Simón', position: 'GOL', club: 'Athletic Bilbao', nationality: 'Espanha', initialPrice: 25000000, currentPrice: 25000000 },
-
-  // ZAGUEIROS (ZAG) - 22 atletas
-  { id: 'p-15', name: 'Gabriel', position: 'ZAG', club: 'Arsenal', nationality: 'Brasil', initialPrice: 45000000, currentPrice: 45000000 },
-  { id: 'p-16', name: 'Willian Pacho', position: 'ZAG', club: 'Paris Saint-Germain', nationality: 'Equador', initialPrice: 45000000, currentPrice: 45000000 },
-  { id: 'p-17', name: 'Virgil van Dijk', position: 'ZAG', club: 'Liverpool', nationality: 'Holanda', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-18', name: 'William Saliba', position: 'ZAG', club: 'Arsenal', nationality: 'França', initialPrice: 50000000, currentPrice: 50000000 },
-  { id: 'p-19', name: 'Dayot Upamecano', position: 'ZAG', club: 'Bayern de Munique', nationality: 'França', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-20', name: 'Jonathan Tah', position: 'ZAG', club: 'Bayer Leverkusen', nationality: 'Alemanha', initialPrice: 30000000, currentPrice: 30000000 },
-  { id: 'p-21', name: 'Marquinhos', position: 'ZAG', club: 'Paris Saint-Germain', nationality: 'Brasil', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-22', name: 'Nico Schlotterbeck', position: 'ZAG', club: 'Borussia Dortmund', nationality: 'Alemanha', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-23', name: 'Rúben Dias', position: 'ZAG', club: 'Manchester City', nationality: 'Portugal', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-24', name: 'Alessandro Bastoni', position: 'ZAG', club: 'Inter de Milão', nationality: 'Itália', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-25', name: 'Bremer', position: 'ZAG', club: 'Juventus', nationality: 'Brasil', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-26', name: 'Pau Cubarsí', position: 'ZAG', club: 'Barcelona', nationality: 'Espanha', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-27', name: 'Ibrahima Konaté', position: 'ZAG', club: 'Liverpool', nationality: 'França', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-28', name: 'Antonio Rüdiger', position: 'ZAG', club: 'Real Madrid', nationality: 'Alemanha', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-29', name: 'Lucas Hernández', position: 'ZAG', club: 'Paris Saint-Germain', nationality: 'França', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-30', name: 'Riccardo Calafiori', position: 'ZAG', club: 'Arsenal', nationality: 'Itália', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-31', name: 'Éder Militão', position: 'ZAG', club: 'Real Madrid', nationality: 'Brasil', initialPrice: 30000000, currentPrice: 30000000 },
-  { id: 'p-32', name: 'Joško Gvardiol', position: 'ZAG', club: 'Manchester City', nationality: 'Croácia', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-33', name: 'Eric García', position: 'ZAG', club: 'Barcelona', nationality: 'Espanha', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-34', name: 'Marc Guéhi', position: 'ZAG', club: 'Crystal Palace', nationality: 'Inglaterra', initialPrice: 30000000, currentPrice: 30000000 },
-  { id: 'p-35', name: 'Ousmane Diomandé', position: 'ZAG', club: 'Sporting CP', nationality: 'Costa do Marfim', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-36', name: 'Ezri Konsa', position: 'ZAG', club: 'Aston Villa', nationality: 'Inglaterra', initialPrice: 15000000, currentPrice: 15000000 },
-
-  // LATERAIS-ESQUERDOS (LE) - 5 atletas
-  { id: 'p-37', name: 'Nuno Mendes', position: 'LE', club: 'Paris Saint-Germain', nationality: 'Portugal', initialPrice: 65000000, currentPrice: 65000000 },
-  { id: 'p-38', name: 'Federico Dimarco', position: 'LE', club: 'Inter de Milão', nationality: 'Itália', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-39', name: 'Marc Cucurella', position: 'LE', club: 'Chelsea', nationality: 'Espanha', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-40', name: 'Alphonso Davies', position: 'LE', club: 'Bayern de Munique', nationality: 'Canadá', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-41', name: 'Alejandro Grimaldo', position: 'LE', club: 'Bayer Leverkusen', nationality: 'Espanha', initialPrice: 25000000, currentPrice: 25000000 },
-
-  // LATERAIS-DIREITOS (LD) - 6 atletas
-  { id: 'p-42', name: 'Achraf Hakimi', position: 'LD', club: 'Paris Saint-Germain', nationality: 'Marrocos', initialPrice: 65000000, currentPrice: 65000000 },
-  { id: 'p-43', name: 'Jules Koundé', position: 'LD', club: 'Barcelona', nationality: 'França', initialPrice: 50000000, currentPrice: 50000000 },
-  { id: 'p-44', name: 'Reece James', position: 'LD', club: 'Chelsea', nationality: 'Inglaterra', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-45', name: 'Trent Alexander-Arnold', position: 'LD', club: 'Liverpool', nationality: 'Inglaterra', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-46', name: 'Rico Lewis', position: 'LD', club: 'Manchester City', nationality: 'Inglaterra', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-47', name: 'Marcos Llorente', position: 'LD', club: 'Atlético de Madrid', nationality: 'Espanha', initialPrice: 25000000, currentPrice: 25000000 },
-
-  // VOLANTES (VOL) - 12 atletas
-  { id: 'p-48', name: 'Rodri', position: 'VOL', club: 'Manchester City', nationality: 'Espanha', initialPrice: 50000000, currentPrice: 50000000 },
-  { id: 'p-49', name: 'Declan Rice', position: 'VOL', club: 'Arsenal', nationality: 'Inglaterra', initialPrice: 65000000, currentPrice: 65000000 },
-  { id: 'p-50', name: 'Joshua Kimmich', position: 'VOL', club: 'Bayern de Munique', nationality: 'Alemanha', initialPrice: 55000000, currentPrice: 55000000 },
-  { id: 'p-51', name: 'Moisés Caicedo', position: 'VOL', club: 'Chelsea', nationality: 'Equador', initialPrice: 50000000, currentPrice: 50000000 },
-  { id: 'p-52', name: 'Aurélien Tchouaméni', position: 'VOL', club: 'Real Madrid', nationality: 'França', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-53', name: 'Youssouf Fofana', position: 'VOL', club: 'Milan', nationality: 'França', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-54', name: 'Ryan Gravenberch', position: 'VOL', club: 'Liverpool', nationality: 'Holanda', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-55', name: 'Konrad Laimer', position: 'VOL', club: 'Bayern de Munique', nationality: 'Áustria', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-56', name: 'Hakan Çalhanoğlu', position: 'VOL', club: 'Inter de Milão', nationality: 'Turquia', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-57', name: 'Rúben Neves', position: 'VOL', club: 'Al-Hilal', nationality: 'Portugal', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-58', name: 'Granit Xhaka', position: 'VOL', club: 'Bayer Leverkusen', nationality: 'Suíça', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-59', name: 'Martín Zubimendi', position: 'VOL', club: 'Real Sociedad', nationality: 'Espanha', initialPrice: 15000000, currentPrice: 15000000 },
-
-  // MEIO-CAMPISTAS (MC) - 24 atletas
-  { id: 'p-60', name: 'Pedri', position: 'MC', club: 'Barcelona', nationality: 'Espanha', initialPrice: 60000000, currentPrice: 60000000 },
-  { id: 'p-61', name: 'Vitinha', position: 'MC', club: 'Paris Saint-Germain', nationality: 'Portugal', initialPrice: 65000000, currentPrice: 65000000 },
-  { id: 'p-62', name: 'João Neves', position: 'MC', club: 'Paris Saint-Germain', nationality: 'Portugal', initialPrice: 50000000, currentPrice: 50000000 },
-  { id: 'p-63', name: 'Federico Valverde', position: 'MC', club: 'Real Madrid', nationality: 'Uruguai', initialPrice: 50000000, currentPrice: 50000000 },
-  { id: 'p-64', name: 'Nicolò Barella', position: 'MC', club: 'Inter de Milão', nationality: 'Itália', initialPrice: 40000000, currentPrice: 40000000 },
-  { id: 'p-65', name: 'Bruno Guimarães', position: 'MC', club: 'Newcastle United', nationality: 'Brasil', initialPrice: 30000000, currentPrice: 30000000 },
-  { id: 'p-66', name: 'Enzo Fernández', position: 'MC', club: 'Chelsea', nationality: 'Argentina', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-67', name: 'Fabián Ruiz', position: 'MC', club: 'Paris Saint-Germain', nationality: 'Espanha', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-68', name: 'Frenkie de Jong', position: 'MC', club: 'Barcelona', nationality: 'Holanda', initialPrice: 30000000, currentPrice: 30000000 },
-  { id: 'p-69', name: 'Martin Ødegaard', position: 'MC', club: 'Arsenal', nationality: 'Noruega', initialPrice: 30000000, currentPrice: 30000000 },
-  { id: 'p-70', name: 'Scott McTominay', position: 'MC', club: 'Napoli', nationality: 'Escócia', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-71', name: 'Alexis Mac Allister', position: 'MC', club: 'Liverpool', nationality: 'Argentina', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-72', name: 'Bernardo Silva', position: 'MC', club: 'Manchester City', nationality: 'Portugal', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-73', name: 'Warren Zaïre-Emery', position: 'MC', club: 'Paris Saint-Germain', nationality: 'França', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-74', name: 'Eduardo Camavinga', position: 'MC', club: 'Real Madrid', nationality: 'França', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-75', name: 'Gavi', position: 'MC', club: 'Barcelona', nationality: 'Espanha', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-76', name: 'Fermín López', position: 'MC', club: 'Barcelona', nationality: 'Espanha', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-77', name: 'Kobbie Mainoo', position: 'MC', club: 'Manchester United', nationality: 'Inglaterra', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-78', name: 'Mikel Merino', position: 'MC', club: 'Arsenal', nationality: 'Espanha', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-79', name: 'Youri Tielemans', position: 'MC', club: 'Aston Villa', nationality: 'Bélgica', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-80', name: 'Adrien Rabiot', position: 'MC', club: 'Marseille', nationality: 'França', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-81', name: 'Felix Nmecha', position: 'MC', club: 'Borussia Dortmund', nationality: 'Alemanha', initialPrice: 30000000, currentPrice: 30000000 },
-  { id: 'p-82', name: 'Sandro Tonali', position: 'MC', club: 'Newcastle United', nationality: 'Itália', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-83', name: 'Luka Modrić', position: 'MC', club: 'Real Madrid', nationality: 'Croácia', initialPrice: 20000000, currentPrice: 20000000 },
-
-  // MEIAS-ATACANTES (MEI) - 15 atletas
-  { id: 'p-84', name: 'Jude Bellingham', position: 'MEI', club: 'Real Madrid', nationality: 'Inglaterra', initialPrice: 70000000, currentPrice: 70000000 },
-  { id: 'p-85', name: 'Lionel Messi', position: 'MEI', club: 'Inter Miami', nationality: 'Argentina', initialPrice: 45000000, currentPrice: 45000000 },
-  { id: 'p-86', name: 'Bruno Fernandes', position: 'MEI', club: 'Manchester United', nationality: 'Portugal', initialPrice: 65000000, currentPrice: 65000000 },
-  { id: 'p-87', name: 'Jamal Musiala', position: 'MEI', club: 'Bayern de Munique', nationality: 'Alemanha', initialPrice: 60000000, currentPrice: 60000000 },
-  { id: 'p-88', name: 'Dominik Szoboszlai', position: 'MEI', club: 'Liverpool', nationality: 'Hungria', initialPrice: 45000000, currentPrice: 45000000 },
-  { id: 'p-89', name: 'Florian Wirtz', position: 'MEI', club: 'Bayer Leverkusen', nationality: 'Alemanha', initialPrice: 60000000, currentPrice: 60000000 },
-  { id: 'p-90', name: 'Cole Palmer', position: 'MEI', club: 'Chelsea', nationality: 'Inglaterra', initialPrice: 60000000, currentPrice: 60000000 },
-  { id: 'p-91', name: 'Kevin De Bruyne', position: 'MEI', club: 'Manchester City', nationality: 'Bélgica', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-92', name: 'Phil Foden', position: 'MEI', club: 'Manchester City', nationality: 'Inglaterra', initialPrice: 30000000, currentPrice: 30000000 },
-  { id: 'p-93', name: 'Arda Güler', position: 'MEI', club: 'Real Madrid', nationality: 'Turquia', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-94', name: 'Julian Brandt', position: 'MEI', club: 'Borussia Dortmund', nationality: 'Alemanha', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-95', name: 'Paulo Dybala', position: 'MEI', club: 'Roma', nationality: 'Argentina', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-96', name: 'Morgan Rogers', position: 'MEI', club: 'Aston Villa', nationality: 'Inglaterra', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-97', name: 'Nico Paz', position: 'MEI', club: 'Como', nationality: 'Argentina', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-98', name: 'Eberechi Eze', position: 'MEI', club: 'Crystal Palace', nationality: 'Inglaterra', initialPrice: 20000000, currentPrice: 20000000 },
-
-  // MEIAS-ESQUERDA (ME) - 2 atletas
-  { id: 'p-99', name: 'Luis Díaz', position: 'ME', club: 'Liverpool', nationality: 'Colômbia', initialPrice: 45000000, currentPrice: 45000000 },
-  { id: 'p-100', name: 'Jack Grealish', position: 'ME', club: 'Manchester City', nationality: 'Inglaterra', initialPrice: 15000000, currentPrice: 15000000 },
-
-  // MEIAS-DIREITA (MD) - 2 atletas
-  { id: 'p-101', name: 'Michael Olise', position: 'MD', club: 'Bayern de Munique', nationality: 'França', initialPrice: 70000000, currentPrice: 70000000 },
-  { id: 'p-102', name: 'Mohamed Salah', position: 'MD', club: 'Liverpool', nationality: 'Egito', initialPrice: 40000000, currentPrice: 40000000 },
-
-  // PONTAS-ESQUERDA (PE) - 8 atletas
-  { id: 'p-103', name: 'Khvicha Kvaratskhelia', position: 'PE', club: 'Napoli', nationality: 'Geórgia', initialPrice: 70000000, currentPrice: 70000000 },
-  { id: 'p-104', name: 'Vini Jr.', position: 'PE', club: 'Real Madrid', nationality: 'Brasil', initialPrice: 80000000, currentPrice: 80000000 },
-  { id: 'p-105', name: 'Bradley Barcola', position: 'PE', club: 'Paris Saint-Germain', nationality: 'França', initialPrice: 50000000, currentPrice: 50000000 },
-  { id: 'p-106', name: 'Nico Williams', position: 'PE', club: 'Athletic Bilbao', nationality: 'Espanha', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-107', name: 'Gabriel Martinelli', position: 'PE', club: 'Arsenal', nationality: 'Brasil', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-108', name: 'Marcus Rashford', position: 'PE', club: 'Manchester United', nationality: 'Inglaterra', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-109', name: 'Raphinha', position: 'PE', club: 'Barcelona', nationality: 'Brasil', initialPrice: 80000000, currentPrice: 80000000 },
-  { id: 'p-110', name: 'Jérémy Doku', position: 'PE', club: 'Manchester City', nationality: 'Bélgica', initialPrice: 25000000, currentPrice: 25000000 },
-
-  // PONTAS-DIREITA (PD) - 9 atletas
-  { id: 'p-111', name: 'Bukayo Saka', position: 'PD', club: 'Arsenal', nationality: 'Inglaterra', initialPrice: 55000000, currentPrice: 55000000 },
-  { id: 'p-112', name: 'Désiré Doué', position: 'PD', club: 'Paris Saint-Germain', nationality: 'França', initialPrice: 40000000, currentPrice: 40000000 },
-  { id: 'p-113', name: 'Rayan Cherki', position: 'PD', club: 'Lyon', nationality: 'França', initialPrice: 45000000, currentPrice: 45000000 },
-  { id: 'p-114', name: 'Rodrygo', position: 'PD', club: 'Real Madrid', nationality: 'Brasil', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-115', name: 'Bryan Mbeumo', position: 'PD', club: 'Brentford', nationality: 'Camarões', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-116', name: 'Leroy Sané', position: 'PD', club: 'Bayern de Munique', nationality: 'Alemanha', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-117', name: 'Pedro Neto', position: 'PD', club: 'Chelsea', nationality: 'Portugal', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-118', name: 'Estêvão', position: 'PD', club: 'Palmeiras', nationality: 'Brasil', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-119', name: 'Lamine Yamal', position: 'PD', club: 'Barcelona', nationality: 'Espanha', initialPrice: 95000000, currentPrice: 95000000 },
-
-  // ATACANTES (ATA) - 24 atletas
-  { id: 'p-120', name: 'Erling Haaland', position: 'ATA', club: 'Manchester City', nationality: 'Noruega', initialPrice: 95000000, currentPrice: 95000000 },
-  { id: 'p-121', name: 'Kylian Mbappé', position: 'ATA', club: 'Real Madrid', nationality: 'França', initialPrice: 95000000, currentPrice: 95000000 },
-  { id: 'p-122', name: 'Harry Kane', position: 'ATA', club: 'Bayern de Munique', nationality: 'Inglaterra', initialPrice: 65000000, currentPrice: 65000000 },
-  { id: 'p-123', name: 'Ousmane Dembélé', position: 'ATA', club: 'Paris Saint-Germain', nationality: 'França', initialPrice: 65000000, currentPrice: 65000000 },
-  { id: 'p-124', name: 'Lautaro Martínez', position: 'ATA', club: 'Inter de Milão', nationality: 'Argentina', initialPrice: 45000000, currentPrice: 45000000 },
-  { id: 'p-125', name: 'Alexander Isak', position: 'ATA', club: 'Newcastle United', nationality: 'Suécia', initialPrice: 45000000, currentPrice: 45000000 },
-  { id: 'p-126', name: 'Julián Álvarez', position: 'ATA', club: 'Atlético de Madrid', nationality: 'Argentina', initialPrice: 45000000, currentPrice: 45000000 },
-  { id: 'p-127', name: 'Viktor Gyökeres', position: 'ATA', club: 'Sporting CP', nationality: 'Suécia', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-128', name: 'Robert Lewandowski', position: 'ATA', club: 'Barcelona', nationality: 'Polônia', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-129', name: 'Victor Osimhen', position: 'ATA', club: 'Galatasaray', nationality: 'Nigéria', initialPrice: 35000000, currentPrice: 35000000 },
-  { id: 'p-130', name: 'Ferran Torres', position: 'ATA', club: 'Barcelona', nationality: 'Espanha', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-131', name: 'Jonathan David', position: 'ATA', club: 'Lille', nationality: 'Canadá', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-132', name: 'Kai Havertz', position: 'ATA', club: 'Arsenal', nationality: 'Alemanha', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-133', name: 'Serhou Guirassy', position: 'ATA', club: 'Borussia Dortmund', nationality: 'Guiné', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-134', name: 'João Pedro', position: 'ATA', club: 'Brighton', nationality: 'Brasil', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-135', name: 'Endrick', position: 'ATA', club: 'Real Madrid', nationality: 'Brasil', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-136', name: 'Nicolas Jackson', position: 'ATA', club: 'Chelsea', nationality: 'Senegal', initialPrice: 12000000, currentPrice: 12000000 },
-  { id: 'p-137', name: 'Randal Kolo Muani', position: 'ATA', club: 'Paris Saint-Germain', nationality: 'França', initialPrice: 12000000, currentPrice: 12000000 },
-  { id: 'p-138', name: 'Marcus Thuram', position: 'ATA', club: 'Inter de Milão', nationality: 'França', initialPrice: 20000000, currentPrice: 20000000 },
-  { id: 'p-139', name: 'Hugo Ekitike', position: 'ATA', club: 'Eintracht Frankfurt', nationality: 'França', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-140', name: 'Deniz Undav', position: 'ATA', club: 'Stuttgart', nationality: 'Alemanha', initialPrice: 30000000, currentPrice: 30000000 },
-  { id: 'p-141', name: 'Quiñones', position: 'ATA', club: 'Al-Qadsiah', nationality: 'México', initialPrice: 15000000, currentPrice: 15000000 },
-  { id: 'p-142', name: 'Cristiano Ronaldo', position: 'ATA', club: 'Al-Nassr', nationality: 'Portugal', initialPrice: 25000000, currentPrice: 25000000 },
-  { id: 'p-143', name: 'Matheus Cunha', position: 'ATA', club: 'Wolverhampton', nationality: 'Brasil', initialPrice: 25000000, currentPrice: 25000000 }
+export const INITIAL_PLAYERS: Player[] = [
+  {
+    "id": "p-1",
+    "name": "Gianluigi Donnarumma",
+    "position": "GOL",
+    "club": "Paris Saint-Germain",
+    "nationality": "Itália",
+    "initialPrice": 40000000,
+    "currentPrice": 40000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-2",
+    "name": "Thibaut Courtois",
+    "position": "GOL",
+    "club": "Real Madrid",
+    "nationality": "Bélgica",
+    "initialPrice": 40000000,
+    "currentPrice": 40000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-3",
+    "name": "David Raya",
+    "position": "GOL",
+    "club": "Arsenal",
+    "nationality": "Espanha",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-4",
+    "name": "Jan Oblak",
+    "position": "GOL",
+    "club": "Atlético de Madrid",
+    "nationality": "Eslovênia",
+    "initialPrice": 30000000,
+    "currentPrice": 30000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-5",
+    "name": "Alisson",
+    "position": "GOL",
+    "club": "Liverpool",
+    "nationality": "Brasil",
+    "initialPrice": 30000000,
+    "currentPrice": 30000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-6",
+    "name": "Diogo Costa",
+    "position": "GOL",
+    "club": "Porto",
+    "nationality": "Portugal",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-7",
+    "name": "Gregor Kobel",
+    "position": "GOL",
+    "club": "Borussia Dortmund",
+    "nationality": "Suíça",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-8",
+    "name": "Joan García",
+    "position": "GOL",
+    "club": "Espanyol",
+    "nationality": "Espanha",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-9",
+    "name": "Marco Carnesecchi",
+    "position": "GOL",
+    "club": "Atalanta",
+    "nationality": "Itália",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-10",
+    "name": "Mike Maignan",
+    "position": "GOL",
+    "club": "Milan",
+    "nationality": "França",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-11",
+    "name": "Manuel Neuer",
+    "position": "GOL",
+    "club": "Bayern de Munique",
+    "nationality": "Alemanha",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-12",
+    "name": "Jordan Pickford",
+    "position": "GOL",
+    "club": "Everton",
+    "nationality": "Inglaterra",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-13",
+    "name": "Emiliano Martínez",
+    "position": "GOL",
+    "club": "Aston Villa",
+    "nationality": "Argentina",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-14",
+    "name": "Unai Simón",
+    "position": "GOL",
+    "club": "Athletic Bilbao",
+    "nationality": "Espanha",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-15",
+    "name": "Gabriel",
+    "position": "ZAG",
+    "club": "Arsenal",
+    "nationality": "Brasil",
+    "initialPrice": 45000000,
+    "currentPrice": 45000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-16",
+    "name": "Willian Pacho",
+    "position": "ZAG",
+    "club": "Paris Saint-Germain",
+    "nationality": "Equador",
+    "initialPrice": 45000000,
+    "currentPrice": 45000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-17",
+    "name": "Virgil van Dijk",
+    "position": "ZAG",
+    "club": "Liverpool",
+    "nationality": "Holanda",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-18",
+    "name": "William Saliba",
+    "position": "ZAG",
+    "club": "Arsenal",
+    "nationality": "França",
+    "initialPrice": 50000000,
+    "currentPrice": 50000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-19",
+    "name": "Dayot Upamecano",
+    "position": "ZAG",
+    "club": "Bayern de Munique",
+    "nationality": "França",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-20",
+    "name": "Jonathan Tah",
+    "position": "ZAG",
+    "club": "Bayer Leverkusen",
+    "nationality": "Alemanha",
+    "initialPrice": 30000000,
+    "currentPrice": 30000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-21",
+    "name": "Marquinhos",
+    "position": "ZAG",
+    "club": "Paris Saint-Germain",
+    "nationality": "Brasil",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-22",
+    "name": "Nico Schlotterbeck",
+    "position": "ZAG",
+    "club": "Borussia Dortmund",
+    "nationality": "Alemanha",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-23",
+    "name": "Rúben Dias",
+    "position": "ZAG",
+    "club": "Manchester City",
+    "nationality": "Portugal",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-24",
+    "name": "Alessandro Bastoni",
+    "position": "ZAG",
+    "club": "Inter de Milão",
+    "nationality": "Itália",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-25",
+    "name": "Bremer",
+    "position": "ZAG",
+    "club": "Juventus",
+    "nationality": "Brasil",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-26",
+    "name": "Pau Cubarsí",
+    "position": "ZAG",
+    "club": "Barcelona",
+    "nationality": "Espanha",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-27",
+    "name": "Ibrahima Konaté",
+    "position": "ZAG",
+    "club": "Liverpool",
+    "nationality": "França",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-28",
+    "name": "Antonio Rüdiger",
+    "position": "ZAG",
+    "club": "Real Madrid",
+    "nationality": "Alemanha",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-29",
+    "name": "Lucas Hernández",
+    "position": "ZAG",
+    "club": "Paris Saint-Germain",
+    "nationality": "França",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-30",
+    "name": "Riccardo Calafiori",
+    "position": "ZAG",
+    "club": "Arsenal",
+    "nationality": "Itália",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-31",
+    "name": "Éder Militão",
+    "position": "ZAG",
+    "club": "Real Madrid",
+    "nationality": "Brasil",
+    "initialPrice": 30000000,
+    "currentPrice": 30000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-32",
+    "name": "Joško Gvardiol",
+    "position": "ZAG",
+    "club": "Manchester City",
+    "nationality": "Croácia",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-33",
+    "name": "Eric García",
+    "position": "ZAG",
+    "club": "Barcelona",
+    "nationality": "Espanha",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-34",
+    "name": "Marc Guéhi",
+    "position": "ZAG",
+    "club": "Crystal Palace",
+    "nationality": "Inglaterra",
+    "initialPrice": 30000000,
+    "currentPrice": 30000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-35",
+    "name": "Ousmane Diomandé",
+    "position": "ZAG",
+    "club": "Sporting CP",
+    "nationality": "Costa do Marfim",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-36",
+    "name": "Ezri Konsa",
+    "position": "ZAG",
+    "club": "Aston Villa",
+    "nationality": "Inglaterra",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-37",
+    "name": "Nuno Mendes",
+    "position": "LE",
+    "club": "Paris Saint-Germain",
+    "nationality": "Portugal",
+    "initialPrice": 65000000,
+    "currentPrice": 65000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-38",
+    "name": "Federico Dimarco",
+    "position": "LE",
+    "club": "Inter de Milão",
+    "nationality": "Itália",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-39",
+    "name": "Marc Cucurella",
+    "position": "LE",
+    "club": "Chelsea",
+    "nationality": "Espanha",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-40",
+    "name": "Alphonso Davies",
+    "position": "LE",
+    "club": "Bayern de Munique",
+    "nationality": "Canadá",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-41",
+    "name": "Alejandro Grimaldo",
+    "position": "LE",
+    "club": "Bayer Leverkusen",
+    "nationality": "Espanha",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-42",
+    "name": "Achraf Hakimi",
+    "position": "LD",
+    "club": "Paris Saint-Germain",
+    "nationality": "Marrocos",
+    "initialPrice": 65000000,
+    "currentPrice": 65000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-43",
+    "name": "Jules Koundé",
+    "position": "LD",
+    "club": "Barcelona",
+    "nationality": "França",
+    "initialPrice": 50000000,
+    "currentPrice": 50000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-44",
+    "name": "Reece James",
+    "position": "LD",
+    "club": "Chelsea",
+    "nationality": "Inglaterra",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-45",
+    "name": "Trent Alexander-Arnold",
+    "position": "LD",
+    "club": "Liverpool",
+    "nationality": "Inglaterra",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-46",
+    "name": "Rico Lewis",
+    "position": "LD",
+    "club": "Manchester City",
+    "nationality": "Inglaterra",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-47",
+    "name": "Marcos Llorente",
+    "position": "LD",
+    "club": "Atlético de Madrid",
+    "nationality": "Espanha",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-48",
+    "name": "Rodri",
+    "position": "VOL",
+    "club": "Manchester City",
+    "nationality": "Espanha",
+    "initialPrice": 50000000,
+    "currentPrice": 50000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-49",
+    "name": "Declan Rice",
+    "position": "VOL",
+    "club": "Arsenal",
+    "nationality": "Inglaterra",
+    "initialPrice": 65000000,
+    "currentPrice": 65000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-50",
+    "name": "Joshua Kimmich",
+    "position": "MC",
+    "club": "Bayern de Munique",
+    "nationality": "Alemanha",
+    "initialPrice": 55000000,
+    "currentPrice": 55000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-51",
+    "name": "Moisés Caicedo",
+    "position": "VOL",
+    "club": "Chelsea",
+    "nationality": "Equador",
+    "initialPrice": 50000000,
+    "currentPrice": 50000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-52",
+    "name": "Aurélien Tchouaméni",
+    "position": "VOL",
+    "club": "Real Madrid",
+    "nationality": "França",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-53",
+    "name": "Youssouf Fofana",
+    "position": "VOL",
+    "club": "Milan",
+    "nationality": "França",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-54",
+    "name": "Ryan Gravenberch",
+    "position": "VOL",
+    "club": "Liverpool",
+    "nationality": "Holanda",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-55",
+    "name": "Konrad Laimer",
+    "position": "VOL",
+    "club": "Bayern de Munique",
+    "nationality": "Áustria",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-56",
+    "name": "Hakan Çalhanoğlu",
+    "position": "VOL",
+    "club": "Inter de Milão",
+    "nationality": "Turquia",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-57",
+    "name": "Rúben Neves",
+    "position": "VOL",
+    "club": "Al-Hilal",
+    "nationality": "Portugal",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-58",
+    "name": "Granit Xhaka",
+    "position": "VOL",
+    "club": "Bayer Leverkusen",
+    "nationality": "Suíça",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-59",
+    "name": "Martín Zubimendi",
+    "position": "VOL",
+    "club": "Real Sociedad",
+    "nationality": "Espanha",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-60",
+    "name": "Pedri",
+    "position": "MC",
+    "club": "Barcelona",
+    "nationality": "Espanha",
+    "initialPrice": 60000000,
+    "currentPrice": 60000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-61",
+    "name": "Vitinha",
+    "position": "MC",
+    "club": "Paris Saint-Germain",
+    "nationality": "Portugal",
+    "initialPrice": 65000000,
+    "currentPrice": 65000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-62",
+    "name": "João Neves",
+    "position": "MC",
+    "club": "Paris Saint-Germain",
+    "nationality": "Portugal",
+    "initialPrice": 50000000,
+    "currentPrice": 50000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-63",
+    "name": "Federico Valverde",
+    "position": "MC",
+    "club": "Real Madrid",
+    "nationality": "Uruguai",
+    "initialPrice": 50000000,
+    "currentPrice": 50000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-64",
+    "name": "Nicolò Barella",
+    "position": "MC",
+    "club": "Inter de Milão",
+    "nationality": "Itália",
+    "initialPrice": 40000000,
+    "currentPrice": 40000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-65",
+    "name": "Bruno Guimarães",
+    "position": "MC",
+    "club": "Newcastle United",
+    "nationality": "Brasil",
+    "initialPrice": 30000000,
+    "currentPrice": 30000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-66",
+    "name": "Enzo Fernández",
+    "position": "MC",
+    "club": "Chelsea",
+    "nationality": "Argentina",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-67",
+    "name": "Fabián Ruiz",
+    "position": "MC",
+    "club": "Paris Saint-Germain",
+    "nationality": "Espanha",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-68",
+    "name": "Frenkie de Jong",
+    "position": "MC",
+    "club": "Barcelona",
+    "nationality": "Holanda",
+    "initialPrice": 30000000,
+    "currentPrice": 30000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-69",
+    "name": "Martin Ødegaard",
+    "position": "MC",
+    "club": "Arsenal",
+    "nationality": "Noruega",
+    "initialPrice": 30000000,
+    "currentPrice": 30000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-70",
+    "name": "Scott McTominay",
+    "position": "MC",
+    "club": "Napoli",
+    "nationality": "Escócia",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-71",
+    "name": "Alexis Mac Allister",
+    "position": "MC",
+    "club": "Liverpool",
+    "nationality": "Argentina",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-72",
+    "name": "Bernardo Silva",
+    "position": "MC",
+    "club": "Manchester City",
+    "nationality": "Portugal",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-73",
+    "name": "Warren Zaïre-Emery",
+    "position": "MC",
+    "club": "Paris Saint-Germain",
+    "nationality": "França",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-74",
+    "name": "Eduardo Camavinga",
+    "position": "MC",
+    "club": "Real Madrid",
+    "nationality": "França",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-75",
+    "name": "Gavi",
+    "position": "MC",
+    "club": "Barcelona",
+    "nationality": "Espanha",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-76",
+    "name": "Fermín López",
+    "position": "MC",
+    "club": "Barcelona",
+    "nationality": "Espanha",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-77",
+    "name": "Kobbie Mainoo",
+    "position": "MC",
+    "club": "Manchester United",
+    "nationality": "Inglaterra",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-78",
+    "name": "Mikel Merino",
+    "position": "MC",
+    "club": "Arsenal",
+    "nationality": "Espanha",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-79",
+    "name": "Youri Tielemans",
+    "position": "MC",
+    "club": "Aston Villa",
+    "nationality": "Bélgica",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-80",
+    "name": "Adrien Rabiot",
+    "position": "MC",
+    "club": "Marseille",
+    "nationality": "França",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-81",
+    "name": "Felix Nmecha",
+    "position": "MC",
+    "club": "Borussia Dortmund",
+    "nationality": "Alemanha",
+    "initialPrice": 30000000,
+    "currentPrice": 30000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-82",
+    "name": "Sandro Tonali",
+    "position": "MC",
+    "club": "Newcastle United",
+    "nationality": "Itália",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-83",
+    "name": "Luka Modrić",
+    "position": "MC",
+    "club": "Real Madrid",
+    "nationality": "Croácia",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-84",
+    "name": "Jude Bellingham",
+    "position": "MEI",
+    "club": "Real Madrid",
+    "nationality": "Inglaterra",
+    "initialPrice": 70000000,
+    "currentPrice": 70000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-85",
+    "name": "Lionel Messi",
+    "position": "MEI",
+    "club": "Inter Miami",
+    "nationality": "Argentina",
+    "initialPrice": 45000000,
+    "currentPrice": 45000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-86",
+    "name": "Bruno Fernandes",
+    "position": "MC",
+    "club": "Manchester United",
+    "nationality": "Portugal",
+    "initialPrice": 65000000,
+    "currentPrice": 65000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-87",
+    "name": "Jamal Musiala",
+    "position": "MEI",
+    "club": "Bayern de Munique",
+    "nationality": "Alemanha",
+    "initialPrice": 60000000,
+    "currentPrice": 60000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-88",
+    "name": "Dominik Szoboszlai",
+    "position": "MEI",
+    "club": "Liverpool",
+    "nationality": "Hungria",
+    "initialPrice": 45000000,
+    "currentPrice": 45000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-89",
+    "name": "Florian Wirtz",
+    "position": "MEI",
+    "club": "Bayer Leverkusen",
+    "nationality": "Alemanha",
+    "initialPrice": 60000000,
+    "currentPrice": 60000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-90",
+    "name": "Cole Palmer",
+    "position": "MEI",
+    "club": "Chelsea",
+    "nationality": "Inglaterra",
+    "initialPrice": 60000000,
+    "currentPrice": 60000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-91",
+    "name": "Kevin De Bruyne",
+    "position": "MEI",
+    "club": "Manchester City",
+    "nationality": "Bélgica",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-92",
+    "name": "Phil Foden",
+    "position": "MEI",
+    "club": "Manchester City",
+    "nationality": "Inglaterra",
+    "initialPrice": 30000000,
+    "currentPrice": 30000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-93",
+    "name": "Arda Güler",
+    "position": "MEI",
+    "club": "Real Madrid",
+    "nationality": "Turquia",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-94",
+    "name": "Julian Brandt",
+    "position": "MEI",
+    "club": "Borussia Dortmund",
+    "nationality": "Alemanha",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-95",
+    "name": "Paulo Dybala",
+    "position": "MEI",
+    "club": "Roma",
+    "nationality": "Argentina",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-96",
+    "name": "Morgan Rogers",
+    "position": "MEI",
+    "club": "Aston Villa",
+    "nationality": "Inglaterra",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-97",
+    "name": "Nico Paz",
+    "position": "MEI",
+    "club": "Como",
+    "nationality": "Argentina",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-98",
+    "name": "Eberechi Eze",
+    "position": "MEI",
+    "club": "Crystal Palace",
+    "nationality": "Inglaterra",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-99",
+    "name": "Luis Díaz",
+    "position": "ME",
+    "club": "Liverpool",
+    "nationality": "Colômbia",
+    "initialPrice": 45000000,
+    "currentPrice": 45000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-100",
+    "name": "Jack Grealish",
+    "position": "ME",
+    "club": "Manchester City",
+    "nationality": "Inglaterra",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-101",
+    "name": "Michael Olise",
+    "position": "MD",
+    "club": "Bayern de Munique",
+    "nationality": "França",
+    "initialPrice": 70000000,
+    "currentPrice": 70000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-102",
+    "name": "Mohamed Salah",
+    "position": "MEI",
+    "club": "Liverpool",
+    "nationality": "Egito",
+    "initialPrice": 40000000,
+    "currentPrice": 40000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-103",
+    "name": "Khvicha Kvaratskhelia",
+    "position": "PE",
+    "club": "Napoli",
+    "nationality": "Geórgia",
+    "initialPrice": 70000000,
+    "currentPrice": 70000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-104",
+    "name": "Vini Jr.",
+    "position": "ATA",
+    "club": "Real Madrid",
+    "nationality": "Brasil",
+    "initialPrice": 80000000,
+    "currentPrice": 80000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-105",
+    "name": "Bradley Barcola",
+    "position": "PE",
+    "club": "Paris Saint-Germain",
+    "nationality": "França",
+    "initialPrice": 50000000,
+    "currentPrice": 50000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-106",
+    "name": "Nico Williams",
+    "position": "PE",
+    "club": "Athletic Bilbao",
+    "nationality": "Espanha",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-107",
+    "name": "Gabriel Martinelli",
+    "position": "PE",
+    "club": "Arsenal",
+    "nationality": "Brasil",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-108",
+    "name": "Marcus Rashford",
+    "position": "PE",
+    "club": "Manchester United",
+    "nationality": "Inglaterra",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-109",
+    "name": "Raphinha",
+    "position": "MEI",
+    "club": "Barcelona",
+    "nationality": "Brasil",
+    "initialPrice": 80000000,
+    "currentPrice": 80000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-110",
+    "name": "Jérémy Doku",
+    "position": "PE",
+    "club": "Manchester City",
+    "nationality": "Bélgica",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-111",
+    "name": "Bukayo Saka",
+    "position": "PD",
+    "club": "Arsenal",
+    "nationality": "Inglaterra",
+    "initialPrice": 55000000,
+    "currentPrice": 55000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-112",
+    "name": "Désiré Doué",
+    "position": "PD",
+    "club": "Paris Saint-Germain",
+    "nationality": "França",
+    "initialPrice": 40000000,
+    "currentPrice": 40000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-113",
+    "name": "Rayan Cherki",
+    "position": "MEI",
+    "club": "Lyon",
+    "nationality": "França",
+    "initialPrice": 45000000,
+    "currentPrice": 45000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-114",
+    "name": "Rodrygo",
+    "position": "PD",
+    "club": "Real Madrid",
+    "nationality": "Brasil",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-115",
+    "name": "Bryan Mbeumo",
+    "position": "PD",
+    "club": "Brentford",
+    "nationality": "Camarões",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-116",
+    "name": "Leroy Sané",
+    "position": "PD",
+    "club": "Bayern de Munique",
+    "nationality": "Alemanha",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-117",
+    "name": "Pedro Neto",
+    "position": "PD",
+    "club": "Chelsea",
+    "nationality": "Portugal",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-118",
+    "name": "Estêvão",
+    "position": "PD",
+    "club": "Palmeiras",
+    "nationality": "Brasil",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-119",
+    "name": "Lamine Yamal",
+    "position": "PD",
+    "club": "Barcelona",
+    "nationality": "Espanha",
+    "initialPrice": 95000000,
+    "currentPrice": 95000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-120",
+    "name": "Erling Haaland",
+    "position": "ATA",
+    "club": "Manchester City",
+    "nationality": "Noruega",
+    "initialPrice": 95000000,
+    "currentPrice": 95000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-121",
+    "name": "Kylian Mbappé",
+    "position": "ATA",
+    "club": "Real Madrid",
+    "nationality": "França",
+    "initialPrice": 95000000,
+    "currentPrice": 95000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-122",
+    "name": "Harry Kane",
+    "position": "ATA",
+    "club": "Bayern de Munique",
+    "nationality": "Inglaterra",
+    "initialPrice": 65000000,
+    "currentPrice": 65000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-123",
+    "name": "Ousmane Dembélé",
+    "position": "ATA",
+    "club": "Paris Saint-Germain",
+    "nationality": "França",
+    "initialPrice": 65000000,
+    "currentPrice": 65000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-124",
+    "name": "Lautaro Martínez",
+    "position": "ATA",
+    "club": "Inter de Milão",
+    "nationality": "Argentina",
+    "initialPrice": 45000000,
+    "currentPrice": 45000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-125",
+    "name": "Alexander Isak",
+    "position": "ATA",
+    "club": "Newcastle United",
+    "nationality": "Suécia",
+    "initialPrice": 45000000,
+    "currentPrice": 45000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-126",
+    "name": "Julián Álvarez",
+    "position": "MEI",
+    "club": "Atlético de Madrid",
+    "nationality": "Argentina",
+    "initialPrice": 45000000,
+    "currentPrice": 45000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-127",
+    "name": "Viktor Gyökeres",
+    "position": "ATA",
+    "club": "Sporting CP",
+    "nationality": "Suécia",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-128",
+    "name": "Robert Lewandowski",
+    "position": "ATA",
+    "club": "Barcelona",
+    "nationality": "Polônia",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-129",
+    "name": "Victor Osimhen",
+    "position": "ATA",
+    "club": "Galatasaray",
+    "nationality": "Nigéria",
+    "initialPrice": 35000000,
+    "currentPrice": 35000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-130",
+    "name": "Ferran Torres",
+    "position": "ATA",
+    "club": "Barcelona",
+    "nationality": "Espanha",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-131",
+    "name": "Jonathan David",
+    "position": "ATA",
+    "club": "Lille",
+    "nationality": "Canadá",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-132",
+    "name": "Kai Havertz",
+    "position": "ATA",
+    "club": "Arsenal",
+    "nationality": "Alemanha",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-133",
+    "name": "Serhou Guirassy",
+    "position": "ATA",
+    "club": "Borussia Dortmund",
+    "nationality": "Guiné",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-134",
+    "name": "João Pedro",
+    "position": "ATA",
+    "club": "Brighton",
+    "nationality": "Brasil",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-135",
+    "name": "Endrick",
+    "position": "ATA",
+    "club": "Real Madrid",
+    "nationality": "Brasil",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-136",
+    "name": "Nicolas Jackson",
+    "position": "ATA",
+    "club": "Chelsea",
+    "nationality": "Senegal",
+    "initialPrice": 12000000,
+    "currentPrice": 12000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-137",
+    "name": "Randal Kolo Muani",
+    "position": "ATA",
+    "club": "Paris Saint-Germain",
+    "nationality": "França",
+    "initialPrice": 12000000,
+    "currentPrice": 12000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-138",
+    "name": "Marcus Thuram",
+    "position": "ATA",
+    "club": "Inter de Milão",
+    "nationality": "França",
+    "initialPrice": 20000000,
+    "currentPrice": 20000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-139",
+    "name": "Hugo Ekitike",
+    "position": "ATA",
+    "club": "Eintracht Frankfurt",
+    "nationality": "França",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-140",
+    "name": "Deniz Undav",
+    "position": "ATA",
+    "club": "Stuttgart",
+    "nationality": "Alemanha",
+    "initialPrice": 30000000,
+    "currentPrice": 30000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-141",
+    "name": "Quiñones",
+    "position": "ATA",
+    "club": "Al-Qadsiah",
+    "nationality": "México",
+    "initialPrice": 15000000,
+    "currentPrice": 15000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-142",
+    "name": "Cristiano Ronaldo",
+    "position": "ATA",
+    "club": "Al-Nassr",
+    "nationality": "Portugal",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-143",
+    "name": "Matheus Cunha",
+    "position": "ATA",
+    "club": "Wolverhampton",
+    "nationality": "Brasil",
+    "initialPrice": 25000000,
+    "currentPrice": 25000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-144",
+    "name": "A. Batalla",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-145",
+    "name": "A. Kinský",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-146",
+    "name": "A. Lunin",
+    "position": "GOL",
+    "club": "Real Madrid",
+    "nationality": "Ucrânia",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-147",
+    "name": "A. Meret",
+    "position": "GOL",
+    "club": "Napoli",
+    "nationality": "Itália",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-148",
+    "name": "Á. Montero",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-149",
+    "name": "A. Moris",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-150",
+    "name": "A. Nübel",
+    "position": "GOL",
+    "club": "Stuttgart",
+    "nationality": "Alemanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-151",
+    "name": "A. Onana",
+    "position": "GOL",
+    "club": "Manchester United",
+    "nationality": "Camarões",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-152",
+    "name": "A. Ramsdale",
+    "position": "GOL",
+    "club": "Southampton",
+    "nationality": "Inglaterra",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-153",
+    "name": "A. Trubin",
+    "position": "GOL",
+    "club": "Benfica",
+    "nationality": "Ucrânia",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-154",
+    "name": "Agirrezabala",
+    "position": "GOL",
+    "club": "Athletic Bilbao",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-155",
+    "name": "Aitor Fernández",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-156",
+    "name": "Álex Remiro",
+    "position": "GOL",
+    "club": "Real Sociedad",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-157",
+    "name": "Álvaro Valles",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-158",
+    "name": "B. Leno",
+    "position": "GOL",
+    "club": "Fulham",
+    "nationality": "Alemanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-159",
+    "name": "B. Özer",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-160",
+    "name": "B. Samba",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-161",
+    "name": "B. Verbruggen",
+    "position": "GOL",
+    "club": "Brighton",
+    "nationality": "Holanda",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-162",
+    "name": "Bento",
+    "position": "GOL",
+    "club": "Al-Nassr",
+    "nationality": "Brasil",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-163",
+    "name": "C. Coosemans",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-164",
+    "name": "C. Kelleher",
+    "position": "GOL",
+    "club": "Liverpool",
+    "nationality": "Irlanda",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-165",
+    "name": "C. Rushworth",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-166",
+    "name": "C. Vargas",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-167",
+    "name": "D. Greif",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-168",
+    "name": "D. Henderson",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-169",
+    "name": "D. Heuer Fernandes",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-170",
+    "name": "D. Léon",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-171",
+    "name": "D. Livaković",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-172",
+    "name": "Đ. Petrović",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-173",
+    "name": "D. Roef",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-174",
+    "name": "David Soria",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-175",
+    "name": "De Gea",
+    "position": "GOL",
+    "club": "Fiorentina",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-176",
+    "name": "Diego Conde",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-177",
+    "name": "E. Audero",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-178",
+    "name": "E. Caprile",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-179",
+    "name": "É. Mendy",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-180",
+    "name": "Ederson",
+    "position": "GOL",
+    "club": "Manchester City",
+    "nationality": "Brasil",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-181",
+    "name": "F. Dahmen",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-182",
+    "name": "F. Jörgensen",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-183",
+    "name": "F. Muslera",
+    "position": "GOL",
+    "club": "Galatasaray",
+    "nationality": "Uruguai",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-184",
+    "name": "F. Rønnow",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-185",
+    "name": "G. Mamardashvili",
+    "position": "GOL",
+    "club": "Valencia",
+    "nationality": "Geórgia",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-186",
+    "name": "G. Restes",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-187",
+    "name": "G. Rulli",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-188",
+    "name": "G. Vicario",
+    "position": "GOL",
+    "club": "Tottenham",
+    "nationality": "Itália",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-189",
+    "name": "H. Koffi",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-190",
+    "name": "I. Provedel",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-191",
+    "name": "I. Radu",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-192",
+    "name": "J. Butez",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-193",
+    "name": "J. Musso",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-194",
+    "name": "J. Trafford",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-195",
+    "name": "J. Urbig",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-196",
+    "name": "Josep Martínez",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-197",
+    "name": "K. Casteels",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-198",
+    "name": "K. Darlow",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-199",
+    "name": "K. Grabara",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-200",
+    "name": "K. Navas",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-201",
+    "name": "K. Scherpen",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-202",
+    "name": "K. Trapp",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-203",
+    "name": "K. Tzolakis",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-204",
+    "name": "Kepa",
+    "position": "GOL",
+    "club": "Bournemouth",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-205",
+    "name": "L. Carević",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-206",
+    "name": "L. Chevalier",
+    "position": "GOL",
+    "club": "Lille",
+    "nationality": "França",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-207",
+    "name": "L. Horníček",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-208",
+    "name": "L. Hrádecký",
+    "position": "GOL",
+    "club": "Bayer Leverkusen",
+    "nationality": "Finlândia",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-209",
+    "name": "L. Montipò",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-210",
+    "name": "Ł. Skorupski",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-211",
+    "name": "L. Unnerstall",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-212",
+    "name": "Leo Román",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-213",
+    "name": "Lucas Perri",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-214",
+    "name": "Luiz Júnior",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-215",
+    "name": "M. Backhaus",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-216",
+    "name": "M. Bizot",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-217",
+    "name": "M. Borjan",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-218",
+    "name": "M. Bułka",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-219",
+    "name": "M. Di Gregorio",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-220",
+    "name": "M. Dituro",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-221",
+    "name": "M. Dmitrović",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-222",
+    "name": "M. Dúbravka",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-223",
+    "name": "M. Epolo",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-224",
+    "name": "M. Flekken",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-225",
+    "name": "M. Kovář",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-226",
+    "name": "M. Nicolas",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-227",
+    "name": "M. Okoye",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-228",
+    "name": "M. Penders",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-229",
+    "name": "M. Ryan",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-230",
+    "name": "M. Safonov",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-231",
+    "name": "M. Schwäbe",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-232",
+    "name": "M. Sels",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-233",
+    "name": "M. Sportiello",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-234",
+    "name": "M. Svilar",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-235",
+    "name": "M. ter Stegen",
+    "position": "GOL",
+    "club": "Barcelona",
+    "nationality": "Alemanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-236",
+    "name": "M. Vandevoordt",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-237",
+    "name": "M. Zetterer",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-238",
+    "name": "Mailson",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-239",
+    "name": "N. Atubolu",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-240",
+    "name": "N. Guzmán",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-241",
+    "name": "N. Losada",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-242",
+    "name": "N. Olij",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-243",
+    "name": "N. Pope",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-244",
+    "name": "N. Vasilj",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-245",
+    "name": "O. Baumann",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-246",
+    "name": "O. Vlachodimos",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-247",
+    "name": "P. Gulácsi",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-248",
+    "name": "P. Köhn",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-249",
+    "name": "P. Rajković",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-250",
+    "name": "P. Terracciano",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-251",
+    "name": "R. Rangel",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-252",
+    "name": "R. Risser",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-253",
+    "name": "R. Roefs",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-254",
+    "name": "R. Zentner",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-255",
+    "name": "Robert Sánchez",
+    "position": "GOL",
+    "club": "Chelsea",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-256",
+    "name": "Rui Silva",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-257",
+    "name": "S. Dimitrievski",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-258",
+    "name": "S. Lammens",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-259",
+    "name": "Sergio Herrera",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-260",
+    "name": "Sivera",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-261",
+    "name": "U. Çakır",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-262",
+    "name": "V. Barkas",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-263",
+    "name": "V. Milinković-Savić",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-264",
+    "name": "W. Benítez",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-265",
+    "name": "W. Falcone",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-266",
+    "name": "W. Szczęsny",
+    "position": "GOL",
+    "club": "Barcelona",
+    "nationality": "Polônia",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-267",
+    "name": "Y. Bounou",
+    "position": "GOL",
+    "club": "Al-Hilal",
+    "nationality": "Marrocos",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-268",
+    "name": "Y. Diouf",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-269",
+    "name": "Y. Mvogo",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-270",
+    "name": "Y. Sommer",
+    "position": "GOL",
+    "club": "Inter de Milão",
+    "nationality": "Suíça",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-271",
+    "name": "Z. Suzuki",
+    "position": "GOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-272",
+    "name": "A. Bardakcı",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-273",
+    "name": "A. Batagov",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-274",
+    "name": "A. Buongiorno",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-275",
+    "name": "A. Christensen",
+    "position": "ZAG",
+    "club": "Barcelona",
+    "nationality": "Dinamarca",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-276",
+    "name": "A. Disasi",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-277",
+    "name": "A. Hajdari",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-278",
+    "name": "A. Heaven",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-279",
+    "name": "A. Khusanov",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-280",
+    "name": "A. Laporte",
+    "position": "ZAG",
+    "club": "Al-Nassr",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-281",
+    "name": "A. Mandi",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-282",
+    "name": "A. Pieper",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-283",
+    "name": "A. Rouault",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-284",
+    "name": "A. Rrahmani",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-285",
+    "name": "A. Theate",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-286",
+    "name": "Aitor Paredes",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-287",
+    "name": "Alexsandro",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-288",
+    "name": "Andrei Girotto",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-289",
+    "name": "António Silva",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-290",
+    "name": "Asencio",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-291",
+    "name": "B. Badiashile",
+    "position": "ZAG",
+    "club": "Chelsea",
+    "nationality": "França",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-292",
+    "name": "B. Chardonnet",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-293",
+    "name": "B. Diakité",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-294",
+    "name": "B. Djimsiti",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-295",
+    "name": "B. Mechele",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-296",
+    "name": "B. Pavard",
+    "position": "ZAG",
+    "club": "Inter de Milão",
+    "nationality": "França",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-297",
+    "name": "Bartra",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-298",
+    "name": "Bigas",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-299",
+    "name": "C. Bassey",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-300",
+    "name": "C. Burgess",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-301",
+    "name": "C. Cresswell",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-302",
+    "name": "C. Lenglet",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-303",
+    "name": "C. Lukeba",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-304",
+    "name": "C. Matsima",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-305",
+    "name": "C. Richards",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-306",
+    "name": "C. Romero",
+    "position": "ZAG",
+    "club": "Tottenham",
+    "nationality": "Argentina",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-307",
+    "name": "C. Starfelt",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-308",
+    "name": "Catena",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-309",
+    "name": "Clinton Mata",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-310",
+    "name": "Cristhian Mosquera",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-311",
+    "name": "D. Affengruber",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-312",
+    "name": "D. Ballard",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-313",
+    "name": "D. Blind",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-314",
+    "name": "D. Burn",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-315",
+    "name": "D. Djené",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-316",
+    "name": "D. Doekhi",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-317",
+    "name": "D. Hancko",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-318",
+    "name": "D. Huijsen",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-319",
+    "name": "D. O'Shea",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-320",
+    "name": "D. Sánchez",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-321",
+    "name": "Danilo Pereira",
+    "position": "ZAG",
+    "club": "Al-Ittihad",
+    "nationality": "Portugal",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-322",
+    "name": "Diego Carlos",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-323",
+    "name": "Diego Llorente",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-324",
+    "name": "Diogo Leite",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-325",
+    "name": "E. Agbadou",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-326",
+    "name": "E. Boyomo",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-327",
+    "name": "E. Can",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-328",
+    "name": "E. Dier",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-329",
+    "name": "E. Ndicka",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-330",
+    "name": "E. Tapsoba",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-331",
+    "name": "Eduardo Quaresma",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-332",
+    "name": "F. Gatti",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-333",
+    "name": "F. Lejeune",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-334",
+    "name": "F. Medina",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-335",
+    "name": "F. Schär",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-336",
+    "name": "F. Tomori",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-337",
+    "name": "G. Mancini",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-338",
+    "name": "G. Scalvini",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-339",
+    "name": "Gerard Martín",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-340",
+    "name": "Gonçalo Inácio",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-341",
+    "name": "H. Ito",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-342",
+    "name": "H. Maguire",
+    "position": "ZAG",
+    "club": "Manchester United",
+    "nationality": "Inglaterra",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-343",
+    "name": "I. Diop",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-344",
+    "name": "I. Doukouré",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-345",
+    "name": "I. Ganiou",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-346",
+    "name": "I. Hien",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-347",
+    "name": "I. Zabarnyi",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-348",
+    "name": "Ibañez",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-349",
+    "name": "Iñigo Martínez",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-350",
+    "name": "J. Acheampong",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-351",
+    "name": "J. Andersen",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-352",
+    "name": "J. Bednarek",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-353",
+    "name": "J. Bijol",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-354",
+    "name": "J. Branthwaite",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-355",
+    "name": "J. Canvot",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-356",
+    "name": "J. Chabot",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-357",
+    "name": "J. de Haas",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-358",
+    "name": "J. Foyth",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-359",
+    "name": "J. Giménez",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-360",
+    "name": "J. Gomez",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-361",
+    "name": "J. Gouweleeuw",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-362",
+    "name": "J. Gradit",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-363",
+    "name": "J. Hill",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-364",
+    "name": "J. Jacquet",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-365",
+    "name": "J. Kiwior",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-366",
+    "name": "J. Lefort",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-367",
+    "name": "J. Lucumí",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-368",
+    "name": "J. Oosterwolde",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-369",
+    "name": "J. Ordoñez",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-370",
+    "name": "J. Quansah",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-371",
+    "name": "J. Rodon",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-372",
+    "name": "J. Schouten",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-373",
+    "name": "J. Stones",
+    "position": "ZAG",
+    "club": "Manchester City",
+    "nationality": "Inglaterra",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-374",
+    "name": "J. Šutalo",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-375",
+    "name": "J. Tarkowski",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-376",
+    "name": "J. Todibo",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-377",
+    "name": "J. van Hecke",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-378",
+    "name": "Jacobo Ramón",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-379",
+    "name": "Jair Cunha",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-380",
+    "name": "Javi Rodríguez",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-381",
+    "name": "Jon Martín",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-382",
+    "name": "Jorge Cuenca",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-383",
+    "name": "K. Ajer",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-384",
+    "name": "K. Danso",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-385",
+    "name": "K. Diks",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-386",
+    "name": "K. Itakura",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-387",
+    "name": "K. Koulibaly",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-388",
+    "name": "K. Koulierakis",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-389",
+    "name": "K. Mac Allister",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-390",
+    "name": "K. Mavropanos",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-391",
+    "name": "K. Schlotterbeck",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-392",
+    "name": "Kike Salas",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-393",
+    "name": "Kim Min Jae",
+    "position": "ZAG",
+    "club": "Bayern de Munique",
+    "nationality": "Coreia do Sul",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-394",
+    "name": "L. Badé",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-395",
+    "name": "L. Balerdi",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-396",
+    "name": "L. Brassier",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-397",
+    "name": "L. Cabrera",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-398",
+    "name": "L. Colwill",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-399",
+    "name": "L. Costa",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-400",
+    "name": "L. Di Lollo",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-401",
+    "name": "L. Dunk",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-402",
+    "name": "L. Geertruida",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-403",
+    "name": "L. Kelly",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-404",
+    "name": "L. Krejčí",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-405",
+    "name": "L. Martínez Quarta",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-406",
+    "name": "L. Østigård",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-407",
+    "name": "L. Querfeld",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-408",
+    "name": "L. Vušković",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-409",
+    "name": "L. Yoro",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-410",
+    "name": "M. Akanji",
+    "position": "ZAG",
+    "club": "Manchester City",
+    "nationality": "Suíça",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-411",
+    "name": "M. de Ligt",
+    "position": "ZAG",
+    "club": "Manchester United",
+    "nationality": "Holanda",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-412",
+    "name": "M. Demiral",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-413",
+    "name": "M. Diakhaby",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-414",
+    "name": "M. Estève",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-415",
+    "name": "M. Friedl",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-416",
+    "name": "M. Gabbia",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-417",
+    "name": "M. Ginter",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-418",
+    "name": "M. Keane",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-419",
+    "name": "M. Kempf",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-420",
+    "name": "M. Lacroix",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-421",
+    "name": "M. Niakhaté",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-422",
+    "name": "M. Salisu",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-423",
+    "name": "M. Sarr",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-424",
+    "name": "M. Senesi",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-425",
+    "name": "M. Simakan",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-426",
+    "name": "M. Škriniar",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-427",
+    "name": "M. Smets",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-428",
+    "name": "M. Thiaw",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-429",
+    "name": "M. van de Ven",
+    "position": "ZAG",
+    "club": "Tottenham",
+    "nationality": "Holanda",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-430",
+    "name": "Marcos Alonso",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-431",
+    "name": "Mario Gila",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-432",
+    "name": "Mario Hermoso",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-433",
+    "name": "Mika Mármol",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-434",
+    "name": "Murillo",
+    "position": "ZAG",
+    "club": "Nottingham Forest",
+    "nationality": "Brasil",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-435",
+    "name": "N. Aguerd",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-436",
+    "name": "N. Aké",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-437",
+    "name": "N. Collins",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-438",
+    "name": "N. Elvedi",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-439",
+    "name": "N. Milenković",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-440",
+    "name": "N. Ngoy",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-441",
+    "name": "N. Otamendi",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-442",
+    "name": "N. Pérez",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-443",
+    "name": "N. Tenaglia",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-444",
+    "name": "Nacho Fernández",
+    "position": "ZAG",
+    "club": "Al-Qadsiah",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-445",
+    "name": "Natan",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-446",
+    "name": "O. Alderete",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-447",
+    "name": "O. Boscagli",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-448",
+    "name": "O. Kabak",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-449",
+    "name": "O. Kossounou",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-450",
+    "name": "O. Solet",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-451",
+    "name": "P. Kalulu",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-452",
+    "name": "P. Lienhart",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-453",
+    "name": "P. Schuurs",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-454",
+    "name": "P. Struijk",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-455",
+    "name": "Pau Torres",
+    "position": "ZAG",
+    "club": "Aston Villa",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-456",
+    "name": "Pubill",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-457",
+    "name": "R. Andrich",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-458",
+    "name": "R. Araujo",
+    "position": "ZAG",
+    "club": "Barcelona",
+    "nationality": "Uruguai",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-459",
+    "name": "R. Bensebaini",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-460",
+    "name": "R. Flamingo",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-461",
+    "name": "R. Hendriks",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-462",
+    "name": "R. Hranáč",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-463",
+    "name": "R. Koch",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-464",
+    "name": "R. Le Normand",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-465",
+    "name": "R. Nicolaisen",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-466",
+    "name": "Rafa Marín",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-467",
+    "name": "Renato Veiga",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-468",
+    "name": "S. Baidoo",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-469",
+    "name": "S. Beukema",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-470",
+    "name": "S. Botman",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-471",
+    "name": "S. Bueno",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-472",
+    "name": "S. Eraković",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-473",
+    "name": "S. Kolašinac",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-474",
+    "name": "S. Pavlović",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-475",
+    "name": "S. Posch",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-476",
+    "name": "S. Savić",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-477",
+    "name": "S. van den Berg",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-478",
+    "name": "Saúl Coco",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-479",
+    "name": "T. Adarabioyo",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-480",
+    "name": "T. Chalobah",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-481",
+    "name": "T. Harwood-Bellis",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-482",
+    "name": "T. Kehrer",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-483",
+    "name": "T. Mings",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-484",
+    "name": "T. Muharemović",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-485",
+    "name": "T. Watanabe",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-486",
+    "name": "Tomás Araújo",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-487",
+    "name": "V. Gómez",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-488",
+    "name": "V. Lindelöf",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-489",
+    "name": "Vitor Reis",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-490",
+    "name": "Vivian",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-491",
+    "name": "W. Anton",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-492",
+    "name": "W. Ditta",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-493",
+    "name": "W. Fofana",
+    "position": "ZAG",
+    "club": "Chelsea",
+    "nationality": "França",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-494",
+    "name": "W. Goes",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-495",
+    "name": "W. Orbán",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-496",
+    "name": "W. Singo",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-497",
+    "name": "Y. Baas",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-498",
+    "name": "Y. Bisseck",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-499",
+    "name": "Y. Mina",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-500",
+    "name": "Yarek",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-501",
+    "name": "Yeray",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-502",
+    "name": "Z. Debast",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-503",
+    "name": "Z. Romero",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-504",
+    "name": "Zubeldia",
+    "position": "ZAG",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-505",
+    "name": "A. Bah",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-506",
+    "name": "A. Caci",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-507",
+    "name": "A. Dedić",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-508",
+    "name": "A. Maitland-Niles",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-509",
+    "name": "A. Marušić",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-510",
+    "name": "A. Rațiu",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-511",
+    "name": "A. Saelemaekers",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-512",
+    "name": "A. Wan-Bissaka",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-513",
+    "name": "Alberto Costa",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-514",
+    "name": "Álex Jiménez",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-515",
+    "name": "Álvaro Núñez",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-516",
+    "name": "Areso",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-517",
+    "name": "Arnau Martínez",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-518",
+    "name": "B. Henrichs",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-519",
+    "name": "B. van Rooij",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-520",
+    "name": "B. White",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-521",
+    "name": "C. Bradley",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-522",
+    "name": "Carmona",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-523",
+    "name": "D. Dumfries",
+    "position": "LD",
+    "club": "Inter de Milão",
+    "nationality": "Holanda",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-524",
+    "name": "D. Muñoz",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-525",
+    "name": "D. Sidibé",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-526",
+    "name": "Diogo Dalot",
+    "position": "LD",
+    "club": "Manchester United",
+    "nationality": "Portugal",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-527",
+    "name": "Dodô",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-528",
+    "name": "Fresneda",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-529",
+    "name": "G. Di Lorenzo",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-530",
+    "name": "G. Doué",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-531",
+    "name": "G. Montiel",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-532",
+    "name": "G. Read",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-533",
+    "name": "Gorosabel",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-534",
+    "name": "Héctor Bellerín",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-535",
+    "name": "I. Reyes",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-536",
+    "name": "J. Aramburu",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-537",
+    "name": "J. Bogle",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-538",
+    "name": "J. Clauss",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-539",
+    "name": "J. Frimpong",
+    "position": "LD",
+    "club": "Bayer Leverkusen",
+    "nationality": "Holanda",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-540",
+    "name": "J. Justin",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-541",
+    "name": "J. O'Brien",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-542",
+    "name": "J. Ryerson",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-543",
+    "name": "J. Stanišić",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-544",
+    "name": "J. Teze",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-545",
+    "name": "J. Timber",
+    "position": "LD",
+    "club": "Arsenal",
+    "nationality": "Holanda",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-546",
+    "name": "J. Veltman",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-547",
+    "name": "Javi Rueda",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-548",
+    "name": "João Mário",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-549",
+    "name": "Jonny",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-550",
+    "name": "Juan Iglesias",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-551",
+    "name": "Juanlu Sánchez",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-552",
+    "name": "K. Tete",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-553",
+    "name": "K. Trippier",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-554",
+    "name": "K. Walker",
+    "position": "LD",
+    "club": "Manchester City",
+    "nationality": "Inglaterra",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-555",
+    "name": "K. Walker-Peters",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-556",
+    "name": "L. Lozano",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-557",
+    "name": "Luis Henrique",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-558",
+    "name": "M. Cash",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-559",
+    "name": "M. Gusto",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-560",
+    "name": "M. Kayode",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-561",
+    "name": "M. Palestra",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-562",
+    "name": "M. Vojvoda",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-563",
+    "name": "M. Weiser",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-564",
+    "name": "M. Wieffer",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-565",
+    "name": "Maffeo",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-566",
+    "name": "Martim Fernandes",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-567",
+    "name": "Matheus Nunes",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-568",
+    "name": "Mingueza",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-569",
+    "name": "N. Mazraoui",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-570",
+    "name": "N. Molina",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-571",
+    "name": "N. Mukiele",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-572",
+    "name": "N. Savona",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-573",
+    "name": "Nélson Semedo",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-574",
+    "name": "O. Aina",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-575",
+    "name": "Omar El Hilali",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-576",
+    "name": "P. Frankowski",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-577",
+    "name": "P. Treu",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-578",
+    "name": "Pedro Porro",
+    "position": "LD",
+    "club": "Tottenham",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-579",
+    "name": "R. Aguilar",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-580",
+    "name": "R. Baku",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-581",
+    "name": "R. Bellanova",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-582",
+    "name": "R. Sallai",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-583",
+    "name": "S. Abdulhamid",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-584",
+    "name": "S. Dest",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-585",
+    "name": "S. Mouriño",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-586",
+    "name": "T. Castagne",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-587",
+    "name": "T. Hume",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-588",
+    "name": "T. Livramento",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-589",
+    "name": "T. Meunier",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-590",
+    "name": "T. Weah",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-591",
+    "name": "V. Coufal",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-592",
+    "name": "V. Rosier",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-593",
+    "name": "Vanderson",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-594",
+    "name": "Víctor Gómez",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-595",
+    "name": "Yan Couto",
+    "position": "LD",
+    "club": "Borussia Dortmund",
+    "nationality": "Brasil",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-596",
+    "name": "Z. Çelik",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-597",
+    "name": "Z. El Ouahdi",
+    "position": "LD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-598",
+    "name": "A. Cambiaso",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-599",
+    "name": "A. Kouassi",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-600",
+    "name": "A. Prass",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-601",
+    "name": "A. Robertson",
+    "position": "LE",
+    "club": "Liverpool",
+    "nationality": "Escócia",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-602",
+    "name": "A. Robinson",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-603",
+    "name": "A. Truffert",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-604",
+    "name": "Abel Bretones",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-605",
+    "name": "Abner Vinícius",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-606",
+    "name": "Álvaro Carreras",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-607",
+    "name": "Angeliño",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-608",
+    "name": "B. Chilwell",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-609",
+    "name": "Balde",
+    "position": "LE",
+    "club": "Barcelona",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-610",
+    "name": "Caio Henrique",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-611",
+    "name": "Carlos Augusto",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-612",
+    "name": "Carlos Romero",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-613",
+    "name": "Cucurella",
+    "position": "LE",
+    "club": "Chelsea",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-614",
+    "name": "D. Methalie",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-615",
+    "name": "D. Raum",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-616",
+    "name": "D. Spence",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-617",
+    "name": "D. Svensson",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-618",
+    "name": "D. Udogie",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-619",
+    "name": "Diego Rico",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-620",
+    "name": "E. Diouf",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-621",
+    "name": "Emerson Palmieri",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-622",
+    "name": "F. Kadıoğlu",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-623",
+    "name": "F. Kostić",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-624",
+    "name": "F. Mendy",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-625",
+    "name": "Fran García",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-626",
+    "name": "Francisco Moura",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-627",
+    "name": "G. Gudmundsson",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-628",
+    "name": "Gayà",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-629",
+    "name": "I. Maatsen",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-630",
+    "name": "J. Bos",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-631",
+    "name": "J. Gallardo",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-632",
+    "name": "J. Hato",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-633",
+    "name": "J. Kayembe",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-634",
+    "name": "J. Mojica",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-635",
+    "name": "Javi Galán",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-636",
+    "name": "João Cancelo",
+    "position": "LE",
+    "club": "Al-Hilal",
+    "nationality": "Portugal",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-637",
+    "name": "Juan Miranda",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-638",
+    "name": "K. Lewis-Potter",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-639",
+    "name": "K. Tsimikas",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-640",
+    "name": "L. Blanco",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-641",
+    "name": "L. Davis",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-642",
+    "name": "L. Digne",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-643",
+    "name": "L. Hall",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-644",
+    "name": "L. Shaw",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-645",
+    "name": "L. Spinazzola",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-646",
+    "name": "M. Acuña",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-647",
+    "name": "M. Bard",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-648",
+    "name": "M. De Cuyper",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-649",
+    "name": "M. Kerkez",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-650",
+    "name": "M. Lewis-Skelly",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-651",
+    "name": "M. Mittelstädt",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-652",
+    "name": "M. Olivera",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-653",
+    "name": "M. Ruggeri",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-654",
+    "name": "M. Udol",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-655",
+    "name": "Manu Sánchez",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-656",
+    "name": "Mauro Júnior",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-657",
+    "name": "Miguel Gutiérrez",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-658",
+    "name": "N. Brown",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-659",
+    "name": "N. O'Reilly",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-660",
+    "name": "N. Tagliafico",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-661",
+    "name": "Nuno Tavares",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-662",
+    "name": "P. Estupiñán",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-663",
+    "name": "P. Hincapié",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-664",
+    "name": "Pedraza",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-665",
+    "name": "Pep Chavarría",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-666",
+    "name": "Q. Merlin",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-667",
+    "name": "R. Aït-Nouri",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-668",
+    "name": "R. Gosens",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-669",
+    "name": "R. Henry",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-670",
+    "name": "R. Perraud",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-671",
+    "name": "R. Sessegnon",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-672",
+    "name": "Reinildo",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-673",
+    "name": "S. El Karouani",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-674",
+    "name": "Sergi Cardona",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-675",
+    "name": "Sergio Gómez",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-676",
+    "name": "T. Hernández",
+    "position": "LE",
+    "club": "Milan",
+    "nationality": "França",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-677",
+    "name": "T. Mitchell",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-678",
+    "name": "T. Tomiyasu",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-679",
+    "name": "V. Mykolenko",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-680",
+    "name": "Wesley",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-681",
+    "name": "Yuri Berchiche",
+    "position": "LE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-682",
+    "name": "A. Bouaddi",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-683",
+    "name": "A. El Mahdioui",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-684",
+    "name": "A. Gray",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-685",
+    "name": "A. Jashari",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-686",
+    "name": "A. Karazor",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-687",
+    "name": "A. Matusiwa",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-688",
+    "name": "A. Moreno",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-689",
+    "name": "A. Pavlović",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-690",
+    "name": "A. Stanković",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-691",
+    "name": "A. Stiller",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-692",
+    "name": "A. Varela",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-693",
+    "name": "A. Witsel",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-694",
+    "name": "A. Zorgane",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-695",
+    "name": "Altimira",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-696",
+    "name": "André",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-697",
+    "name": "Antonio Blanco",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-698",
+    "name": "B. André",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-699",
+    "name": "B. Heynen",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-700",
+    "name": "B. Kamara",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-701",
+    "name": "Beñat Prados",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-702",
+    "name": "C. Baleba",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-703",
+    "name": "C. Cásseres Jr",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-704",
+    "name": "C. Doucouré",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-705",
+    "name": "C. Nørgaard",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-706",
+    "name": "C. Roldan",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-707",
+    "name": "C. Vanhoutte",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-708",
+    "name": "Casemiro",
+    "position": "VOL",
+    "club": "Manchester United",
+    "nationality": "Brasil",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-709",
+    "name": "D. Haspolat",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-710",
+    "name": "D. Nejašmić",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-711",
+    "name": "D. Zakaria",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-712",
+    "name": "Douglas Luiz",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-713",
+    "name": "E. Álvarez",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-714",
+    "name": "E. Ampadu",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-715",
+    "name": "E. Anderson",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-716",
+    "name": "E. Barrenechea",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-717",
+    "name": "E. Lira",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-718",
+    "name": "E. Martel",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-719",
+    "name": "E. Skhiri",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-720",
+    "name": "F. Fattori",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-721",
+    "name": "F. Gorriarán",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-722",
+    "name": "F. Kessié",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-723",
+    "name": "Fabinho",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-724",
+    "name": "Florentino",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-725",
+    "name": "G. Kondogbia",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-726",
+    "name": "G. Rodríguez",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-727",
+    "name": "Gorrotxa",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-728",
+    "name": "H. Magnetti",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-729",
+    "name": "H. Massengo",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-730",
+    "name": "I. Gruev",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-731",
+    "name": "I. Gueye",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-732",
+    "name": "I. Sangaré",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-733",
+    "name": "İ. Yüksek",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-734",
+    "name": "J. Clasie",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-735",
+    "name": "J. Cullen",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-736",
+    "name": "J. Garner",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-737",
+    "name": "J. Henderson",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-738",
+    "name": "J. Hinshelwood",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-739",
+    "name": "J. Lerma",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-740",
+    "name": "J. Tverskov",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-741",
+    "name": "J. Weigl",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-742",
+    "name": "João Gomes",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-743",
+    "name": "Johnny Cardoso",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-744",
+    "name": "K. Sano",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-745",
+    "name": "L. Agoumé",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-746",
+    "name": "L. Avdullahu",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-747",
+    "name": "L. Cook",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-748",
+    "name": "L. Da Cunha",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-749",
+    "name": "L. Ferguson",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-750",
+    "name": "L. Goretzka",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-751",
+    "name": "L. Romo",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-752",
+    "name": "L. Torreira",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-753",
+    "name": "L. Ugochukwu",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-754",
+    "name": "Lucas Beraldo",
+    "position": "VOL",
+    "club": "Paris Saint-Germain",
+    "nationality": "Brasil",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-755",
+    "name": "Lucas Torró",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-756",
+    "name": "M. Caqueret",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-757",
+    "name": "M. Eggestein",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-758",
+    "name": "M. Frendrup",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-759",
+    "name": "M. Grimes",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-760",
+    "name": "M. Guendouzi",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-761",
+    "name": "M. Hjulmand",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-762",
+    "name": "M. Lemina",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-763",
+    "name": "M. Locatelli",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-764",
+    "name": "M. Perrone",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-765",
+    "name": "M. Ugarte",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-766",
+    "name": "Marc Bernal",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-767",
+    "name": "Marc Casadó",
+    "position": "VOL",
+    "club": "Barcelona",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-768",
+    "name": "Marc Roca",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-769",
+    "name": "N. Bentaleb",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-770",
+    "name": "N. Domínguez",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-771",
+    "name": "N. Fagioli",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-772",
+    "name": "N. Kanté",
+    "position": "VOL",
+    "club": "Al-Ittihad",
+    "nationality": "França",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-773",
+    "name": "N. Matić",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-774",
+    "name": "N. Rovella",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-775",
+    "name": "N. Sadiki",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-776",
+    "name": "N. Seiwald",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-777",
+    "name": "Nico González",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-778",
+    "name": "O. Dorley",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-779",
+    "name": "O. Targhalline",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-780",
+    "name": "Óscar Valentín",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-781",
+    "name": "P. Ciss",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-782",
+    "name": "P. Groß",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-783",
+    "name": "P. Højbjerg",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-784",
+    "name": "P. Lees-Melou",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-785",
+    "name": "P. Rosario",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-786",
+    "name": "Palhinha",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-787",
+    "name": "R. Bentancur",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-788",
+    "name": "R. Christie",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-789",
+    "name": "R. Khedira",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-790",
+    "name": "R. Lavia",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-791",
+    "name": "R. Onyedika",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-792",
+    "name": "R. Yates",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-793",
+    "name": "Ruiz de Galarreta",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-794",
+    "name": "S. Amrabat",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-795",
+    "name": "S. Ascacíbar",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-796",
+    "name": "S. Berge",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-797",
+    "name": "S. Berhalter",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-798",
+    "name": "S. Lukić",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-799",
+    "name": "S. Lynen",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-800",
+    "name": "Samú Costa",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-801",
+    "name": "T. Adams",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-802",
+    "name": "T. Iroegbunam",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-803",
+    "name": "T. Morton",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-804",
+    "name": "T. Partey",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-805",
+    "name": "T. Souček",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-806",
+    "name": "Turrientes",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-807",
+    "name": "Urko González",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-808",
+    "name": "V. Janelt",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-809",
+    "name": "V. Rongier",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-810",
+    "name": "W. Endo",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-811",
+    "name": "W. Hughes",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-812",
+    "name": "X. Schlager",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-813",
+    "name": "Y. Ayari",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-814",
+    "name": "Y. Yarmoliuk",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-815",
+    "name": "Z. Youssouf",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-816",
+    "name": "Zubimendi",
+    "position": "VOL",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-817",
+    "name": "A. Atta",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-818",
+    "name": "A. Diouf",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-819",
+    "name": "A. Kadri",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-820",
+    "name": "A. Ouédraogo",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-821",
+    "name": "A. Sambi Lokonga",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-822",
+    "name": "A. Scott",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-823",
+    "name": "A. Stach",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-824",
+    "name": "A. Tanaka",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-825",
+    "name": "A. Thomasson",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-826",
+    "name": "A. Vermeeren",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-827",
+    "name": "A. Wharton",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-828",
+    "name": "A. Zambo Anguissa",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-829",
+    "name": "Adrián Bernabé",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-830",
+    "name": "Aleix Febas",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-831",
+    "name": "Aleix García",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-832",
+    "name": "Andrey Santos",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-833",
+    "name": "Ângelo",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-834",
+    "name": "B. Cristante",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-835",
+    "name": "Brais Méndez",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-836",
+    "name": "C. Gallagher",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-837",
+    "name": "C. Jones",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-838",
+    "name": "C. Rodríguez",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-839",
+    "name": "C. Tolisso",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-840",
+    "name": "Carlos Soler",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-841",
+    "name": "D. Cataldi",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-842",
+    "name": "D. Frattesi",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-843",
+    "name": "D. Gómez",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-844",
+    "name": "D. Kamada",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-845",
+    "name": "D. Klaassen",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-846",
+    "name": "D. Kulusevski",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-847",
+    "name": "D. Sow",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-848",
+    "name": "Dani Ceballos",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-849",
+    "name": "Daniel Bragança",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-850",
+    "name": "E. Palacios",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-851",
+    "name": "Edu Expósito",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-852",
+    "name": "F. Aursnes",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-853",
+    "name": "F. Grillitsch",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-854",
+    "name": "Fidalgo",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-855",
+    "name": "Fornals",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-856",
+    "name": "G. Prömel",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-857",
+    "name": "Gabri Veiga",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-858",
+    "name": "Gabriel Sara",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-859",
+    "name": "H. Diarra",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-860",
+    "name": "H. Hackney",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-861",
+    "name": "H. Larsson",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-862",
+    "name": "H. Mkhitaryan",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-863",
+    "name": "H. Morita",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-864",
+    "name": "Hwang In Beom",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-865",
+    "name": "İ. Gündoğan",
+    "position": "MC",
+    "club": "Manchester City",
+    "nationality": "Alemanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-866",
+    "name": "I. Moriba",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-867",
+    "name": "Iván Martín",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-868",
+    "name": "J. Maddison",
+    "position": "MC",
+    "club": "Tottenham",
+    "nationality": "Inglaterra",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-869",
+    "name": "J. Manzambi",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-870",
+    "name": "J. Pereyra",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-871",
+    "name": "J. Ramsey",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-872",
+    "name": "J. Stage",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-873",
+    "name": "J. Veerman",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-874",
+    "name": "J. Willock",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-875",
+    "name": "Jauregizar",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-876",
+    "name": "Javi Guerra",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-877",
+    "name": "João Moutinho",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-878",
+    "name": "Joelinton",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-879",
+    "name": "K. Danois",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-880",
+    "name": "K. Koné",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-881",
+    "name": "K. Smit",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-882",
+    "name": "K. Taylor",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-883",
+    "name": "K. Thorstvedt",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-884",
+    "name": "K. Thuram",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-885",
+    "name": "Koke",
+    "position": "MC",
+    "club": "Atlético de Madrid",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-886",
+    "name": "L. Abergel",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-887",
+    "name": "L. Barreiro",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-888",
+    "name": "L. Bergvall",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-889",
+    "name": "L. Camara",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-890",
+    "name": "L. Miley",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-891",
+    "name": "L. Paredes",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-892",
+    "name": "L. Sučić",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-893",
+    "name": "L. Valente",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-894",
+    "name": "Lee Jae Sung",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-895",
+    "name": "Luís Esteves",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-896",
+    "name": "Luis Milla",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-897",
+    "name": "M. Al Juwair",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-898",
+    "name": "M. Arambarri",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-899",
+    "name": "M. Camara",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-900",
+    "name": "M. de Roon",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-901",
+    "name": "M. Götze",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-902",
+    "name": "M. Jensen",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-903",
+    "name": "M. Kovačić",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-904",
+    "name": "M. Munetsi",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-905",
+    "name": "M. Pašalić",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-906",
+    "name": "M. Pessina",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-907",
+    "name": "M. Ruiz",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-908",
+    "name": "M. Sabitzer",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-909",
+    "name": "M. Sangaré",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-910",
+    "name": "Mateus Fernandes",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-911",
+    "name": "Medrán",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-912",
+    "name": "Moi Gómez",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-913",
+    "name": "Moncayola",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-914",
+    "name": "N. Amiri",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-915",
+    "name": "N. El Aynaoui",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-916",
+    "name": "N. Nández",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-917",
+    "name": "O. Kökçü",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-918",
+    "name": "Óliver Torres",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-919",
+    "name": "P. Gueye",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-920",
+    "name": "P. Sarr",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-921",
+    "name": "P. Sučić",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-922",
+    "name": "P. Vite",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-923",
+    "name": "P. Zieliński",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-924",
+    "name": "Pablo Barrios",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-925",
+    "name": "Pablo Martínez",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-926",
+    "name": "Pepelu",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-927",
+    "name": "Q. Timber",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-928",
+    "name": "R. Barkley",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-929",
+    "name": "R. De Paul",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-930",
+    "name": "R. Mandragora",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-931",
+    "name": "R. Reitz",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-932",
+    "name": "R. Ríos",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-933",
+    "name": "R. Schoofs",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-934",
+    "name": "S. Fofana",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-935",
+    "name": "S. Lobotka",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-936",
+    "name": "S. Longstaff",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-937",
+    "name": "S. Mayulu",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-938",
+    "name": "S. Milinković-Savić",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-939",
+    "name": "S. Ricci",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-940",
+    "name": "S. Szymański",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-941",
+    "name": "Santi Comesaña",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-942",
+    "name": "T. Bischof",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-943",
+    "name": "T. Lemar",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-944",
+    "name": "T. Reijnders",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-945",
+    "name": "Unai López",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-946",
+    "name": "V. Barco",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-947",
+    "name": "V. Froholdt",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-948",
+    "name": "W. Burger",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-949",
+    "name": "W. McKennie",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-950",
+    "name": "Y. Adli",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-951",
+    "name": "Y. Herrera",
+    "position": "MC",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-952",
+    "name": "A. Batrakov",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-953",
+    "name": "A. Bondarenko",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-954",
+    "name": "A. Claude-Maurice",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-955",
+    "name": "A. Colpani",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-956",
+    "name": "Á. Correa",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-957",
+    "name": "A. Golovin",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-958",
+    "name": "A. Kramarić",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-959",
+    "name": "A. Miranchuk",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-960",
+    "name": "A. Rusnák",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-961",
+    "name": "Aimar Oroz",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-962",
+    "name": "B. El Khannouss",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-963",
+    "name": "B. Gruda",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-964",
+    "name": "C. Alcaraz",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-965",
+    "name": "C. Baumgartner",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-966",
+    "name": "C. Chukwuemeka",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-967",
+    "name": "C. De Ketelaere",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-968",
+    "name": "C. Pulisic",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-969",
+    "name": "C. Stengs",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-970",
+    "name": "C. Uzun",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-971",
+    "name": "Carles Gil",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-972",
+    "name": "D. Tadić",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-973",
+    "name": "Dani Olmo",
+    "position": "MEI",
+    "club": "Barcelona",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-974",
+    "name": "E. Elmas",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-975",
+    "name": "E. Forsberg",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-976",
+    "name": "E. Le Fée",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-977",
+    "name": "E. Millot",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-978",
+    "name": "E. Smith Rowe",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-979",
+    "name": "Evander",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-980",
+    "name": "F. Chaïbi",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-981",
+    "name": "F. Cristaldo",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-982",
+    "name": "F. Rieder",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-983",
+    "name": "Fábio Vieira",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-984",
+    "name": "Fermín",
+    "position": "MEI",
+    "club": "Barcelona",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-985",
+    "name": "Francisco Conceição",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-986",
+    "name": "G. Hein",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-987",
+    "name": "G. Konstantelias",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-988",
+    "name": "G. Lo Celso",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-989",
+    "name": "G. Rutter",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-990",
+    "name": "G. Sudakov",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-991",
+    "name": "G. Til",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-992",
+    "name": "G. Wijnaldum",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-993",
+    "name": "H. Aouar",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-994",
+    "name": "H. Elliott",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-995",
+    "name": "H. Haraldsson",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-996",
+    "name": "H. Mukhtar",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-997",
+    "name": "H. Vanaken",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-998",
+    "name": "I. Maza",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-999",
+    "name": "I. Saibari",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1000",
+    "name": "Isco",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1001",
+    "name": "Isi",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1002",
+    "name": "J. Boga",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1003",
+    "name": "J. Brunetta",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1004",
+    "name": "J. Enciso",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1005",
+    "name": "J. Hofmann",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1006",
+    "name": "J. Kluivert",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1007",
+    "name": "J. Odgaard",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1008",
+    "name": "J. Paradela",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1009",
+    "name": "João Félix",
+    "position": "MEI",
+    "club": "Chelsea",
+    "nationality": "Portugal",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1010",
+    "name": "K. Dewsbury-Hall",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1011",
+    "name": "K. Karetsas",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1012",
+    "name": "K. Yıldız",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1013",
+    "name": "L. Pellegrini",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1014",
+    "name": "L. Samardžić",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1015",
+    "name": "L. Zelarayán",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1016",
+    "name": "M. Akliouche",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1017",
+    "name": "M. Baturina",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1018",
+    "name": "M. Beier",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1019",
+    "name": "M. Damsgaard",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1020",
+    "name": "M. Gibbs-White",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1021",
+    "name": "M. Lanzini",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1022",
+    "name": "M. Moreno",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1023",
+    "name": "M. Mount",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1024",
+    "name": "M. O'Riley",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1025",
+    "name": "M. Ojeda",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1026",
+    "name": "M. Reus",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1027",
+    "name": "M. Soulé",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1028",
+    "name": "M. Terrier",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1029",
+    "name": "M. Tillman",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1030",
+    "name": "Marco Asensio",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1031",
+    "name": "N. Fekir",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1032",
+    "name": "N. Fernández",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1033",
+    "name": "N. Vlašić",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1034",
+    "name": "O. Gloukh",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1035",
+    "name": "O. Pineda",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1036",
+    "name": "P. Nebel",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1037",
+    "name": "P. Pagis",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1038",
+    "name": "P. Šulc",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1039",
+    "name": "P. Wanner",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1040",
+    "name": "Pep Biel",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1041",
+    "name": "R. Loftus-Cheek",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1042",
+    "name": "R. Schmid",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1043",
+    "name": "R. Zalazar",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1044",
+    "name": "Rafa",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1045",
+    "name": "Raphael Veiga",
+    "position": "MEI",
+    "club": "Palmeiras",
+    "nationality": "Brasil",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1046",
+    "name": "Ricardo Horta",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1047",
+    "name": "Rodrigo Mora",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1048",
+    "name": "S. Bergwijn",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1049",
+    "name": "S. El Shaarawy",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1050",
+    "name": "S. Gnabry",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1051",
+    "name": "S. Mijnans",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1052",
+    "name": "S. Steijn",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1053",
+    "name": "Sancet",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1054",
+    "name": "T. Almada",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1055",
+    "name": "T. Chery",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1056",
+    "name": "T. Galván",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1057",
+    "name": "T. Koopmeiners",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1058",
+    "name": "T. Müller",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1059",
+    "name": "Trincão",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1060",
+    "name": "X. Simons",
+    "position": "MEI",
+    "club": "RB Leipzig",
+    "nationality": "Holanda",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1061",
+    "name": "Y. Akgün",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1062",
+    "name": "Y. Suzuki",
+    "position": "MEI",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1063",
+    "name": "Á. Di María",
+    "position": "PD",
+    "club": "Benfica",
+    "nationality": "Argentina",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1064",
+    "name": "A. Dreyer",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1065",
+    "name": "A. Elanga",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1066",
+    "name": "A. Hadj Moussa",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1067",
+    "name": "A. Semenyo",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1068",
+    "name": "A. Zendejas",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1069",
+    "name": "Allan",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1070",
+    "name": "Andrés Martín",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1071",
+    "name": "Antony",
+    "position": "PD",
+    "club": "Manchester United",
+    "nationality": "Brasil",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1072",
+    "name": "B. Aaronson",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1073",
+    "name": "B. Johnson",
+    "position": "PD",
+    "club": "Tottenham",
+    "nationality": "País de Gales",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1074",
+    "name": "Berenguer",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1075",
+    "name": "D. Berardi",
+    "position": "PD",
+    "club": "Sassuolo",
+    "nationality": "Itália",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1076",
+    "name": "D. James",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1077",
+    "name": "D. Lainez",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1078",
+    "name": "D. Lukébakio",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1079",
+    "name": "D. Man",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1080",
+    "name": "De Frutos",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1081",
+    "name": "E. Guessand",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1082",
+    "name": "F. Thauvin",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1083",
+    "name": "G. Isaksen",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1084",
+    "name": "H. Wilson",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1085",
+    "name": "I. Mbaye",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1086",
+    "name": "I. Sarr",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1087",
+    "name": "Iago Aspas",
+    "position": "PD",
+    "club": "Celta de Vigo",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1088",
+    "name": "Iñaki Williams",
+    "position": "PD",
+    "club": "Athletic Bilbao",
+    "nationality": "Gana",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1089",
+    "name": "J. Bakayoko",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1090",
+    "name": "J. Murphy",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1091",
+    "name": "Lee Kang In",
+    "position": "PD",
+    "club": "Paris Saint-Germain",
+    "nationality": "Coreia do Sul",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1092",
+    "name": "M. Politano",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1093",
+    "name": "N. Madueke",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1094",
+    "name": "N. Pépé",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1095",
+    "name": "P. Zinckernagel",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1096",
+    "name": "Pepê",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1097",
+    "name": "R. Nelson",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1098",
+    "name": "Robert Navarro",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1099",
+    "name": "S. Berghuis",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1100",
+    "name": "Sávio",
+    "position": "PD",
+    "club": "Manchester City",
+    "nationality": "Brasil",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1101",
+    "name": "V. Tsygankov",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1102",
+    "name": "William Gomes",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1103",
+    "name": "Y. Diomande",
+    "position": "PD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1104",
+    "name": "A. Gordon",
+    "position": "PE",
+    "club": "Newcastle United",
+    "nationality": "Inglaterra",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1105",
+    "name": "A. Laurienté",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1106",
+    "name": "A. Nusa",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1107",
+    "name": "A. Saint-Maximin",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1108",
+    "name": "A. Schjelderup",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1109",
+    "name": "A. Şimşir",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1110",
+    "name": "A. Vega",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1111",
+    "name": "Abde",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1112",
+    "name": "Álvaro García",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1113",
+    "name": "B. Rodríguez",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1114",
+    "name": "B. Touré",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1115",
+    "name": "Barrenetxea",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1116",
+    "name": "Borja Sainz",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1117",
+    "name": "C. Ejuke",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1118",
+    "name": "C. Tzolis",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1119",
+    "name": "D. Bouanga",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1120",
+    "name": "David Neres",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1121",
+    "name": "Diego López",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1122",
+    "name": "E. Zeballos",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1123",
+    "name": "Guedes",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1124",
+    "name": "H. Barnes",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1125",
+    "name": "I. Perišić",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1126",
+    "name": "Jan Virgili",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1127",
+    "name": "L. Haraslín",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1128",
+    "name": "L. Ocampos",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1129",
+    "name": "L. Ramazani",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1130",
+    "name": "L. Trossard",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1131",
+    "name": "M. Barrow",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1132",
+    "name": "M. Godts",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1133",
+    "name": "M. Zaccagni",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1134",
+    "name": "N. Okafor",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1135",
+    "name": "O. Idrissi",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1136",
+    "name": "O. Marmoush",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1137",
+    "name": "Puado",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1138",
+    "name": "R. Vargas",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1139",
+    "name": "Rafael Leão",
+    "position": "PE",
+    "club": "Milan",
+    "nationality": "Portugal",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1140",
+    "name": "S. Adingra",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1141",
+    "name": "S. Diop",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1142",
+    "name": "W. Swedberg",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1143",
+    "name": "Y. Carrasco",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1144",
+    "name": "Y. Cathline",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1145",
+    "name": "Y. Gboho",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1146",
+    "name": "Yeremy Pino",
+    "position": "PE",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1147",
+    "name": "A. Diao",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1148",
+    "name": "A. Dønnum",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1149",
+    "name": "A. Fatawu",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1150",
+    "name": "A. Kade",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1151",
+    "name": "A. Khalaili",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1152",
+    "name": "Aitor Ruibal",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1153",
+    "name": "Amad",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1154",
+    "name": "Brahim",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1155",
+    "name": "C. Espinoza",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1156",
+    "name": "C. Talbi",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1157",
+    "name": "Carlos Álvarez",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1158",
+    "name": "Carlos Forbs",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1159",
+    "name": "Carlos Vicente",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1160",
+    "name": "D. Bakwa",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1161",
+    "name": "D. Brooks",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1162",
+    "name": "D. McNeil",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1163",
+    "name": "D. Ouattara",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1164",
+    "name": "D. Zappacosta",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1165",
+    "name": "Diego Moreira",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1166",
+    "name": "E. Poku",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1167",
+    "name": "E. Zhegrova",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1168",
+    "name": "F. Chiesa",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1169",
+    "name": "F. Honorat",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1170",
+    "name": "F. Mastantuono",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1171",
+    "name": "Geny Catamo",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1172",
+    "name": "Geovany Quenda",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1173",
+    "name": "Giuliano",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1174",
+    "name": "I. Kebbal",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1175",
+    "name": "J. Beste",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1176",
+    "name": "J. Bowen",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1177",
+    "name": "J. Ito",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1178",
+    "name": "J. Leweling",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1179",
+    "name": "J. McGinn",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1180",
+    "name": "K. Adeyemi",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1181",
+    "name": "K. Coman",
+    "position": "MD",
+    "club": "Bayern de Munique",
+    "nationality": "França",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1182",
+    "name": "L. Blas",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1183",
+    "name": "L. Karl",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1184",
+    "name": "Luis Rioja",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1185",
+    "name": "M. Diaby",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1186",
+    "name": "M. Greenwood",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1187",
+    "name": "M. Kudus",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1188",
+    "name": "N. Kühn",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1189",
+    "name": "N. Tella",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1190",
+    "name": "O. Bobb",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1191",
+    "name": "O. Hutchinson",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1192",
+    "name": "P. Pflücke",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1193",
+    "name": "R. Alvarado",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1194",
+    "name": "R. Del Castillo",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1195",
+    "name": "R. Doan",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1196",
+    "name": "R. Orsolini",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1197",
+    "name": "Rayan",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1198",
+    "name": "Rubén García",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1199",
+    "name": "S. Chukwueze",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1200",
+    "name": "Sergio Canales",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1201",
+    "name": "T. Buchanan",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1202",
+    "name": "T. Kubo",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1203",
+    "name": "T. Palacios",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1204",
+    "name": "V. Černý",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1205",
+    "name": "Y. Minteh",
+    "position": "MD",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1206",
+    "name": "A. Adli",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1207",
+    "name": "A. Garnacho",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1208",
+    "name": "A. Iwobi",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1209",
+    "name": "A. Knauff",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1210",
+    "name": "Afonso Moreira",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1211",
+    "name": "Álex Baena",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1212",
+    "name": "Ansu Fati",
+    "position": "ME",
+    "club": "Barcelona",
+    "nationality": "Espanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1213",
+    "name": "B. Yılmaz",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1214",
+    "name": "Bryan Zaragoza",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1215",
+    "name": "C. Führich",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1216",
+    "name": "C. Gakpo",
+    "position": "ME",
+    "club": "Liverpool",
+    "nationality": "Holanda",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1217",
+    "name": "C. Hudson-Odoi",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1218",
+    "name": "C. Summerville",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1219",
+    "name": "Carreira",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1220",
+    "name": "D. Maeda",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1221",
+    "name": "D. Ndoye",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1222",
+    "name": "Daniel Podence",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1223",
+    "name": "E. Buendía",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1224",
+    "name": "F. Sakala",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1225",
+    "name": "G. Nkoudou",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1226",
+    "name": "Galeno",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1227",
+    "name": "Grimaldo",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1228",
+    "name": "I. Ndiaye",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1229",
+    "name": "Igor Paixão",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1230",
+    "name": "Iñigo Vicente",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1231",
+    "name": "J. Anthony",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1232",
+    "name": "J. Bahoya",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1233",
+    "name": "J. Campaz",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1234",
+    "name": "J. Clarke",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1235",
+    "name": "J. Gittens",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1236",
+    "name": "J. Kamiński",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1237",
+    "name": "J. Philogene",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1238",
+    "name": "J. Rowe",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1239",
+    "name": "Jesús Rodríguez",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1240",
+    "name": "K. Aktürkoğlu",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1241",
+    "name": "K. Mitoma",
+    "position": "ME",
+    "club": "Brighton",
+    "nationality": "Japão",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1242",
+    "name": "K. Nakamura",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1243",
+    "name": "K. Schade",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1244",
+    "name": "Kevin",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1245",
+    "name": "M. Al Tamari",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1246",
+    "name": "M. Araújo",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1247",
+    "name": "M. Fofana",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1248",
+    "name": "M. Godo",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1249",
+    "name": "M. Mudryk",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1250",
+    "name": "M. Simon",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1251",
+    "name": "M. Solomon",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1252",
+    "name": "M. Tavernier",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1253",
+    "name": "M. Tel",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1254",
+    "name": "M. Vargas",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1255",
+    "name": "Moleiro",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1256",
+    "name": "N. Cambiaghi",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1257",
+    "name": "N. González",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1258",
+    "name": "N. Lang",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1259",
+    "name": "N. Zalewski",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1260",
+    "name": "O. Niang",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1261",
+    "name": "P. Dorgu",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1262",
+    "name": "P. Wimmer",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1263",
+    "name": "Pedro Gonçalves",
+    "position": "ME",
+    "club": "Sporting CP",
+    "nationality": "Portugal",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1264",
+    "name": "R. Hack",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1265",
+    "name": "R. Ngumoha",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1266",
+    "name": "Riquelme",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1267",
+    "name": "S. Al Dawsari",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1268",
+    "name": "S. Benrahma",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1269",
+    "name": "S. El Mala",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1270",
+    "name": "S. Mané",
+    "position": "ME",
+    "club": "Al-Nassr",
+    "nationality": "Senegal",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1271",
+    "name": "T. Minamino",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1272",
+    "name": "T. Werner",
+    "position": "ME",
+    "club": "Tottenham",
+    "nationality": "Alemanha",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1273",
+    "name": "Tiago Tomás",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1274",
+    "name": "V. Grifo",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1275",
+    "name": "Valera",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1276",
+    "name": "Víctor Muñoz",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1277",
+    "name": "W. Odobert",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1278",
+    "name": "Yeremay",
+    "position": "ME",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1279",
+    "name": "A. Arce",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1280",
+    "name": "A. Bertaccini",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1281",
+    "name": "A. Budimir",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1282",
+    "name": "A. Dovbyk",
+    "position": "ATA",
+    "club": "Roma",
+    "nationality": "Ucrânia",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1283",
+    "name": "A. Gouiri",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1284",
+    "name": "A. Griezmann",
+    "position": "ATA",
+    "club": "Atlético de Madrid",
+    "nationality": "França",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1285",
+    "name": "A. Guðmundsson",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1286",
+    "name": "A. Hamdallah",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1287",
+    "name": "A. Hložek",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1288",
+    "name": "A. Kalimuendo",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1289",
+    "name": "A. Lacazette",
+    "position": "ATA",
+    "club": "Lyon",
+    "nationality": "França",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1290",
+    "name": "A. Lookman",
+    "position": "ATA",
+    "club": "Atalanta",
+    "nationality": "Nigéria",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1291",
+    "name": "A. Martínez",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1292",
+    "name": "A. Milik",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1293",
+    "name": "A. Pléa",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1294",
+    "name": "A. Sørloth",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1295",
+    "name": "A. Ueda",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1296",
+    "name": "André Silva",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1297",
+    "name": "Ayoze",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1298",
+    "name": "B. Brobbey",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1299",
+    "name": "B. Dia",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1300",
+    "name": "B. Šeško",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1301",
+    "name": "Beto",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1302",
+    "name": "Borja Iglesias",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1303",
+    "name": "Borja Mayoral",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1304",
+    "name": "C. Adams",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1305",
+    "name": "C. Kofane",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1306",
+    "name": "C. Nkunku",
+    "position": "ATA",
+    "club": "Chelsea",
+    "nationality": "França",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1307",
+    "name": "C. Wilson",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1308",
+    "name": "C. Wood",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1309",
+    "name": "Carlos Espí",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1310",
+    "name": "Chupe",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1311",
+    "name": "Cucho Hernández",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1312",
+    "name": "D. Calvert-Lewin",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1313",
+    "name": "D. Malen",
+    "position": "ATA",
+    "club": "Borussia Dortmund",
+    "nationality": "Holanda",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1314",
+    "name": "D. Núñez",
+    "position": "ATA",
+    "club": "Liverpool",
+    "nationality": "Uruguai",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1315",
+    "name": "D. Solanke",
+    "position": "ATA",
+    "club": "Tottenham",
+    "nationality": "Inglaterra",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1316",
+    "name": "D. Vlahović",
+    "position": "ATA",
+    "club": "Juventus",
+    "nationality": "Sérvia",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1317",
+    "name": "D. Welbeck",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1318",
+    "name": "D. Zapata",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1319",
+    "name": "E. Demirović",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1320",
+    "name": "E. Džeko",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1321",
+    "name": "E. Emegha",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1322",
+    "name": "E. Kroupi",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1323",
+    "name": "E. Lepaul",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1324",
+    "name": "E. Shomurodov",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1325",
+    "name": "E. Ünal",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1326",
+    "name": "E. Wahi",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1327",
+    "name": "Evanilson",
+    "position": "ATA",
+    "club": "Bournemouth",
+    "nationality": "Brasil",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1328",
+    "name": "F. Asllani",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1329",
+    "name": "F. Balogun",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1330",
+    "name": "F. Esposito",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1331",
+    "name": "F. Ioannidis",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1332",
+    "name": "F. Viñas",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1333",
+    "name": "Fábio Silva",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1334",
+    "name": "G. Berterame",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1335",
+    "name": "G. Carrillo",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1336",
+    "name": "G. Laborde",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1337",
+    "name": "G. Mikautadze",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1338",
+    "name": "G. Raspadori",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1339",
+    "name": "G. Scamacca",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1340",
+    "name": "G. Simeone",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1341",
+    "name": "Gabriel Jesus",
+    "position": "ATA",
+    "club": "Arsenal",
+    "nationality": "Brasil",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1342",
+    "name": "Gerard Moreno",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1343",
+    "name": "Gonçalo Ramos",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1344",
+    "name": "Gonzalo",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1345",
+    "name": "Guruzeta",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1346",
+    "name": "H. Cuypers",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1347",
+    "name": "H. Igamane",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1348",
+    "name": "Hugo Duro",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1349",
+    "name": "I. Matanović",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1350",
+    "name": "I. Toney",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1351",
+    "name": "Igor Jesus",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1352",
+    "name": "Igor Thiago",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1353",
+    "name": "J. Burkardt",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1354",
+    "name": "J. Durán",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1355",
+    "name": "J. King",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1356",
+    "name": "J. Mateta",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1357",
+    "name": "J. Panichelli",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1358",
+    "name": "J. Quiñones",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1359",
+    "name": "J. Strand Larsen",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1360",
+    "name": "J. Zirkzee",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1361",
+    "name": "K. Davis",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1362",
+    "name": "K. Denkey",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1363",
+    "name": "K. Dolberg",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1364",
+    "name": "L. Ajorque",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1365",
+    "name": "L. Boyé",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1366",
+    "name": "L. Delap",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1367",
+    "name": "L. Nmecha",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1368",
+    "name": "L. Openda",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1369",
+    "name": "L. Sinayoko",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1370",
+    "name": "L. Suárez",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1371",
+    "name": "M. Abline",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1372",
+    "name": "M. Amoura",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1373",
+    "name": "M. Batna",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1374",
+    "name": "M. Biereth",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1375",
+    "name": "M. Fernandez-Pardo",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1376",
+    "name": "M. Gregoritsch",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1377",
+    "name": "M. Kean",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1378",
+    "name": "M. Merentiel",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1379",
+    "name": "M. Retegui",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1380",
+    "name": "M. Satriano",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1381",
+    "name": "Marcos Leonardo",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1382",
+    "name": "N. Füllkrug",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1383",
+    "name": "N. Krstović",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1384",
+    "name": "N. Tresoldi",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1385",
+    "name": "N. Woltemade",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1386",
+    "name": "N. Zaniolo",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1387",
+    "name": "O. Édouard",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1388",
+    "name": "O. Giroud",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1389",
+    "name": "O. Watkins",
+    "position": "ATA",
+    "club": "Aston Villa",
+    "nationality": "Inglaterra",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1390",
+    "name": "Oyarzabal",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1391",
+    "name": "P. Aubameyang",
+    "position": "ATA",
+    "club": "Al-Qadsiah",
+    "nationality": "Gabão",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1392",
+    "name": "P. David",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1393",
+    "name": "P. Musa",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1394",
+    "name": "P. Onuachu",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1395",
+    "name": "P. Schick",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1396",
+    "name": "Paulinho",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1397",
+    "name": "R. Ache",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1398",
+    "name": "R. Højlund",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1399",
+    "name": "R. Jiménez",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1400",
+    "name": "R. Lukaku",
+    "position": "ATA",
+    "club": "Napoli",
+    "nationality": "Bélgica",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1401",
+    "name": "R. Martínez",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1402",
+    "name": "R. Pepi",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1403",
+    "name": "Richarlison",
+    "position": "ATA",
+    "club": "Tottenham",
+    "nationality": "Brasil",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1404",
+    "name": "Rodrigo Muniz",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1405",
+    "name": "Rômulo",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1406",
+    "name": "S. Castro",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1407",
+    "name": "S. Driussi",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1408",
+    "name": "S. Esposito",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1409",
+    "name": "S. Giménez",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1410",
+    "name": "S. Surridge",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1411",
+    "name": "S. Villa",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1412",
+    "name": "Samu",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1413",
+    "name": "Son Heung Min",
+    "position": "ATA",
+    "club": "Tottenham",
+    "nationality": "Coreia do Sul",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1414",
+    "name": "T. Abraham",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1415",
+    "name": "T. Arokodare",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1416",
+    "name": "T. Barry",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1417",
+    "name": "T. Castellanos",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1418",
+    "name": "T. Douvikas",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1419",
+    "name": "T. Kleindienst",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1420",
+    "name": "T. Lemperle",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1421",
+    "name": "T. Parrott",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1422",
+    "name": "Toni Martínez",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1423",
+    "name": "U. Sadiq",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1424",
+    "name": "V. Boniface",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1425",
+    "name": "V. Janssen",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1426",
+    "name": "V. Muriqi",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1427",
+    "name": "V. Pavlidis",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1428",
+    "name": "W. Isidor",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1429",
+    "name": "W. Osula",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1430",
+    "name": "W. Weghorst",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1431",
+    "name": "Y. Bonny",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1432",
+    "name": "Y. En-Nesyri",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1433",
+    "name": "Y. Wissa",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1434",
+    "name": "Z. Flemming",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "p-1435",
+    "name": "Ž. Vipotnik",
+    "position": "ATA",
+    "club": "EAFC Elite",
+    "nationality": "Internacional",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
+  }
 ];
 
 export const INITIAL_FORMATIONS: TacticalFormation[] = [
@@ -256,3 +14440,4 @@ export const INITIAL_FORMATIONS: TacticalFormation[] = [
     ]
   }
 ];
+

@@ -2,13 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Users, Lock, Sparkles, RefreshCw, Check, 
   Share2, ArrowRightLeft, DollarSign, Trophy, Info, Trash2,
-  GripVertical, CheckCircle2, ArrowDownCircle
+  GripVertical, CheckCircle2, ArrowDownCircle, Target, Star,
+  ListPlus, ExternalLink, Plus, UserPlus
 } from 'lucide-react';
 import { Player, UserProfile, UserSquad, FormationSlot, TacticalFormation } from '../types';
 import { INITIAL_FORMATIONS } from '../data/initialPlayers';
 import { formatCurrency, getPositionBadge, isCompatiblePosition } from '../utils/formatters';
 import { playBidSound } from '../utils/sound';
+import { getWatchlist, toggleWatchlistPlayer, setWatchlistFromConcept } from '../utils/watchlist';
 import { PlayerPickerModal } from './PlayerPickerModal';
+import { ConceptToTargetsModal } from './ConceptToTargetsModal';
+import { BenchPlayerPickerModal } from './BenchPlayerPickerModal';
 
 interface SquadPlannerSectionProps {
   currentUser: UserProfile | null;
@@ -16,6 +20,10 @@ interface SquadPlannerSectionProps {
   userSquad: UserSquad | null;
   onSaveSquad: (formationId: string, starterSlots: { [slotId: string]: string | null }, benchPlayerIds: string[]) => Promise<void>;
   onOpenAuth: () => void;
+  watchedPlayerIds?: string[];
+  onToggleWatch?: (playerId: string) => void;
+  onOpenWatchlist?: () => void;
+  onNavigateToAuction?: () => void;
 }
 
 interface DragItemData {
@@ -30,6 +38,10 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
   userSquad,
   onSaveSquad,
   onOpenAuth,
+  watchedPlayerIds,
+  onToggleWatch,
+  onOpenWatchlist,
+  onNavigateToAuction,
 }) => {
   // Current formation
   const [selectedFormationId, setSelectedFormationId] = useState<string>(
@@ -45,6 +57,23 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
   const [benchPlayerIds, setBenchPlayerIds] = useState<string[]>(
     userSquad?.benchPlayerIds || []
   );
+
+  // Watchlist synchronization
+  const [localWatchedIds, setLocalWatchedIds] = useState<string[]>(() =>
+    watchedPlayerIds && watchedPlayerIds.length > 0
+      ? watchedPlayerIds
+      : getWatchlist(currentUser?.id)
+  );
+
+  useEffect(() => {
+    if (watchedPlayerIds) {
+      setLocalWatchedIds(watchedPlayerIds);
+    }
+  }, [watchedPlayerIds]);
+
+  // Concept to Targets modal state
+  const [isConceptModalOpen, setIsConceptModalOpen] = useState(false);
+  const [isBenchPickerOpen, setIsBenchPickerOpen] = useState(false);
 
   // Modal state
   const [activeSlot, setActiveSlot] = useState<FormationSlot | null>(null);
@@ -118,6 +147,61 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
 
   const currentFormation: TacticalFormation =
     INITIAL_FORMATIONS.find((f) => f.id === selectedFormationId) || INITIAL_FORMATIONS[0];
+
+  // Cálculos do Elenco de Conceito e Alvos do Leilão (Titulares + Banco de Reservas)
+  const assignedStarterIds = Object.values(starterSlots).filter(Boolean) as string[];
+  const conceptPlayerIds = Array.from(new Set([...assignedStarterIds, ...benchPlayerIds]));
+  // Atletas que ainda não foram comprados e são os alvos planejados pelo usuário para o leilão (tanto titulares quanto reservas)
+  const conceptTargetPlayerIds = conceptPlayerIds.filter((id) => !ownedPlayerIds.includes(id));
+  const conceptTargetPlayers = conceptTargetPlayerIds
+    .map((id) => players.find((p) => p.id === id))
+    .filter((p): p is Player => Boolean(p));
+
+  const totalConceptTargetsCost = conceptTargetPlayers.reduce((sum, p) => sum + p.initialPrice, 0);
+  const alreadyTargetedCount = conceptTargetPlayerIds.filter((id) =>
+    localWatchedIds.includes(id)
+  ).length;
+  const allTargeted =
+    conceptTargetPlayerIds.length > 0 && alreadyTargetedCount === conceptTargetPlayerIds.length;
+
+  const conceptStartersTargetCount = conceptTargetPlayerIds.filter((id) =>
+    assignedStarterIds.includes(id)
+  ).length;
+  const conceptBenchTargetCount = conceptTargetPlayerIds.filter((id) =>
+    benchPlayerIds.includes(id)
+  ).length;
+
+  const conceptBreakdownText =
+    conceptBenchTargetCount > 0
+      ? `${conceptStartersTargetCount} titular${conceptStartersTargetCount !== 1 ? 'es' : ''} e ${conceptBenchTargetCount} reserva${conceptBenchTargetCount !== 1 ? 's' : ''}`
+      : `${conceptStartersTargetCount} titular${conceptStartersTargetCount !== 1 ? 'es' : ''}`;
+
+  const handleOpenTransferModal = () => {
+    if (conceptTargetPlayerIds.length === 0) {
+      showFeedback('Adicione pelo menos um jogador no campinho ou no banco para transferir para seus alvos.', 'swap');
+      return;
+    }
+    setIsConceptModalOpen(true);
+  };
+
+  const handleConfirmTransferToTargets = (mode: 'merge' | 'replace') => {
+    const res = setWatchlistFromConcept(currentUser?.id, conceptTargetPlayerIds, mode);
+    setLocalWatchedIds(res.playerIds);
+    playBidSound();
+    showFeedback(
+      `🎯 ${conceptTargetPlayerIds.length} jogadores do elenco de conceito foram definidos como seus ALVOS no leilão!`,
+      'success'
+    );
+  };
+
+  const handleToggleSingleWatch = (playerId: string) => {
+    if (onToggleWatch) {
+      onToggleWatch(playerId);
+    } else {
+      const res = toggleWatchlistPlayer(currentUser?.id, playerId);
+      setLocalWatchedIds(res.playerIds);
+    }
+  };
 
   const handleOpenSlot = (slot: FormationSlot) => {
     setActiveSlot(slot);
@@ -395,6 +479,36 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
     }
   };
 
+  const handleAddPlayerToBench = (playerId: string) => {
+    if (benchPlayerIds.includes(playerId)) return;
+    const newBench = [...benchPlayerIds, playerId];
+    setBenchPlayerIds(newBench);
+    if (currentUser) {
+      onSaveSquad(selectedFormationId, starterSlots, newBench);
+    }
+    const addedPlayer = players.find((p) => p.id === playerId);
+    if (addedPlayer) {
+      showFeedback(`📋 ${addedPlayer.name} adicionado ao Banco de Reservas!`, 'bench');
+    }
+  };
+
+  const handleRemoveFromBench = (playerId: string) => {
+    // Apenas jogadores NÃO comprados podem ser removidos do banco (jogadores comprados permanecem obrigatoriamente no elenco)
+    if (ownedPlayerIds.includes(playerId)) {
+      showFeedback('Jogadores arrematados no leilão pertencem ao seu elenco e não podem ser excluídos.', 'bench');
+      return;
+    }
+    const newBench = benchPlayerIds.filter((id) => id !== playerId);
+    setBenchPlayerIds(newBench);
+    if (currentUser) {
+      onSaveSquad(selectedFormationId, starterSlots, newBench);
+    }
+    const removedPlayer = players.find((p) => p.id === playerId);
+    if (removedPlayer) {
+      showFeedback(`🗑️ ${removedPlayer.name} removido do banco de conceito.`, 'swap');
+    }
+  };
+
   const handleClearPreviewOnly = () => {
     // Keeps only players owned permanently through auction
     const newSlots: { [slotId: string]: string | null } = {};
@@ -486,6 +600,25 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
               Limpar Prévia
             </button>
 
+            {/* Pass Concept Squad to Auction Targets */}
+            <button
+              onClick={handleOpenTransferModal}
+              disabled={conceptTargetPlayerIds.length === 0}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer ${
+                conceptTargetPlayerIds.length === 0
+                  ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
+                  : allTargeted
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                  : 'bg-amber-400 text-slate-950 border-amber-300 hover:bg-amber-300 font-extrabold shadow-2xs active:scale-95'
+              }`}
+              title="Passar todos os jogadores do elenco de conceito para os seus Alvos no Leilão"
+            >
+              <Target className="w-3.5 h-3.5" />
+              <span>
+                {allTargeted ? 'Alvos Sincronizados ✓' : `Passar para Alvos (${conceptTargetPlayerIds.length})`}
+              </span>
+            </button>
+
             {/* Copy Team Sheet */}
             <button
               onClick={handleCopyTeamSheet}
@@ -569,7 +702,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
         ) : (
           <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between text-xs">
             <span className="text-amber-900 font-medium">
-              Conecte seu Gmail para acompanhar seu orçamento de $150M e salvar seu time oficial da Khedira League.
+              Conecte seu Gmail para acompanhar seu orçamento de € 400M e salvar seu time oficial da Khedira League.
             </span>
             <button
               onClick={onOpenAuth}
@@ -604,6 +737,64 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
                   Em Prévia
                 </span>
+              </div>
+            </div>
+
+            {/* Concept Squad to Auction Targets Strategy Banner */}
+            <div className="mb-4 p-3 sm:p-4 rounded-xl border border-amber-200/90 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-emerald-500/10 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 shadow-sm font-black">
+                  <Target className="w-5 h-5 text-slate-950" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                      Estratégia: Passar Elenco de Conceito para Alvos do Leilão
+                    </h4>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                      allTargeted
+                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                        : 'bg-amber-100 text-amber-900 border-amber-300'
+                    }`}>
+                      {alreadyTargetedCount} de {conceptTargetPlayerIds.length} no Radar
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-0.5">
+                    {conceptTargetPlayerIds.length === 0
+                      ? 'Escale atletas titulares no campinho ou adicione reservas no banco para transferir seu planejamento para a lista de alvos do leilão.'
+                      : allTargeted
+                      ? `Todos os ${conceptTargetPlayerIds.length} jogadores do seu elenco de conceito (${conceptBreakdownText}) já estão sincronizados como Alvos no Radar do Leilão!`
+                      : `Transfira seu elenco de conceito (${conceptTargetPlayerIds.length} atletas: ${conceptBreakdownText}) para o Radar de Alvos do Leilão e monitore os lances em tempo real.`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                {onOpenWatchlist && (
+                  <button
+                    onClick={onOpenWatchlist}
+                    className="px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-white/80 rounded-xl border border-slate-200/80 transition-colors flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
+                    title="Abrir Radar de Alvos completo"
+                  >
+                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                    <span>Ver Alvos</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={handleOpenTransferModal}
+                  disabled={conceptTargetPlayerIds.length === 0}
+                  className={`px-3.5 py-1.5 text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto ${
+                    conceptTargetPlayerIds.length === 0
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      : allTargeted
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      : 'bg-amber-500 hover:bg-amber-400 text-slate-950 active:scale-95'
+                  }`}
+                >
+                  <Target className="w-3.5 h-3.5" />
+                  <span>{allTargeted ? 'Alvos Sincronizados ✓' : 'Passar para Alvos'}</span>
+                </button>
               </div>
             </div>
 
@@ -658,6 +849,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                 const isOwnedByMe = assignedPlayerId
                   ? ownedPlayerIds.includes(assignedPlayerId)
                   : false;
+                const isTargeted = Boolean(player && !isOwnedByMe && localWatchedIds.includes(player.id));
 
                 const isSlotHovered = dragOverSlotId === slot.slotId;
                 const isDraggingAny = Boolean(draggedItem);
@@ -728,6 +920,8 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                             </span>
                             {isOwnedByMe ? (
                               <Lock className="w-2.5 h-2.5 mx-auto mt-0.5 text-emerald-300" />
+                            ) : isTargeted ? (
+                              <Target className="w-2.5 h-2.5 mx-auto mt-0.5 text-amber-300" />
                             ) : (
                               <Sparkles className="w-2.5 h-2.5 mx-auto mt-0.5 text-blue-300" />
                             )}
@@ -744,6 +938,16 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                             Ideal
                           </span>
                         )}
+
+                        {/* Target badge on node */}
+                        {isTargeted && !isSlotHovered && (
+                          <span 
+                            className="absolute -top-1.5 -left-1.5 bg-amber-400 text-slate-950 p-0.5 rounded-full shadow-md border border-amber-300 ring-2 ring-amber-400/40 z-20"
+                            title="Atleta Definido como Alvo do Leilão"
+                          >
+                            <Target className="w-2.5 h-2.5" />
+                          </span>
+                        )}
                       </div>
 
                       {/* Name Tag beneath */}
@@ -754,6 +958,8 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                             : player
                             ? isOwnedByMe
                               ? 'bg-emerald-900/90 text-emerald-100 border border-emerald-500/50'
+                              : isTargeted
+                              ? 'bg-amber-950/90 text-amber-100 border border-amber-400/80 shadow-amber-500/20'
                               : 'bg-slate-900/90 text-white border border-slate-700'
                             : isDraggingAny && isCompatible
                             ? 'bg-emerald-950/90 text-emerald-200 border border-emerald-400'
@@ -765,7 +971,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                             ? `Substituir ${player.name.split(' ').slice(-1)[0]}`
                             : `Soltar em ${slot.role}`
                           : player
-                          ? player.name.split(' ').slice(-1)[0]
+                          ? `${player.name.split(' ').slice(-1)[0]}${isTargeted ? ' 🎯' : ''}`
                           : `+ ${slot.role}`}
                       </div>
                     </div>
@@ -783,12 +989,24 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
             id="squad-starters-card"
             className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs"
           >
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center justify-between">
-              <span>Titulares ({currentFormation.name})</span>
-              <span className="text-[11px] font-normal text-slate-400">
-                {startersCount}/11 vagas
-              </span>
-            </h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                <span>Titulares ({currentFormation.name})</span>
+                <span className="text-[11px] font-normal text-slate-400">
+                  {startersCount}/11 vagas
+                </span>
+              </h4>
+              {conceptTargetPlayerIds.length > 0 && (
+                <button
+                  onClick={handleOpenTransferModal}
+                  className="text-[10px] font-black text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2 py-0.5 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Passar jogadores do elenco de conceito para os alvos do leilão"
+                >
+                  <Target className="w-3 h-3 text-amber-700" />
+                  <span>Alvos ({alreadyTargetedCount}/{conceptTargetPlayerIds.length})</span>
+                </button>
+              )}
+            </div>
 
             <div className="space-y-1.5 max-h-[340px] overflow-y-auto pr-1">
               {currentFormation.slots.map((slot) => {
@@ -799,6 +1017,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                 const isOwned = assignedPlayerId
                   ? ownedPlayerIds.includes(assignedPlayerId)
                   : false;
+                const isTargeted = Boolean(player && !isOwned && localWatchedIds.includes(player.id));
                 const isSlotHovered = dragOverSlotId === slot.slotId;
 
                 return (
@@ -824,6 +1043,8 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                         : player
                         ? isOwned
                           ? 'bg-emerald-50/70 border-emerald-200 hover:border-emerald-300'
+                          : isTargeted
+                          ? 'bg-amber-50/80 border-amber-200/90 hover:border-amber-300'
                           : 'bg-slate-50 border-slate-200/80 hover:border-slate-300'
                         : 'bg-white border-dashed border-slate-200 text-slate-400 hover:border-slate-300'
                     } ${assignedPlayerId ? 'cursor-grab active:cursor-grabbing' : ''}`}
@@ -843,6 +1064,10 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                             </span>
                             {isOwned ? (
                               <Lock className="w-3 h-3 text-emerald-600 shrink-0" title="Comprado no leilão" />
+                            ) : isTargeted ? (
+                              <span className="text-[9px] px-1.5 py-0.2 bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded flex items-center gap-0.5" title="Definido como Alvo do Leilão">
+                                <Target className="w-2.5 h-2.5 text-amber-700" /> Alvo
+                              </span>
                             ) : (
                               <span className="text-[9px] px-1 bg-slate-200 text-slate-600 rounded">
                                 Prévia
@@ -861,6 +1086,23 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
+                      {player && !isOwned && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleSingleWatch(player.id);
+                          }}
+                          className={`p-1 rounded-md transition-colors cursor-pointer ${
+                            isTargeted
+                              ? 'text-amber-500 hover:text-amber-600 bg-amber-100/60'
+                              : 'text-slate-400 hover:text-amber-500 hover:bg-slate-100'
+                          }`}
+                          title={isTargeted ? 'Remover dos Alvos' : 'Definir como Alvo do Leilão'}
+                        >
+                          <Star className={`w-3.5 h-3.5 ${isTargeted ? 'fill-amber-400 text-amber-500' : ''}`} />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleOpenSlot(slot)}
                         className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[10px] transition-colors cursor-pointer"
@@ -883,7 +1125,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
             </div>
           </div>
 
-          {/* Bench / Reservas Adquiridos */}
+          {/* Bench / Banco de Reservas (Comprados no Leilão + Planejados no Conceito) */}
           <div 
             id="squad-bench-card"
             onDragOver={handleDragOverBench}
@@ -896,19 +1138,39 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Reservas Comprados no Leilão ({benchPlayerIds.length})</span>
-              </h4>
-              {benchPlayerIds.length > 0 && (
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <GripVertical className="w-3 h-3" /> Arraste para o campo
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Banco de Reservas ({benchPlayerIds.length})</span>
+                </h4>
+                {benchPlayerIds.some((pId) => !ownedPlayerIds.includes(pId)) && (
+                  <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.2 rounded-md flex items-center gap-1" title="Jogadores adicionados como alvos de conceito para o leilão">
+                    <Sparkles className="w-2.5 h-2.5 text-amber-600" />
+                    {benchPlayerIds.filter((pId) => !ownedPlayerIds.includes(pId)).length} Planejados
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsBenchPickerOpen(true)}
+                  className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-2xs transition-all cursor-pointer"
+                  title="Adicionar jogador reserva ao seu elenco de conceito"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Adicionar Reserva</span>
+                </button>
+                {benchPlayerIds.length > 0 && (
+                  <span className="hidden sm:flex text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full items-center gap-1">
+                    <GripVertical className="w-3 h-3" /> Arraste para o campo
+                  </span>
+                )}
+              </div>
             </div>
 
             <p className="text-[11px] text-slate-400 mb-3">
-              Clique e arraste qualquer reserva diretamente para as vagas do campinho tático.
+              Arraste reservas para as vagas do campo ou clique em <strong className="text-slate-600">Adicionar Reserva</strong> para planejar seu banco de conceito.
             </p>
 
             {/* Drop helper highlight when dragging from pitch */}
@@ -924,6 +1186,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                 {benchPlayerIds.map((pId) => {
                   const player = players.find((p) => p.id === pId);
                   if (!player) return null;
+                  const isOwned = ownedPlayerIds.includes(pId);
                   const badge = getPositionBadge(player.position);
                   const isBeingDragged = draggedItem?.playerId === pId;
 
@@ -933,10 +1196,12 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                       draggable
                       onDragStart={(e) => handleDragStart(e, { playerId: pId, from: 'bench' })}
                       onDragEnd={handleDragEnd}
-                      className={`p-2.5 bg-emerald-50/60 hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-400 hover:shadow-md rounded-xl flex items-center justify-between text-xs transition-all cursor-grab active:cursor-grabbing select-none group ${
-                        isBeingDragged ? 'opacity-40 ring-2 ring-emerald-500 scale-98' : ''
-                      }`}
-                      title="Arraste para o campinho ou clique em Escalar"
+                      className={`p-2.5 rounded-xl flex items-center justify-between text-xs transition-all cursor-grab active:cursor-grabbing select-none group border ${
+                        isOwned
+                          ? 'bg-emerald-50/60 hover:bg-emerald-50 border-emerald-200 hover:border-emerald-400 hover:shadow-md'
+                          : 'bg-amber-50/50 hover:bg-amber-50 border-amber-200 hover:border-amber-400 hover:shadow-md'
+                      } ${isBeingDragged ? 'opacity-40 ring-2 ring-emerald-500 scale-98' : ''}`}
+                      title={isOwned ? "Jogador comprado — Arraste para o campinho ou clique em Escalar" : "Jogador de conceito — Arraste para o campinho, escale ou transfira para os alvos"}
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="text-slate-400 group-hover:text-emerald-700 transition-colors shrink-0">
@@ -946,9 +1211,21 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                           {player.position}
                         </span>
                         <div className="min-w-0">
-                          <span className="font-bold text-slate-900 block truncate group-hover:text-emerald-950">
-                            {player.name}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-900 block truncate group-hover:text-emerald-950">
+                              {player.name}
+                            </span>
+                            {isOwned ? (
+                              <span className="px-1 py-0.2 bg-emerald-100 text-emerald-800 text-[9px] font-extrabold rounded">
+                                Comprado
+                              </span>
+                            ) : (
+                              <span className="px-1 py-0.2 bg-amber-100 text-amber-800 text-[9px] font-extrabold rounded flex items-center gap-0.5">
+                                <Sparkles className="w-2 h-2 text-amber-600" />
+                                Alvo
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[10px] text-slate-500">
                             {player.club}
                           </span>
@@ -956,9 +1233,12 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[11px] font-extrabold text-emerald-700 hidden sm:inline">
+                        <span className={`text-[11px] font-extrabold hidden sm:inline ${
+                          isOwned ? 'text-emerald-700' : 'text-amber-700'
+                        }`}>
                           {formatCurrency(player.soldTo?.amount || player.initialPrice, true)}
                         </span>
+                        
                         <button
                           type="button"
                           onClick={(e) => {
@@ -970,14 +1250,35 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                         >
                           Escalar
                         </button>
+
+                        {!isOwned && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveFromBench(pId);
+                            }}
+                            className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Remover do banco planejado"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="py-6 text-center text-slate-400 text-xs italic bg-slate-50 rounded-xl border border-slate-100">
-                Você ainda não comprou jogadores no leilão. Participe dos lances na Seção 1 para arrematar craques!
+              <div className="py-6 text-center text-slate-400 text-xs italic bg-slate-50 rounded-xl border border-slate-100 flex flex-col items-center justify-center gap-2">
+                <span>Nenhum jogador no banco de reservas.</span>
+                <button
+                  type="button"
+                  onClick={() => setIsBenchPickerOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Adicionar Reserva ao Conceito
+                </button>
               </div>
             )}
           </div>
@@ -1007,6 +1308,31 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
         ownedPlayerIds={ownedPlayerIds}
         currentAssignedPlayerId={activeSlot ? starterSlots[activeSlot.slotId] || null : null}
         onSelectPlayer={handleSelectPlayerForSlot}
+      />
+
+      {/* Concept Squad to Auction Targets Modal */}
+      <ConceptToTargetsModal
+        isOpen={isConceptModalOpen}
+        onClose={() => setIsConceptModalOpen(false)}
+        conceptPlayers={conceptTargetPlayers}
+        alreadyTargetedIds={localWatchedIds}
+        userBudget={currentUser?.budget || 400000000}
+        starterPlayerIds={assignedStarterIds}
+        benchPlayerIds={benchPlayerIds}
+        onConfirmTransfer={handleConfirmTransferToTargets}
+        onNavigateToAuction={onNavigateToAuction}
+      />
+
+      {/* Bench Player Picker Modal (Adicionar ao Banco de Reservas do Conceito) */}
+      <BenchPlayerPickerModal
+        isOpen={isBenchPickerOpen}
+        onClose={() => setIsBenchPickerOpen(false)}
+        players={players}
+        benchPlayerIds={benchPlayerIds}
+        starterPlayerIds={assignedStarterIds}
+        ownedPlayerIds={ownedPlayerIds}
+        targetedPlayerIds={localWatchedIds}
+        onAddPlayerToBench={handleAddPlayerToBench}
       />
     </div>
   );

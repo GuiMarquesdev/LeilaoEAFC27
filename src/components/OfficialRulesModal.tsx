@@ -66,10 +66,10 @@ export const OfficialRulesModal: React.FC<OfficialRulesModalProps> = ({ isOpen, 
               <div className="p-3.5 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-1.5">
                 <span className="text-xs font-bold text-emerald-900 block flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  Orçamento de € 300M
+                  Orçamento de € 400M
                 </span>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Cada clube tem orçamento inicial recorde de <strong className="text-emerald-800 font-bold">€ 300 Milhões</strong> (300.000.000 €).
+                  Cada clube tem orçamento inicial recorde de <strong className="text-emerald-800 font-bold">€ 400 Milhões</strong> (400.000.000 €).
                 </p>
               </div>
 

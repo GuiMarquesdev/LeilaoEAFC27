@@ -48,3 +48,50 @@ export function toggleWatchlistPlayer(userId: string | null | undefined, playerI
 export function isPlayerWatched(watchedList: string[], playerId: string): boolean {
   return watchedList.includes(playerId);
 }
+
+export function addMultipleToWatchlist(
+  userId: string | null | undefined,
+  playerIdsToAdd: string[]
+): { addedCount: number; playerIds: string[] } {
+  const current = getWatchlist(userId);
+  const currentSet = new Set(current);
+  let newlyAdded = 0;
+
+  playerIdsToAdd.forEach((id) => {
+    if (!currentSet.has(id)) {
+      currentSet.add(id);
+      newlyAdded++;
+    }
+  });
+
+  const updated = Array.from(currentSet);
+  saveWatchlist(userId, updated);
+  return { addedCount: newlyAdded, playerIds: updated };
+}
+
+export function setWatchlistFromConcept(
+  userId: string | null | undefined,
+  playerIds: string[],
+  mode: 'merge' | 'replace' = 'merge'
+): { totalCount: number; newCount: number; playerIds: string[] } {
+  const current = getWatchlist(userId);
+  let finalIds: string[];
+  let newCount = 0;
+
+  if (mode === 'replace') {
+    finalIds = Array.from(new Set(playerIds));
+    newCount = finalIds.length;
+  } else {
+    const set = new Set(current);
+    playerIds.forEach((id) => {
+      if (!set.has(id)) {
+        newCount++;
+        set.add(id);
+      }
+    });
+    finalIds = Array.from(set);
+  }
+
+  saveWatchlist(userId, finalIds);
+  return { totalCount: finalIds.length, newCount, playerIds: finalIds };
+}

@@ -4,7 +4,7 @@ import {
   AlertCircle, ChevronRight, Search, Trophy, ArrowUpRight, ShieldCheck 
 } from 'lucide-react';
 import { Player, UserProfile, AuctionState } from '../types';
-import { formatCurrency, getPositionBadge, getDayLabel, getPlayerAuctionDay, isPositionAllowedForDay } from '../utils/formatters';
+import { formatCurrency, getPositionBadge, getDayLabel, getPlayerAuctionDay, isPositionAllowedForDay, matchesPlayerSearch } from '../utils/formatters';
 
 interface WatchlistModalProps {
   isOpen: boolean;
@@ -55,13 +55,8 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
       if (filterStatus === 'SOLD' && player.status !== 'SOLD') return false;
       if (filterStatus === 'AVAILABLE' && (player.status !== 'AVAILABLE' || isCurrentlyInAuction)) return false;
 
-      if (searchTerm.trim()) {
-        const term = searchTerm.toLowerCase();
-        const matches = 
-          player.name.toLowerCase().includes(term) ||
-          player.club.toLowerCase().includes(term) ||
-          player.position.toLowerCase().includes(term);
-        if (!matches) return false;
+      if (searchTerm.trim() && !matchesPlayerSearch(player, searchTerm)) {
+        return false;
       }
 
       return true;

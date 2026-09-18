@@ -953,7 +953,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       {users.length} participantes
                     </div>
                     <span className="text-[11px] text-slate-400 mt-0.5 block">
-                      Saldo restaurado para € 300M cada
+                      Saldo restaurado para € 400M cada
                     </span>
                   </div>
                 </div>
@@ -993,7 +993,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       3. Devolução de 100% do Saldo aos Usuários
                     </div>
                     <p className="text-slate-600 leading-relaxed text-[11px]">
-                      O saldo de cada clube participante volta exatamente para <strong>€ 300.000.000 (€ 300M)</strong> e o valor total gasto é zerado.
+                      O saldo de cada clube participante volta exatamente para <strong>€ 400.000.000 (€ 400M)</strong> e o valor total gasto é zerado.
                     </p>
                   </div>
 
@@ -1058,7 +1058,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               <ul className="list-disc pl-4 space-y-1 text-amber-900/90 text-[11px]">
                 <li>Todos os <strong>{soldPlayers.length} jogadores</strong> atualmente em clubes voltarão a ficar disponíveis no mercado.</li>
                 <li>As escalações e pranchetas táticas de todos os clubes serão esvaziadas.</li>
-                <li>O saldo de todos os <strong>{users.length} participantes</strong> será restaurado para <strong>€ 300.000.000 (€ 300M)</strong>.</li>
+                <li>O saldo de todos os <strong>{users.length} participantes</strong> será restaurado para <strong>€ 400.000.000 (€ 400M)</strong>.</li>
                 <li>Um anúncio oficial será transmitido em tempo real na tela de todos os participantes.</li>
               </ul>
             </div>

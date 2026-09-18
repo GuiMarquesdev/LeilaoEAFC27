@@ -233,3 +233,59 @@ export function formatAuctionTimer(totalSeconds: number): string {
   return `${seconds}s`;
 }
 
+export function normalizeSearchString(str: string): string {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+export function matchesPlayerSearch(
+  player: { name: string; club?: string; nationality?: string; position?: string },
+  query: string
+): boolean {
+  if (!query) return true;
+  const cleanTerm = normalizeSearchString(query);
+  if (!cleanTerm) return true;
+
+  const cleanName = normalizeSearchString(player.name);
+  const cleanClub = normalizeSearchString(player.club || '');
+  const cleanNat = normalizeSearchString(player.nationality || '');
+  const cleanPos = normalizeSearchString(player.position || '');
+
+  // Direct substring check
+  if (
+    cleanName.includes(cleanTerm) ||
+    cleanClub.includes(cleanTerm) ||
+    cleanNat.includes(cleanTerm) ||
+    cleanPos.includes(cleanTerm)
+  ) {
+    return true;
+  }
+
+  // Abbreviated first name matching, e.g. "t. courtois", "t courtois", "w. saliba"
+  const abbrevMatch = cleanTerm.match(/^([a-z])\.?\s+(.+)$/);
+  if (abbrevMatch) {
+    const initial = abbrevMatch[1];
+    const rest = abbrevMatch[2];
+    const nameParts = cleanName.split(/\s+/);
+    if (nameParts.length >= 2) {
+      const firstInitial = nameParts[0][0];
+      const remainder = nameParts.slice(1).join(' ');
+      if (firstInitial === initial && remainder.includes(rest)) {
+        return true;
+      }
+    }
+  }
+
+  // Dot-free comparison (e.g. "vini jr." vs "vini jr")
+  const termNoPunct = cleanTerm.replace(/[.\-_]/g, '');
+  const nameNoPunct = cleanName.replace(/[.\-_]/g, '');
+  if (nameNoPunct.includes(termNoPunct)) {
+    return true;
+  }
+
+  return false;
+}
+

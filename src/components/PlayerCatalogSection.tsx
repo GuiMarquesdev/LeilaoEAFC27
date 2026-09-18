@@ -4,7 +4,7 @@ import {
   CheckCircle2, Lock, Sparkles, ExternalLink, Plus, X, ShieldAlert, ShieldCheck, Calendar, Star, Eye
 } from 'lucide-react';
 import { Player, UserProfile, AuctionState, UserSquad } from '../types';
-import { formatCurrency, getPositionBadge, getPositionCategory, isPositionAllowedForDay, getDayLabel, getPlayerAuctionDay } from '../utils/formatters';
+import { formatCurrency, getPositionBadge, getPositionCategory, isPositionAllowedForDay, getDayLabel, getPlayerAuctionDay, matchesPlayerSearch } from '../utils/formatters';
 
 interface PlayerCatalogSectionProps {
   players: Player[];
@@ -63,11 +63,12 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
     if (viewScope === 'WATCHED_ONLY') {
       return players.filter((p) => watchedPlayerIds.includes(p.id));
     }
-    if (viewScope === 'ALL_PHASES') {
+    // If user is actively searching, search across all phases so they can find any player
+    if (viewScope === 'ALL_PHASES' || searchTerm.trim().length > 0) {
       return players;
     }
     return dayPlayers;
-  }, [players, viewScope, watchedPlayerIds, dayPlayers]);
+  }, [players, viewScope, watchedPlayerIds, dayPlayers, searchTerm]);
 
   const handleFilterByPosition = (pos: string) => {
     if (exactPositionFilter === pos) {
@@ -88,14 +89,10 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
           return false;
         }
 
-        // Search
-        const term = searchTerm.toLowerCase();
-        const matchesSearch =
-          player.name.toLowerCase().includes(term) ||
-          player.club.toLowerCase().includes(term) ||
-          player.nationality.toLowerCase().includes(term) ||
-          player.position.toLowerCase().includes(term);
-        if (!matchesSearch) return false;
+        // Search using intelligent matcher (supports abbreviations like "T. Courtois", accents, etc.)
+        if (searchTerm.trim() && !matchesPlayerSearch(player, searchTerm)) {
+          return false;
+        }
 
         // Position category
         if (categoryFilter !== 'ALL') {

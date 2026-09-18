@@ -10,7 +10,7 @@ import { LeagueState, Player, UserProfile, Bid, UserSquad, WSMessage } from './s
 const PORT = Number(process.env.PORT) || 3000;
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'league_db.json');
-const DEFAULT_BUDGET = 300000000; // €300.000.000 (300 Milhões de Euros fixos e inegociáveis conforme Ata Oficial)
+const DEFAULT_BUDGET = 400000000; // €400.000.000 (400 Milhões de Euros fixos e inegociáveis conforme Ata Oficial)
 // Administradores Oficiais da Khedira League:
 // - Guilherme Pereira Marques Brito (guimarquesbrito@gmail.com) -> Diretor
 // - Guilherme Tourinho (Guilhermebtourinho@gmail.com) -> Presidente
@@ -163,11 +163,9 @@ try {
       leagueState.auction.nominationTurnUserId = 'user-admin-default';
     }
 
-    // Update existing users to €300M if they had old 150M budget and haven't spent
+    // Atualiza o orçamento de todos os participantes para € 400M (recalculando saldo restante: 400M - spent)
     leagueState.users.forEach((u) => {
-      if (u.budget === 150000000 && u.spent === 0) {
-        u.budget = DEFAULT_BUDGET;
-      }
+      u.budget = DEFAULT_BUDGET - (u.spent || 0);
       const emailLower = u.email.trim().toLowerCase();
       // Guarantee Guilherme Pereira as Diretor and ADMIN
       if (emailLower === PEREIRA_EMAIL.toLowerCase()) {
@@ -1639,7 +1637,7 @@ async function startServer() {
         broadcast({
           type: 'CHAT_NOTIFICATION',
           data: {
-            message: `🚀 ${adminLeaderLabel} iniciou oficialmente o Leilão da Khedira League! Orçamento de € 300M por clube. Participantes, a disputa começou!`,
+            message: `🚀 ${adminLeaderLabel} iniciou oficialmente o Leilão da Khedira League! Orçamento de € 400M por clube. Participantes, a disputa começou!`,
             timestamp: Date.now(),
             type: 'info'
           }
