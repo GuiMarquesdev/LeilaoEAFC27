@@ -17,6 +17,10 @@ export interface Player {
   initialPrice: number; // in fictional currency (e.g., 25000000 = €25M)
   currentPrice: number;
   status: PlayerStatus;
+  currentBid?: Bid | null;
+  bidHistory?: Bid[];
+  auctionExpiresAt?: number;
+  timerRemaining?: number;
   soldTo?: {
     userId: string;
     userName: string;
@@ -53,6 +57,7 @@ export interface UserProfile {
   spent: number;
   avatarUrl?: string;
   password?: string;
+  passwordHash?: string;
   authProvider?: 'gmail' | 'google' | 'password' | string;
   createdAt: number;
 }

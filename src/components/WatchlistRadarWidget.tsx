@@ -149,7 +149,7 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
                           {player.name}
                         </h5>
                         <span className="text-[10px] text-slate-500 block">
-                          Fase {playerDay} • {player.club}
+                          Fase {playerDay}
                         </span>
                       </div>
                     </div>
@@ -193,13 +193,27 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
                           Vendido
                         </span>
                       ) : isDayActive && canNominate && onNominate ? (
-                        <button
-                          type="button"
-                          onClick={() => onNominate(player.id)}
-                          className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
-                        >
-                          Indicar
-                        </button>
+                        (() => {
+                          const isAuctionInProgress = auction.status !== 'NOT_STARTED' && auction.status !== 'ENDED';
+                          return (
+                            <button
+                              type="button"
+                              disabled={!isAuctionInProgress}
+                              onClick={() => {
+                                if (!isAuctionInProgress) return;
+                                onNominate(player.id);
+                              }}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                                isAuctionInProgress
+                                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer active:scale-95'
+                                  : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                              }`}
+                              title={!isAuctionInProgress ? 'Leilão não iniciado' : 'Fazer Proposta'}
+                            >
+                              Fazer Proposta
+                            </button>
+                          );
+                        })()
                       ) : (
                         <span className="text-[9px] text-slate-400 font-medium">
                           {isDayActive ? 'Aguardando' : `Fase ${playerDay}`}

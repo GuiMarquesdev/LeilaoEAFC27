@@ -9,7 +9,8 @@
       "adminTitle": "Diretor",
       "budget": 400000000,
       "spent": 0,
-      "createdAt": 1789411494821
+      "createdAt": 1789411494821,
+      "password": "fifakhedira2015"
     },
     {
       "id": "user-admin-tourinho",

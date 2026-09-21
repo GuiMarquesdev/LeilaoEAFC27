@@ -267,9 +267,6 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-slate-500">
-                            {player.club} • {player.nationality}
-                          </p>
                         </div>
                       </div>
 
@@ -375,18 +372,30 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                               </span>
                             );
                           }
+                          const isAuctionInProgress = auction.status !== 'NOT_STARTED' && auction.status !== 'ENDED';
                           return (
                             <button
+                              type="button"
+                              disabled={!isAuctionInProgress}
                               onClick={() => {
+                                if (!isAuctionInProgress) return;
                                 onNominate(player.id);
                                 onClose();
                                 onNavigateToAuction?.();
                               }}
-                              className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                              title={auction.status === 'ACTIVE' ? "Postar na fila de espera para 24h" : "Postar no leilão ao vivo por 24h"}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                                isAuctionInProgress
+                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 shadow-2xs'
+                                  : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+                              }`}
+                              title={
+                                !isAuctionInProgress
+                                  ? "Propostas bloqueadas: O leilão oficial ainda não foi iniciado pela Diretoria."
+                                  : "Fazer Proposta para este jogador"
+                              }
                             >
                               <Gavel className="w-3 h-3" />
-                              <span>{auction.status === 'ACTIVE' ? "Postar Fila" : "Postar (24h)"}</span>
+                              <span>Fazer Proposta</span>
                             </button>
                           );
                         })()

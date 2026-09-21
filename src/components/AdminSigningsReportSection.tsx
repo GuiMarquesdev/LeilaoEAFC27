@@ -76,8 +76,6 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
           comp = (a.soldTo?.amount || 0) - (b.soldTo?.amount || 0);
         } else if (sortField === 'name') {
           comp = a.name.localeCompare(b.name);
-        } else if (sortField === 'club') {
-          comp = a.club.localeCompare(b.club);
         } else if (sortField === 'agio') {
           const agioA = (a.soldTo?.amount || 0) - a.initialPrice;
           const agioB = (b.soldTo?.amount || 0) - b.initialPrice;
@@ -190,7 +188,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
       text += `  _Nenhum atleta arrematado nesta fase ainda._\n`;
     } else {
       phase1Sold.forEach((p, idx) => {
-        text += `  ${idx + 1}. *${p.name}* (${p.position} - ${p.club}) ➔ *${p.soldTo?.teamName}* por *${formatCurrency(p.soldTo?.amount || 0)}*\n`;
+        text += `  ${idx + 1}. *${p.name}* (${p.position}) ➔ *${p.soldTo?.teamName}* por *${formatCurrency(p.soldTo?.amount || 0)}*\n`;
       });
     }
     text += `\n`;
@@ -203,7 +201,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
       text += `  _Nenhum atleta arrematado nesta fase ainda._\n`;
     } else {
       phase2Sold.forEach((p, idx) => {
-        text += `  ${idx + 1}. *${p.name}* (${p.position} - ${p.club}) ➔ *${p.soldTo?.teamName}* por *${formatCurrency(p.soldTo?.amount || 0)}*\n`;
+        text += `  ${idx + 1}. *${p.name}* (${p.position}) ➔ *${p.soldTo?.teamName}* por *${formatCurrency(p.soldTo?.amount || 0)}*\n`;
       });
     }
     text += `\n`;
@@ -216,7 +214,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
       text += `  _Nenhum atleta arrematado nesta fase ainda._\n`;
     } else {
       phase3Sold.forEach((p, idx) => {
-        text += `  ${idx + 1}. *${p.name}* (${p.position} - ${p.club}) ➔ *${p.soldTo?.teamName}* por *${formatCurrency(p.soldTo?.amount || 0)}*\n`;
+        text += `  ${idx + 1}. *${p.name}* (${p.position}) ➔ *${p.soldTo?.teamName}* por *${formatCurrency(p.soldTo?.amount || 0)}*\n`;
       });
     }
     text += `\n`;
@@ -571,7 +569,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="Buscar jogador, time, clube..."
+                placeholder="Buscar jogador ou time comprador..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -587,7 +585,6 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
               <option value="amount">Valor Arrematado</option>
               <option value="agio">Maior Ágio / Disputa</option>
               <option value="name">Nome do Jogador</option>
-              <option value="club">Clube Real</option>
             </select>
 
             <button
@@ -620,7 +617,6 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
                 <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-500 uppercase tracking-wider font-extrabold text-[10px]">
                   <th className="py-2.5 px-3">Atleta</th>
                   <th className="py-2.5 px-3">Posição & Fase</th>
-                  <th className="py-2.5 px-3">Clube de Origem</th>
                   <th className="py-2.5 px-3">Comprador na Liga</th>
                   <th className="py-2.5 px-3 text-right">Lance Inicial</th>
                   <th className="py-2.5 px-3 text-right">Preço Final</th>
@@ -647,7 +643,6 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] text-slate-400">{player.nationality}</span>
                       </td>
 
                       <td className="py-3 px-3">
@@ -663,10 +658,6 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
                             Fase {phase}
                           </span>
                         </div>
-                      </td>
-
-                      <td className="py-3 px-3 text-slate-600 font-medium">
-                        {player.club}
                       </td>
 
                       <td className="py-3 px-3">

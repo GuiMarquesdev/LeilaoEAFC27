@@ -21,8 +21,6 @@ import { NotificationFeed, LeagueNotification } from './components/NotificationF
 import { isSoundEnabled, toggleSound, playBidSound, playHammerSound } from './utils/sound';
 import { getWatchlist, toggleWatchlistPlayer } from './utils/watchlist';
 
-const AUTH_STORAGE_KEY = 'khedira_league_user_id';
-
 export default function App() {
   const [leagueState, setLeagueState] = useState<LeagueState | null>(null);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
@@ -37,13 +35,15 @@ export default function App() {
   const [wsConnected, setWsConnected] = useState(false);
   const [backendOffline, setBackendOffline] = useState(false);
 
-  // Watchlist state (persistent per user in localStorage)
-  const [watchedPlayerIds, setWatchedPlayerIds] = useState<string[]>(() => {
-    const savedUserId = typeof window !== 'undefined' ? localStorage.getItem(AUTH_STORAGE_KEY) : null;
-    return getWatchlist(savedUserId);
-  });
+  // Watchlist state (scoped per user)
+  const [watchedPlayerIds, setWatchedPlayerIds] = useState<string[]>(() => getWatchlist(null));
   const watchedPlayerIdsRef = useRef<string[]>(watchedPlayerIds);
   watchedPlayerIdsRef.current = watchedPlayerIds;
+
+  // Sync watchlist when user changes
+  useEffect(() => {
+    setWatchedPlayerIds(getWatchlist(currentUser?.id));
+  }, [currentUser?.id]);
 
   const currentUserRef = useRef<UserProfile | null>(currentUser);
   currentUserRef.current = currentUser;
@@ -51,6 +51,51 @@ export default function App() {
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wsFailuresRef = useRef<number>(0);
+
+  // Helper for authenticated request headers using session-scoped token
+  const getAuthHeaders = useCallback((): Record<string, string> => {
+    const token = typeof window !== 'undefined' ? sessionStorage.getItem('khedira_token') : null;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (currentUser?.id) {
+      headers['x-user-id'] = currentUser.id;
+    }
+    return headers;
+  }, [currentUser?.id]);
+
+  // Verify server session on application start via HttpOnly cookie & token
+  const checkSession = useCallback(async () => {
+    try {
+      const res = await fetch(apiUrl('/api/auth/me'), {
+        credentials: 'include',
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.user) {
+          setCurrentUser(json.user);
+          return;
+        }
+      }
+      setCurrentUser(null);
+    } catch {
+      setCurrentUser(null);
+    }
+  }, [getAuthHeaders]);
+
+  useEffect(() => {
+    // Purge any legacy insecure localStorage user ID
+    try {
+      localStorage.removeItem('khedira_league_user_id');
+    } catch {
+      // ignore
+    }
+    checkSession();
+  }, [checkSession]);
 
   const getFallbackInitialState = (): LeagueState => ({
     users: [
@@ -119,7 +164,7 @@ export default function App() {
   // Fetch full state from REST
   const fetchState = useCallback(async () => {
     try {
-      const res = await fetch(apiUrl('/api/state'));
+      const res = await fetch(apiUrl('/api/state'), { credentials: 'include' });
       const contentType = res.headers.get('content-type');
       if (res.ok && contentType && contentType.includes('application/json')) {
         const json = await res.json();
@@ -127,14 +172,12 @@ export default function App() {
           setLeagueState(json.data);
           setBackendOffline(false);
 
-          // Restore user from storage if needed
-          const storedUserId = localStorage.getItem(AUTH_STORAGE_KEY);
-          if (storedUserId) {
-            const matched = json.data.users.find((u: UserProfile) => u.id === storedUserId);
-            if (matched) {
-              setCurrentUser(matched);
-            }
-          }
+          // Synchronize verified currentUser if logged in
+          setCurrentUser((prev) => {
+            if (!prev) return null;
+            const matched = json.data.users.find((u: UserProfile) => u.id === prev.id);
+            return matched || prev;
+          });
           return;
         }
       }
@@ -363,12 +406,15 @@ export default function App() {
       const res = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password, authProvider }),
       });
       const data = await res.json();
       if (data.success && data.user) {
+        if (data.token) {
+          sessionStorage.setItem('khedira_token', data.token);
+        }
         setCurrentUser(data.user);
-        localStorage.setItem(AUTH_STORAGE_KEY, data.user.id);
         addNotification(`Bem-vindo de volta à Khedira League, ${data.user.name}!`, 'info');
         await fetchState();
         return { success: true };
@@ -392,12 +438,15 @@ export default function App() {
       const res = await fetch(apiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, name, teamName, password, authProvider }),
       });
       const data = await res.json();
       if (data.success && data.user) {
+        if (data.token) {
+          sessionStorage.setItem('khedira_token', data.token);
+        }
         setCurrentUser(data.user);
-        localStorage.setItem(AUTH_STORAGE_KEY, data.user.id);
         addNotification(`🎉 Bem-vindo à Khedira League, ${data.user.name}! Clube ${data.user.teamName} cadastrado com € 400M!`, 'success');
         await fetchState();
         return { success: true };
@@ -420,12 +469,15 @@ export default function App() {
       const res = await fetch(apiUrl('/api/auth/google'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, name, teamName, avatarUrl }),
       });
       const data = await res.json();
       if (data.success && data.user) {
+        if (data.token) {
+          sessionStorage.setItem('khedira_token', data.token);
+        }
         setCurrentUser(data.user);
-        localStorage.setItem(AUTH_STORAGE_KEY, data.user.id);
         addNotification(data.message || `Conectado com Gmail: ${data.user.name}!`, 'success');
         await fetchState();
         return { success: true };
@@ -470,7 +522,8 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/auth/update-profile'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ userId: currentUser.id, name, teamName, password }),
       });
       const data = await res.json();
@@ -487,8 +540,21 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+  const handleLogout = async () => {
+    try {
+      await fetch(apiUrl('/api/auth/logout'), {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (e) {
+      console.warn('Logout notification error:', e);
+    }
+    sessionStorage.removeItem('khedira_token');
+    try {
+      localStorage.removeItem('khedira_league_user_id');
+    } catch {
+      // ignore
+    }
     setCurrentUser(null);
     setGuestMode(false);
     setIsAuthOpen(false);
@@ -496,7 +562,8 @@ export default function App() {
   };
 
   // Auction: Place bid
-  const handleBid = async (amount: number): Promise<boolean> => {
+  // Auction: Place bid (supports concurrent players)
+  const handleBid = async (amount: number, playerId?: string): Promise<boolean> => {
     if (!currentUser) {
       setIsAuthOpen(true);
       return false;
@@ -505,24 +572,28 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/auction/bid'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id, amount }),
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ amount, playerId }),
       });
       const data = await res.json();
       if (data.success) {
+        addNotification(`💰 Proposta de € ${(amount / 1000000).toFixed(1)}M registrada com sucesso!`, 'success');
+        await fetchState();
         return true;
       } else {
-        alert(data.error || 'Erro ao registrar lance');
+        addNotification(data.error || 'Erro ao registrar proposta.', 'error');
         return false;
       }
     } catch (err) {
       console.error('Bid error:', err);
+      addNotification('Falha de conexão com o servidor de leilões.', 'error');
       return false;
     }
   };
 
-  // Auction: Nominate player
-  const handleNominate = async (playerId: string): Promise<boolean> => {
+  // Auction: Nominate player / Open proposal (supports concurrent players)
+  const handleNominate = async (playerId: string, initialAmount?: number): Promise<boolean> => {
     if (!currentUser) {
       setIsAuthOpen(true);
       return false;
@@ -531,25 +602,23 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/auction/nominate'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id, playerId }),
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ playerId, amount: initialAmount }),
       });
       const data = await res.json();
       if (data.success) {
         setActiveTab('auction'); // jump to live auction tab!
-        if (data.queued) {
-          addNotification(`📋 ${data.message || 'Jogador adicionado à fila de interesse!'}`, 'success');
-        } else {
-          addNotification('📢 Jogador postado no leilão! Propostas abertas por 24 horas.', 'success');
-        }
+        addNotification('📢 Proposta aberta com sucesso! Disputa ativa por 24 horas.', 'success');
         await fetchState();
         return true;
       } else {
-        alert(data.error || 'Erro ao postar jogador');
+        addNotification(data.error || 'Erro ao registrar proposta.', 'error');
         return false;
       }
     } catch (err) {
       console.error('Nominate error:', err);
+      addNotification('Falha de conexão com o servidor de leilões.', 'error');
       return false;
     }
   };
@@ -560,8 +629,9 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/auction/queue/remove'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id, playerId }),
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ playerId }),
       });
       const data = await res.json();
       if (data.success) {
@@ -582,8 +652,9 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/auction/queue/start-now'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id, playerId }),
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ playerId }),
       });
       const data = await res.json();
       if (data.success) {
@@ -604,8 +675,9 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/auction/pass-turn'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id }),
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({}),
       });
       const data = await res.json();
       if (data.success) {
@@ -632,7 +704,8 @@ export default function App() {
     try {
       await fetch(apiUrl('/api/squad/save'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({
           userId: currentUser.id,
           formationId,
@@ -721,14 +794,16 @@ export default function App() {
   const handleAdminAuctionAction = async (action: string, value?: unknown) => {
     if (!currentUser) return;
     try {
-      await fetch(apiUrl('/api/admin/auction/action'), {
+      const res = await fetch(apiUrl('/api/admin/auction/action'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': currentUser.id,
-        },
+        headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ action, value }),
       });
+      const data = await res.json();
+      if (data.success && data.auction) {
+        setLeagueState((prev) => (prev ? { ...prev, auction: data.auction } : prev));
+      }
     } catch (err) {
       console.error('Admin auction action error:', err);
     }
@@ -745,10 +820,8 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/admin/player/create'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': currentUser.id,
-        },
+        headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(playerData),
       });
       const data = await res.json();
@@ -764,10 +837,8 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/admin/player/update-price'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': currentUser.id,
-        },
+        headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ playerId, initialPrice }),
       });
       const data = await res.json();
@@ -783,10 +854,8 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/admin/player/delete'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': currentUser.id,
-        },
+        headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ playerId }),
       });
       const data = await res.json();
@@ -802,10 +871,8 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/admin/player/release-to-market'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': currentUser.id,
-        },
+        headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ playerId }),
       });
       const data = await res.json();
@@ -825,10 +892,8 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/admin/user/role'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': currentUser.id,
-        },
+        headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ targetUserId, role }),
       });
       const data = await res.json();
@@ -844,10 +909,8 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/admin/user/budget'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': currentUser.id,
-        },
+        headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ targetUserId, budget }),
       });
       const data = await res.json();
@@ -863,10 +926,8 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/admin/user/reset'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': currentUser.id,
-        },
+        headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ targetUserId }),
       });
       const data = await res.json();
@@ -882,10 +943,8 @@ export default function App() {
     try {
       const res = await fetch(apiUrl('/api/admin/reset-league'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': currentUser.id,
-        },
+        headers: getAuthHeaders(),
+        credentials: 'include',
       });
       const data = await res.json();
       if (data.success) {
@@ -1059,6 +1118,7 @@ export default function App() {
             onToggleWatch={handleToggleWatch}
             onOpenWatchlist={() => setIsWatchlistOpen(true)}
             onNominate={handleNominate}
+            onBid={handleBid}
             onViewPreview={handleViewPreview}
             onOpenAuth={() => {
               if (!currentUser) {
@@ -1069,6 +1129,7 @@ export default function App() {
             }}
             onOpenAdmin={() => handleOpenAdmin('auction')}
             onNavigateToSquad={() => setActiveTab('squad')}
+            onNavigateToAuction={() => setActiveTab('auction')}
           />
         )}
       </main>

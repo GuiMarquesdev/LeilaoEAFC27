@@ -1,10 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Search, Filter, ArrowUpDown, Flame, Gavel, 
-  CheckCircle2, Lock, Sparkles, ExternalLink, Plus, X, ShieldAlert, ShieldCheck, Calendar, Star, Eye
+  CheckCircle2, Lock, Sparkles, ExternalLink, X, ShieldAlert, ShieldCheck, Calendar, Star, Eye,
+  Clock, TrendingUp, ArrowRight, Radio, Coins
 } from 'lucide-react';
 import { Player, UserProfile, AuctionState, UserSquad } from '../types';
-import { formatCurrency, getPositionBadge, getPositionCategory, isPositionAllowedForDay, getDayLabel, getPlayerAuctionDay, matchesPlayerSearch } from '../utils/formatters';
+import { 
+  formatCurrency, formatAuctionTimer, getPositionBadge, getPositionCategory, 
+  isPositionAllowedForDay, getDayLabel, getPlayerAuctionDay, matchesPlayerSearch 
+} from '../utils/formatters';
+import { QuickBidModal } from './QuickBidModal';
+
+type StatusFilterType = 'ALL' | 'AVAILABLE' | 'SOLD' | 'IN_AUCTION' | 'WITH_PROPOSAL' | 'IN_QUEUE';
 
 interface PlayerCatalogSectionProps {
   players: Player[];
@@ -14,11 +21,13 @@ interface PlayerCatalogSectionProps {
   watchedPlayerIds?: string[];
   onToggleWatch?: (playerId: string) => void;
   onOpenWatchlist?: () => void;
-  onNominate: (playerId: string) => Promise<boolean>;
+  onNominate: (playerId: string, initialAmount?: number) => Promise<boolean>;
+  onBid?: (amount: number, playerId?: string) => Promise<boolean>;
   onViewPreview: (player: Player) => Promise<void> | void;
   onOpenAuth: () => void;
   onOpenAdmin: () => void;
   onNavigateToSquad: () => void;
+  onNavigateToAuction?: () => void;
 }
 
 export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
@@ -30,19 +39,22 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
   onToggleWatch,
   onOpenWatchlist,
   onNominate,
+  onBid,
   onViewPreview,
   onOpenAuth,
   onOpenAdmin,
   onNavigateToSquad,
+  onNavigateToAuction,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewScope, setViewScope] = useState<'DAY_ONLY' | 'WATCHED_ONLY' | 'ALL_PHASES'>('DAY_ONLY');
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'GOL' | 'DEF' | 'MEI' | 'ATA'>('ALL');
   const [exactPositionFilter, setExactPositionFilter] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'AVAILABLE' | 'SOLD' | 'IN_AUCTION'>('ALL');
-  const [sortField, setSortField] = useState<'name' | 'initialPrice' | 'position' | 'status'>('initialPrice');
+  const [statusFilter, setStatusFilter] = useState<StatusFilterType>('ALL');
+  const [sortField, setSortField] = useState<'name' | 'initialPrice' | 'currentValue' | 'position' | 'status'>('currentValue');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedPlayerForBid, setSelectedPlayerForBid] = useState<Player | null>(null);
   const itemsPerPage = 20;
 
   const currentAuctionDay = auction.auctionDay || 1;
@@ -80,6 +92,16 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
     }
   };
 
+  const getPlayerCurrentValue = (p: Player): number => {
+    if ((p.status === 'IN_AUCTION' || auction.currentPlayer?.id === p.id) && auction.currentBid) {
+      return auction.currentBid.amount;
+    }
+    if (p.status === 'SOLD' && p.soldTo) {
+      return p.soldTo.amount;
+    }
+    return p.initialPrice;
+  };
+
   // Filter & sort logic
   const filteredPlayers = useMemo(() => {
     return scopedPlayers
@@ -101,9 +123,20 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
           }
         }
 
-        // Status
-        if (statusFilter !== 'ALL') {
-          if (player.status !== statusFilter) return false;
+        // Status & Proposal filter
+        if (statusFilter === 'AVAILABLE') {
+          if (player.status !== 'AVAILABLE') return false;
+        } else if (statusFilter === 'SOLD') {
+          if (player.status !== 'SOLD') return false;
+        } else if (statusFilter === 'IN_AUCTION') {
+          if (player.status !== 'IN_AUCTION' && auction.currentPlayer?.id !== player.id) return false;
+        } else if (statusFilter === 'WITH_PROPOSAL') {
+          const hasActiveBid = (player.status === 'IN_AUCTION' || auction.currentPlayer?.id === player.id) && !!auction.currentBid;
+          const isSoldWithBid = player.status === 'SOLD' && !!player.soldTo;
+          if (!hasActiveBid && !isSoldWithBid) return false;
+        } else if (statusFilter === 'IN_QUEUE') {
+          const isQueued = auction.nominationQueue?.some((q) => q.player.id === player.id);
+          if (!isQueued) return false;
         }
 
         return true;
@@ -114,6 +147,8 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
           comp = a.name.localeCompare(b.name);
         } else if (sortField === 'initialPrice') {
           comp = a.initialPrice - b.initialPrice;
+        } else if (sortField === 'currentValue') {
+          comp = getPlayerCurrentValue(a) - getPlayerCurrentValue(b);
         } else if (sortField === 'position') {
           comp = a.position.localeCompare(b.position);
         } else if (sortField === 'status') {
@@ -121,7 +156,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
         }
         return sortOrder === 'asc' ? comp : -comp;
       });
-  }, [scopedPlayers, searchTerm, categoryFilter, exactPositionFilter, statusFilter, sortField, sortOrder]);
+  }, [scopedPlayers, searchTerm, categoryFilter, exactPositionFilter, statusFilter, sortField, sortOrder, auction]);
 
   const totalPages = Math.ceil(filteredPlayers.length / itemsPerPage) || 1;
   const paginatedPlayers = filteredPlayers.slice(
@@ -129,7 +164,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
     currentPage * itemsPerPage
   );
 
-  const toggleSort = (field: 'name' | 'initialPrice' | 'position' | 'status') => {
+  const toggleSort = (field: 'name' | 'initialPrice' | 'currentValue' | 'position' | 'status') => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -172,31 +207,87 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
               Para impedir que participantes burlem as regras ou deem lances fora do setor estabelecido, o mercado oficial só exibe e disponibiliza para negociação os jogadores da fase ativa: <strong className="text-emerald-300 font-bold">{currentDayInfo.positions.join(', ')}</strong>. Atletas de outras posições permanecem ocultos até o seu respectivo dia de leilão.
             </p>
           </div>
-
-          <div className="flex items-center gap-1.5 p-2 bg-slate-800/80 rounded-xl border border-slate-700 shrink-0 flex-wrap">
-            <span className="text-[11px] font-bold text-slate-400 mr-1">Posições Ativas:</span>
-            {currentDayInfo.positions.map((pos) => {
-              const badge = getPositionBadge(pos as any);
-              const countInDay = dayPlayers.filter((p) => p.position === pos).length;
-              return (
-                <button
-                  key={pos}
-                  type="button"
-                  onClick={() => handleFilterByPosition(pos)}
-                  className={`px-2 py-0.5 rounded text-xs font-black transition-all cursor-pointer ${
-                    exactPositionFilter === pos
-                      ? 'bg-emerald-500 text-slate-950 ring-2 ring-white scale-105'
-                      : `${badge.bgClass} ${badge.textClass} hover:opacity-90`
-                  }`}
-                  title={`Filtrar apenas por ${pos} (${countInDay} atletas)`}
-                >
-                  {pos} ({countInDay})
-                </button>
-              );
-            })}
-          </div>
         </div>
       </div>
+
+      {/* Live Auction Movement Alert Banner */}
+      {auction.currentPlayer && (
+        <div className="bg-gradient-to-r from-amber-500 via-rose-500 to-amber-600 rounded-2xl p-0.5 shadow-md animate-in fade-in">
+          <div className="bg-slate-950/95 rounded-[14px] p-3.5 sm:p-4 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-3.5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center shrink-0">
+                <Flame className="w-5 h-5 text-rose-400 animate-pulse" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-rose-500 text-white animate-pulse flex items-center gap-1">
+                    <Radio className="w-3 h-3 animate-ping" />
+                    Leilão Ao Vivo
+                  </span>
+                  <span className="text-sm font-extrabold text-white">
+                    {auction.currentPlayer.name}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-slate-800 text-slate-300 border border-slate-700">
+                    {auction.currentPlayer.position}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    Preço Base: {formatCurrency(auction.currentPlayer.initialPrice)}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center gap-2 flex-wrap text-xs">
+                  {auction.currentBid ? (
+                    <>
+                      <span className="text-emerald-400 font-extrabold flex items-center gap-1">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        Tem Proposta Ativa: {formatCurrency(auction.currentBid.amount)}
+                      </span>
+                      <span className="text-slate-500">•</span>
+                      <span className="text-emerald-300/90 font-semibold">
+                        Ágio: +{formatCurrency(auction.currentBid.amount - auction.currentPlayer.initialPrice, true)}
+                      </span>
+                      <span className="text-slate-500">•</span>
+                      <span className="text-slate-300 font-medium">
+                        {auction.currentBid.userId === currentUser?.id ? (
+                          <strong className="text-emerald-400 font-black">Você está liderando a disputa!</strong>
+                        ) : auction.anonymousBidding ? (
+                          <span className="text-slate-400 italic">Proposta Sigilosa (Ata Oficial)</span>
+                        ) : (
+                          <span>Liderado por <strong className="text-white">{auction.currentBid.teamName}</strong></span>
+                        )}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-amber-300 font-semibold flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-400" />
+                      Sem propostas ainda — Aguardando primeiro lance de {formatCurrency(auction.currentPlayer.initialPrice)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3.5 self-stretch md:self-auto justify-between md:justify-end border-t border-slate-800 md:border-t-0 pt-2.5 md:pt-0">
+              <div className="text-right">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Tempo Restante</span>
+                <span className="text-sm font-black text-amber-400 font-mono flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  {formatAuctionTimer(auction.timerRemaining)}
+                </span>
+              </div>
+              {onNavigateToAuction && (
+                <button
+                  type="button"
+                  onClick={onNavigateToAuction}
+                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>Dar Lance / Acompanhar</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* View Scope Tabs: Fase Atual vs Meu Radar vs Todas as 3 Fases */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2 bg-slate-100 rounded-2xl border border-slate-200">
@@ -308,16 +399,6 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                 : 'Consulte os craques da posição do dia, preços de abertura para lance inicial e situação no leilão.'}
             </p>
           </div>
-
-          {currentUser?.role === 'ADMIN' && (
-            <button
-              onClick={onOpenAdmin}
-              className="px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 self-end sm:self-center cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Gerenciar Preços / Jogadores</span>
-            </button>
-          )}
         </div>
 
         {/* Controls, Filters & Search */}
@@ -505,15 +586,17 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
             <select
               value={statusFilter}
               onChange={(e) => {
-                setStatusFilter(e.target.value as 'ALL' | 'AVAILABLE' | 'SOLD' | 'IN_AUCTION');
+                setStatusFilter(e.target.value as StatusFilterType);
                 setCurrentPage(1);
               }}
               className="w-full px-3 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
             >
-              <option value="ALL">Status: Todos</option>
-              <option value="AVAILABLE">🟢 Apenas Disponíveis</option>
+              <option value="ALL">Status: Todos ({scopedPlayers.length})</option>
+              <option value="WITH_PROPOSAL">🔥 Com Proposta / Lances</option>
               <option value="IN_AUCTION">🟡 Em Leilão Agora</option>
-              <option value="SOLD">🔒 Vendidos</option>
+              <option value="IN_QUEUE">📋 Na Fila de Espera</option>
+              <option value="AVAILABLE">🟢 Apenas Disponíveis</option>
+              <option value="SOLD">🔒 Vendidos / Arrematados</option>
             </select>
           </div>
         </div>
@@ -554,7 +637,16 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                   className="py-3.5 px-4 text-right cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center justify-end gap-1.5">
-                    <span>Lance Inicial (Base)</span>
+                    <span>Preço Base</span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => toggleSort('currentValue')}
+                  className="py-3.5 px-4 cursor-pointer hover:bg-slate-100 transition-colors min-w-[220px]"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Proposta & Último Lance</span>
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
@@ -563,7 +655,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                   className="py-3.5 px-4 cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>Situação / Status</span>
+                    <span>Situação</span>
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
@@ -575,18 +667,26 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                 paginatedPlayers.map((player) => {
                   const badge = getPositionBadge(player.position);
                   const isAvailable = player.status === 'AVAILABLE';
-                  const isInAuction = player.status === 'IN_AUCTION';
+                  const isInAuction = player.status === 'IN_AUCTION' || auction.currentPlayer?.id === player.id;
                   const isSold = player.status === 'SOLD';
                   const isWatched = watchedPlayerIds.includes(player.id);
                   const playerDay = getPlayerAuctionDay(player.position);
                   const isAllowedToday = isPositionAllowedForDay(player.position, currentAuctionDay);
+
+                  const activeBid = isInAuction 
+                    ? (player.currentBid || (auction.currentPlayer?.id === player.id ? auction.currentBid : null)) 
+                    : null;
+                  const playerTimerRemaining = player.timerRemaining ?? (auction.currentPlayer?.id === player.id ? auction.timerRemaining : 86400);
+                  const queueIndex = auction.nominationQueue?.findIndex((q) => q.player.id === player.id) ?? -1;
+                  const isQueued = queueIndex !== -1;
+                  const queueItem = isQueued && auction.nominationQueue ? auction.nominationQueue[queueIndex] : null;
 
                   return (
                     <tr
                       key={player.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
                         isInAuction 
-                          ? 'bg-amber-50/60' 
+                          ? 'bg-rose-50/30 font-medium' 
                           : isWatched 
                           ? 'bg-amber-50/20' 
                           : ''
@@ -618,15 +718,12 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                             </span>
                           )}
                           {isInAuction && (
-                            <span className="flex h-2 w-2 relative">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                            <span className="flex h-2.5 w-2.5 relative" title="Atleta em disputa ao vivo no leilão simultâneo">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
                             </span>
                           )}
                         </div>
-                        <span className="text-[11px] text-slate-400 font-normal block">
-                          {player.club} • {player.nationality}
-                        </span>
                       </td>
 
                       {/* Position Badge */}
@@ -656,57 +753,158 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                         </span>
                       </td>
 
-                      {/* Initial Price */}
+                      {/* Initial Price (Base) */}
                       <td className="py-3.5 px-4 text-right">
                         <span className="text-sm font-extrabold text-slate-800 block">
-                          {isInAuction && auction.currentBid
-                            ? formatCurrency(auction.currentBid.amount)
-                            : formatCurrency(player.initialPrice)}
+                          {formatCurrency(player.initialPrice)}
                         </span>
-                        {isInAuction && auction.currentBid && (
-                          <span className="text-[10px] font-black text-rose-600 block animate-pulse">
-                            Maior lance ao vivo
-                          </span>
-                        )}
-                        {isSold && player.soldTo && (
-                          <span className="text-[11px] font-bold text-emerald-600 block">
-                            Final: {formatCurrency(player.soldTo.amount)}
-                          </span>
+                        <span className="text-[10px] text-slate-400 block font-medium">
+                          Valor Mínimo
+                        </span>
+                      </td>
+
+                      {/* Auction Movements & Last Bid */}
+                      <td className="py-3.5 px-4">
+                        {isInAuction ? (
+                          activeBid ? (
+                            <div className="space-y-1">
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 font-black text-xs">
+                                <Flame className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
+                                <span>Último Lance: {formatCurrency(activeBid.amount)}</span>
+                              </div>
+                              <div className="text-[11px] flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-emerald-600">
+                                  +{formatCurrency(activeBid.amount - player.initialPrice, true)} ágio
+                                </span>
+                                <span className="text-slate-300">•</span>
+                                <span className="font-medium text-slate-600">
+                                  {activeBid.userId === currentUser?.id ? (
+                                    <strong className="text-emerald-700 font-extrabold">Você está liderando</strong>
+                                  ) : auction.anonymousBidding ? (
+                                    <span className="text-slate-500 italic">Proposta Sigilosa</span>
+                                  ) : (
+                                    <span>Por: <strong>{activeBid.teamName}</strong></span>
+                                  )}
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-amber-700 font-semibold flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                <span>Restam {formatAuctionTimer(playerTimerRemaining)}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-0.5">
+                              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                <span>Disputa aberta</span>
+                              </div>
+                              <p className="text-[11px] text-slate-500 font-medium">
+                                Base: <strong className="text-slate-700">{formatCurrency(player.initialPrice)}</strong>
+                              </p>
+                              <div className="text-[10px] text-amber-700 font-semibold flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                <span>Restam {formatAuctionTimer(playerTimerRemaining)}</span>
+                              </div>
+                            </div>
+                          )
+                        ) : isSold && player.soldTo ? (
+                          <div className="space-y-0.5">
+                            <div className="inline-flex items-center gap-1 text-xs font-black text-slate-900">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Arrematado: {formatCurrency(player.soldTo.amount)}</span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 font-medium">
+                              Para: <strong className="text-slate-800">{player.soldTo.teamName}</strong> ({player.soldTo.userName})
+                            </div>
+                            {player.soldTo.amount > player.initialPrice && (
+                              <span className="text-[10px] text-emerald-700 font-bold block">
+                                Ágio final: +{formatCurrency(player.soldTo.amount - player.initialPrice, true)}
+                              </span>
+                            )}
+                          </div>
+                        ) : isQueued && queueItem ? (
+                          <div className="space-y-0.5">
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold">
+                              <span>Na Fila de Espera #{queueIndex + 1}</span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 font-medium">
+                              Postado por: <strong className="text-slate-700">{queueItem.nominatedByTeamName}</strong>
+                            </div>
+                            <span className="text-[10px] text-slate-400 italic block">
+                              Sem propostas ainda (Base: {formatCurrency(player.initialPrice)})
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <span className="text-xs text-slate-400 font-medium block">
+                              — Sem propostas
+                            </span>
+                            <span className="text-[10px] text-slate-400 block">
+                              Disponível para indicação
+                            </span>
+                          </div>
                         )}
                       </td>
 
                       {/* Status */}
                       <td className="py-3.5 px-4">
-                        {isAvailable && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            Disponível
-                          </span>
-                        )}
-
                         {isInAuction && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
-                            <Flame className="w-3 h-3 text-amber-600" />
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-black rounded-full bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
+                            <Flame className="w-3.5 h-3.5 text-rose-600" />
                             Em Leilão Agora
                           </span>
                         )}
 
                         {isSold && player.soldTo && (
-                          <div className="text-xs">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 font-bold rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-                              <Lock className="w-3 h-3 text-slate-500" />
-                              Vendido
-                            </span>
-                            <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
-                              Para: <strong>{player.soldTo.userName}</strong> ({player.soldTo.teamName})
-                            </p>
-                          </div>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                            <Lock className="w-3 h-3 text-slate-500" />
+                            Vendido
+                          </span>
+                        )}
+
+                        {!isInAuction && !isSold && isQueued && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                            Na Fila #{queueIndex + 1}
+                          </span>
+                        )}
+
+                        {!isInAuction && !isSold && !isQueued && isAvailable && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Disponível
+                          </span>
                         )}
                       </td>
 
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {isInAuction && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!currentUser) {
+                                  onOpenAuth();
+                                  return;
+                                }
+                                setSelectedPlayerForBid(player);
+                              }}
+                              className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer ${
+                                activeBid?.userId === currentUser?.id
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                  : 'bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white animate-pulse'
+                              }`}
+                              title={
+                                activeBid?.userId === currentUser?.id
+                                  ? 'Sua equipe lidera o leilão deste atleta! Clique para cobrir ou aumentar sua proposta.'
+                                  : 'Cobrir proposta por este atleta no leilão simultâneo'
+                              }
+                            >
+                              <Flame className="w-3.5 h-3.5" />
+                              <span>{activeBid?.userId === currentUser?.id ? 'Liderando' : 'Cobrir Proposta'}</span>
+                            </button>
+                          )}
+
                           <button
                             onClick={() => onViewPreview(player)}
                             className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs ${
@@ -728,12 +926,8 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                             <span>Ver Prévia</span>
                           </button>
 
-                          {isAvailable && (
+                          {isAvailable && !isInAuction && (
                             (() => {
-                              const queueIndex = auction.nominationQueue?.findIndex((q) => q.player.id === player.id) ?? -1;
-                              const isQueued = queueIndex !== -1;
-                              const queueItem = isQueued && auction.nominationQueue ? auction.nominationQueue[queueIndex] : null;
-
                               if (isQueued && queueItem) {
                                 return (
                                   <span
@@ -767,19 +961,34 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                                 );
                               }
 
+                              const isAuctionInProgress = auction.status !== 'NOT_STARTED' && auction.status !== 'ENDED';
+
                               return (
                                 <button
+                                  type="button"
+                                  disabled={!isAuctionInProgress}
                                   onClick={() => {
+                                    if (!isAuctionInProgress) return;
                                     if (!currentUser) {
                                       onOpenAuth();
                                       return;
                                     }
-                                    onNominate(player.id);
+                                    setSelectedPlayerForBid(player);
                                   }}
-                                  className="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 transition-colors cursor-pointer"
-                                  title={isAuctionActive ? "Postar este jogador na fila de interesse do leilão (24h)" : "Iniciar leilão de 24 horas para este jogador"}
+                                  className={`px-3 py-1.5 text-xs font-extrabold rounded-xl transition-all ${
+                                    isAuctionInProgress
+                                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 shadow-xs'
+                                      : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+                                  }`}
+                                  title={
+                                    auction.status === 'NOT_STARTED'
+                                      ? "Propostas bloqueadas: O leilão oficial ainda não foi iniciado pela Diretoria. Aguarde a abertura oficial para evitar inicializações precoces."
+                                      : auction.status === 'ENDED'
+                                      ? "Propostas encerradas: O leilão oficial da Khedira League foi encerrado."
+                                      : "Fazer proposta oficial de 24 horas para este atleta"
+                                  }
                                 >
-                                  {isAuctionActive ? "Postar na Fila" : "Postar no Leilão (24h)"}
+                                  Fazer Proposta
                                 </button>
                               );
                             })()
@@ -791,7 +1000,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
+                  <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
                     {viewScope === 'WATCHED_ONLY'
                       ? 'Nenhum jogador em observação no momento. Clique na estrela ⭐ ao lado de qualquer atleta para monitorar.'
                       : 'Nenhum jogador encontrado com os filtros atuais.'}
@@ -829,6 +1038,26 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Quick Bid / Propose Modal for Concurrent Auctions */}
+      {selectedPlayerForBid && (
+        <QuickBidModal
+          player={selectedPlayerForBid}
+          isOpen={Boolean(selectedPlayerForBid)}
+          onClose={() => setSelectedPlayerForBid(null)}
+          currentUser={currentUser}
+          auction={auction}
+          onConfirmBid={async (amount, playerId) => {
+            const isAlreadyInAuction = selectedPlayerForBid.status === 'IN_AUCTION';
+            if (isAlreadyInAuction && onBid) {
+              return await onBid(amount, playerId);
+            } else {
+              return await onNominate(playerId, amount);
+            }
+          }}
+          onOpenAuth={onOpenAuth}
+        />
+      )}
     </div>
   );
 };

@@ -532,14 +532,14 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
       const pId = starterSlots[slot.slotId];
       const player = pId ? players.find((p) => p.id === pId) : null;
       const isOwned = pId ? ownedPlayerIds.includes(pId) : false;
-      text += `${slot.role}: ${player ? `${player.name} (${player.club})${isOwned ? ' [Comprado]' : ' [Planejado]'}` : '(Vazio)'}\n`;
+      text += `${slot.role}: ${player ? `${player.name}${isOwned ? ' [Comprado]' : ' [Planejado]'}` : '(Vazio)'}\n`;
     });
 
     if (benchPlayerIds.length > 0) {
       text += `\nBANCO DE RESERVAS:\n`;
       benchPlayerIds.forEach((pId) => {
         const player = players.find((p) => p.id === pId);
-        if (player) text += `- ${player.name} (${player.position} - ${player.club})\n`;
+        if (player) text += `- ${player.name} (${player.position})\n`;
       });
     }
 
@@ -1074,9 +1074,6 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                               </span>
                             )}
                           </div>
-                          <p className="text-[10px] text-slate-400 truncate">
-                            {player.club}
-                          </p>
                         </div>
                       ) : (
                         <span className="text-slate-400 italic text-[11px]">
@@ -1226,9 +1223,6 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-slate-500">
-                            {player.club}
-                          </span>
                         </div>
                       </div>
 

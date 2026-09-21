@@ -101,7 +101,7 @@ export const BenchPlayerPickerModal: React.FC<BenchPlayerPickerModalProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             <input
               type="text"
-              placeholder="Buscar por nome, clube ou posição..."
+              placeholder="Buscar por nome ou posição..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium"
@@ -187,10 +187,6 @@ export const BenchPlayerPickerModal: React.FC<BenchPlayerPickerModalProps> = ({
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <span>{player.club}</span>
-                        <span>•</span>
-                        <span>{player.nationality}</span>
-                        <span>•</span>
                         <span className="font-semibold text-slate-600">{getDayLabel(day)}</span>
                       </div>
                     </div>

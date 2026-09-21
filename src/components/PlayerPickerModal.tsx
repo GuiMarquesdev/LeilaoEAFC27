@@ -264,9 +264,6 @@ export const PlayerPickerModal: React.FC<PlayerPickerModalProps> = ({
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 truncate">
-                        {player.club} • {player.nationality}
-                      </p>
                     </div>
                   </div>
 

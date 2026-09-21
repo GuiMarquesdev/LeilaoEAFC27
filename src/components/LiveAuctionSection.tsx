@@ -6,13 +6,14 @@ import {
   AlertCircle, Shield, Plus, Crown, Volume2, SkipForward,
   Play, Square, Sparkles, Trophy, Users as UsersIcon, RotateCcw,
   Lock, Unlock, FileText, ShieldAlert, ShieldCheck, Calendar, Star,
-  ListOrdered, Trash2
+  ListOrdered, Trash2, Loader2
 } from 'lucide-react';
 import { AuctionState, Player, UserProfile, Bid } from '../types';
 import { formatCurrency, getPositionBadge, getDayLabel, isPositionAllowedForDay, getUserRoleBadge, formatAuctionTimer } from '../utils/formatters';
 import { playBidSound, playHammerSound, playTickSound } from '../utils/sound';
 import { JudgeGavelIcon } from './JudgeGavelIcon';
 import { WatchlistRadarWidget } from './WatchlistRadarWidget';
+import { QuickBidModal } from './QuickBidModal';
 
 interface LiveAuctionSectionProps {
   auction: AuctionState;
@@ -22,8 +23,8 @@ interface LiveAuctionSectionProps {
   watchedPlayerIds?: string[];
   onToggleWatch?: (playerId: string) => void;
   onOpenWatchlist?: () => void;
-  onBid: (amount: number) => Promise<boolean>;
-  onNominate: (playerId: string) => Promise<boolean>;
+  onBid: (amount: number, playerId?: string) => Promise<boolean>;
+  onNominate: (playerId: string, initialAmount?: number) => Promise<boolean>;
   onRemoveFromQueue?: (playerId: string) => Promise<boolean>;
   onStartFromQueue?: (playerId: string) => Promise<boolean>;
   onPassTurn: () => Promise<boolean>;
@@ -62,6 +63,8 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
   const [isStartingAuction, setIsStartingAuction] = useState<boolean>(false);
   const [isEndingAuction, setIsEndingAuction] = useState<boolean>(false);
   const [isQuickPostOpen, setIsQuickPostOpen] = useState<boolean>(false);
+  const [selectedPlayerForBid, setSelectedPlayerForBid] = useState<Player | null>(null);
+  const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
 
   const isAuctionActive = auction.status === 'ACTIVE';
   const isAuctionNotStarted = auction.status === 'NOT_STARTED';
@@ -69,6 +72,23 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
   const currentPlayer = auction.currentPlayer;
   const currentBid = auction.currentBid;
   const isAdmin = currentUser?.role === 'ADMIN';
+
+  // Active concurrent auction players
+  const activeAuctionPlayers = React.useMemo(() => {
+    const inAuctionList = players.filter((p) => p.status === 'IN_AUCTION');
+    if (auction.currentPlayer && !inAuctionList.some((p) => p.id === auction.currentPlayer?.id)) {
+      return [auction.currentPlayer, ...inAuctionList];
+    }
+    return inAuctionList;
+  }, [players, auction.currentPlayer]);
+
+  const focusedPlayer = (focusedPlayerId ? activeAuctionPlayers.find((p) => p.id === focusedPlayerId) : null)
+    || activeAuctionPlayers[0]
+    || currentPlayer
+    || null;
+
+  const focusedBid = focusedPlayer?.currentBid || (auction.currentPlayer?.id === focusedPlayer?.id ? currentBid : null);
+  const focusedTimerRemaining = focusedPlayer?.timerRemaining ?? (auction.currentPlayer?.id === focusedPlayer?.id ? auction.timerRemaining : 86400);
 
   const userWonPlayersCount = currentUser
     ? players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === currentUser.id).length
@@ -103,26 +123,33 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
       p.position.toLowerCase().includes(searchNominate.toLowerCase())
   ).slice(0, 8); // Top 8 suggestions
 
-  const isCurrentPlayerAllowedToday = currentPlayer
-    ? isPositionAllowedForDay(currentPlayer.position, currentAuctionDay)
+  const isCurrentPlayerAllowedToday = focusedPlayer
+    ? isPositionAllowedForDay(focusedPlayer.position, currentAuctionDay)
     : true;
 
-  // Calculate minimum bid required
-  const currentHighest = currentBid ? currentBid.amount : 0;
-  const minRequiredBid = currentPlayer
-    ? currentHighest > 0
-      ? currentHighest + auction.minimumBidIncrement
-      : currentPlayer.initialPrice
+  // Calculate minimum bid required for focused player
+  const focusedHighest = focusedBid ? focusedBid.amount : 0;
+  const minRequiredBid = focusedPlayer
+    ? focusedHighest > 0
+      ? focusedHighest + auction.minimumBidIncrement
+      : focusedPlayer.initialPrice
     : 0;
 
   // Handle quick bid
-  const handleQuickBid = async (increment: number) => {
+  const handleQuickBid = async (increment: number, targetPlayerId?: string) => {
     if (!currentUser) {
       onOpenAuth();
       return;
     }
-    const targetAmount = Math.max(minRequiredBid, currentHighest + increment);
-    await executeBid(targetAmount);
+    const targetPlayer = (targetPlayerId ? players.find((p) => p.id === targetPlayerId) : null) || focusedPlayer || currentPlayer;
+    const playerCurrentHighest = targetPlayer?.currentBid?.amount || (auction.currentPlayer?.id === targetPlayer?.id ? currentHighest : 0) || 0;
+    const minReq = targetPlayer
+      ? playerCurrentHighest > 0
+        ? playerCurrentHighest + auction.minimumBidIncrement
+        : targetPlayer.initialPrice
+      : 0;
+    const targetAmount = Math.max(minReq, playerCurrentHighest + increment);
+    await executeBid(targetAmount, targetPlayer?.id);
   };
 
   const handleCustomBid = async (e: React.FormEvent) => {
@@ -131,20 +158,30 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
       onOpenAuth();
       return;
     }
+    const targetPlayer = focusedPlayer || currentPlayer;
+    const playerCurrentHighest = targetPlayer?.currentBid?.amount || (auction.currentPlayer?.id === targetPlayer?.id ? currentHighest : 0) || 0;
+    const minReq = targetPlayer
+      ? playerCurrentHighest > 0
+        ? playerCurrentHighest + auction.minimumBidIncrement
+        : targetPlayer.initialPrice
+      : 0;
+
     const amount = Number(customBidAmount.replace(/\D/g, ''));
-    if (!amount || amount < minRequiredBid) {
-      setBidError(`O lance mínimo deve ser de ${formatCurrency(minRequiredBid)}`);
+    if (!amount || amount < minReq) {
+      setBidError(`O lance mínimo deve ser de ${formatCurrency(minReq)}`);
       return;
     }
-    await executeBid(amount);
+    await executeBid(amount, targetPlayer?.id);
   };
 
-  const executeBid = async (amount: number) => {
+  const executeBid = async (amount: number, targetPlayerId?: string) => {
     if (!currentUser) return;
     
+    const targetPlayer = (targetPlayerId ? players.find((p) => p.id === targetPlayerId) : null) || focusedPlayer || currentPlayer;
+
     // Strict Anti-Burla Validation
-    if (currentPlayer && !isPositionAllowedForDay(currentPlayer.position, currentAuctionDay)) {
-      setBidError(`Lances Bloqueados: O leilão de hoje é exclusivo para ${getDayLabel(currentAuctionDay).title}. Este atleta (${currentPlayer.position}) não pertence à fase ativa e não pode receber lances!`);
+    if (targetPlayer && !isPositionAllowedForDay(targetPlayer.position, currentAuctionDay)) {
+      setBidError(`Lances Bloqueados: O leilão de hoje é exclusivo para ${getDayLabel(currentAuctionDay).title}. Este atleta (${targetPlayer.position}) não pertence à fase ativa e não pode receber lances!`);
       return;
     }
 
@@ -156,7 +193,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
     setSubmittingBid(true);
     setBidError(null);
     try {
-      const success = await onBid(amount);
+      const success = await onBid(amount, targetPlayer?.id);
       if (success) {
         setCustomBidAmount('');
         playBidSound();
@@ -190,10 +227,11 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
   const handleEndLeagueAuction = async () => {
     if (!onAdminAuctionAction) return;
-    if (!window.confirm('Tem certeza que deseja encerrar o leilão da Khedira League?')) return;
     setIsEndingAuction(true);
     try {
       await onAdminAuctionAction('END_LEAGUE_AUCTION');
+    } catch (err) {
+      console.error('Falha ao encerrar o leilão:', err);
     } finally {
       setIsEndingAuction(false);
     }
@@ -201,11 +239,10 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
   const handleResetToNotStarted = async () => {
     if (!onAdminAuctionAction) return;
-    if (!window.confirm('Deseja retornar o leilão para o estado "Não Iniciado"?')) return;
     try {
       await onAdminAuctionAction('RESET_TO_NOT_STARTED');
     } catch (e) {
-      console.error(e);
+      console.error('Falha ao reiniciar o leilão:', e);
     }
   };
 
@@ -322,13 +359,18 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
             <div className="flex items-center gap-3 self-end sm:self-center">
               {isAdmin && (
                 <button
+                  type="button"
                   id="btn-admin-end-auction-banner"
                   onClick={handleEndLeagueAuction}
                   disabled={isEndingAuction}
-                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-50"
-                  title="Encerrar a sessão de leilão"
+                  className="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-800 border border-rose-200 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Encerrar a sessão de leilão da Khedira League"
                 >
-                  <Square className="w-3 h-3 fill-current" />
+                  {isEndingAuction ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-700" />
+                  ) : (
+                    <Square className="w-3.5 h-3.5 fill-current text-rose-700" />
+                  )}
                   <span>{isEndingAuction ? 'Encerrando...' : 'Encerrar Leilão'}</span>
                 </button>
               )}
@@ -810,9 +852,6 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                       <span className={`px-2 py-0.5 text-xs font-extrabold rounded-md ${getPositionBadge(currentPlayer.position).bgClass} ${getPositionBadge(currentPlayer.position).textClass}`}>
                         {currentPlayer.position}
                       </span>
-                      <span className="text-xs font-semibold text-slate-500">
-                        {currentPlayer.nationality}
-                      </span>
                       {onToggleWatch && (
                         <button
                           type="button"
@@ -837,7 +876,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                       {currentPlayer.name}
                     </h2>
                     <p className="text-xs text-slate-500 font-medium">
-                      {currentPlayer.club} • Preço Base: <strong className="text-slate-700">{formatCurrency(currentPlayer.initialPrice, true)}</strong>
+                      Preço Base: <strong className="text-slate-700">{formatCurrency(currentPlayer.initialPrice, true)}</strong>
                     </p>
                   </div>
                 </div>
@@ -1041,7 +1080,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
                     <input
                       type="text"
-                      placeholder="Buscar por nome, clube ou posição..."
+                      placeholder="Buscar por nome ou posição..."
                       value={searchNominate}
                       onChange={(e) => setSearchNominate(e.target.value)}
                       className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
@@ -1074,7 +1113,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                             </span>
                           </div>
                           <p className="text-[11px] text-slate-500 truncate">
-                            {player.club} • Início: <strong className="text-slate-700">{formatCurrency(player.initialPrice, true)}</strong>
+                            Início: <strong className="text-slate-700">{formatCurrency(player.initialPrice, true)}</strong>
                           </p>
                           {!isAllowedToday && (
                             <span className="text-[10px] text-amber-700 font-semibold flex items-center gap-1 mt-0.5">
@@ -1130,123 +1169,19 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
             </div>
           )}
 
-          {/* Quick Post Drawer when Auction is ACTIVE */}
-          {isAuctionActive && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg shrink-0">
-                    <Plus className="w-4 h-4" />
-                  </span>
-                  <div className="min-w-0">
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900">
-                      Tem interesse em outro jogador registrado?
-                    </h4>
-                    <p className="text-[11px] text-slate-500">
-                      Poste na fila para abrir disputa de 24 horas assim que a rodada atual terminar!
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsQuickPostOpen(!isQuickPostOpen)}
-                  className="w-full sm:w-auto px-4 py-2.5 sm:px-3 sm:py-1.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition-colors shrink-0 cursor-pointer flex items-center justify-center gap-1.5 min-h-[40px] sm:min-h-0"
-                >
-                  {isQuickPostOpen ? 'Fechar Busca' : 'Postar na Fila'}
-                </button>
-              </div>
-
-              {isQuickPostOpen && (
-                <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                    <input
-                      type="text"
-                      placeholder="Buscar por nome ou clube para postar na fila..."
-                      value={searchNominate}
-                      onChange={(e) => setSearchNominate(e.target.value)}
-                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-                    {filteredAvailablePlayers.slice(0, 10).map((player) => {
-                      const badge = getPositionBadge(player.position);
-                      const isAllowedToday = isPositionAllowedForDay(player.position, auction.auctionDay || 'ALL');
-                      const isQueued = auction.nominationQueue?.some((q) => q.player.id === player.id);
-
-                      return (
-                        <div
-                          key={player.id}
-                          className="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2"
-                        >
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1">
-                              <span className={`px-1 py-0.2 text-[9px] font-bold rounded ${badge.bgClass} ${badge.textClass}`}>
-                                {player.position}
-                              </span>
-                              <span className="text-xs font-bold text-slate-800 truncate">
-                                {player.name}
-                              </span>
-                            </div>
-                            <span className="text-[10px] text-slate-500 truncate block">
-                              {player.club} • {formatCurrency(player.initialPrice, true)}
-                            </span>
-                          </div>
-
-                          {isQueued ? (
-                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shrink-0">
-                              Na Fila
-                            </span>
-                          ) : isUserSquadFull ? (
-                            <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded shrink-0">
-                              Elenco 23/23
-                            </span>
-                          ) : currentUser ? (
-                            <button
-                              onClick={() => handleSelectNominate(player.id)}
-                              disabled={nominateLoading || !isAllowedToday}
-                              className={`px-2.5 py-1.5 sm:px-2 sm:py-1 text-xs sm:text-[11px] font-bold rounded-lg shrink-0 transition-colors ${
-                                isAllowedToday
-                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
-                                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                              }`}
-                            >
-                              Postar
-                            </button>
-                          ) : (
-                            <button
-                              onClick={onOpenAuth}
-                              className="px-2.5 py-1.5 sm:px-2 sm:py-1 text-xs sm:text-[11px] font-bold rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 shrink-0 cursor-pointer"
-                            >
-                              Entrar
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Fila de Jogadores de Interesse (Próximas Disputas de 24 Horas) */}
           <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-2 mb-4 pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center font-bold shrink-0">
-                  <ListOrdered className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                    <span>Fila de Jogadores de Interesse</span>
-                    <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
-                      Próximas Disputas de 24h
-                    </span>
-                  </h4>
-                  <p className="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
-                    Jogadores postados pelos próprios participantes. Entram em leilão de 24h automaticamente em ordem de postagem.
-                  </p>
-                </div>
+              <div className="min-w-0">
+                <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <span>Fila de Jogadores de Interesse</span>
+                  <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
+                    Próximas Disputas de 24h
+                  </span>
+                </h4>
+                <p className="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
+                  Jogadores postados pelos próprios participantes. Entram em leilão de 24h automaticamente em ordem de postagem.
+                </p>
               </div>
               <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-bold rounded-xl sm:rounded-full bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 text-slate-700 border border-slate-200/90 transition-all duration-150 shrink-0 self-start sm:self-center select-none shadow-2xs whitespace-nowrap cursor-default">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse"></span>
@@ -1275,8 +1210,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                           </span>
                         </div>
                         <h5 className="font-bold text-slate-900 text-sm">{item.player.name}</h5>
-                        <p className="text-xs text-slate-500">{item.player.club}</p>
-                        <div className="mt-2 text-xs">
+                        <div className="mt-1 text-xs">
                           <span className="text-slate-400">Lance Inicial: </span>
                           <strong className="text-slate-800 font-bold">{formatCurrency(item.player.initialPrice, true)}</strong>
                         </div>

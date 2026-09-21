@@ -102,7 +102,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
   const handleCreatePlayer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName || !newClub || !newPrice) return;
+    if (!newName || !newPrice) return;
 
     const priceNum = Number(newPrice);
     if (isNaN(priceNum) || priceNum < 10000000) {
@@ -113,8 +113,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     const success = await onAdminCreatePlayer({
       name: newName.trim(),
       position: newPosition,
-      club: newClub.trim(),
-      nationality: newNationality.trim(),
+      club: (newClub || 'Mercado da Liga').trim(),
+      nationality: (newNationality || 'Internacional').trim(),
       initialPrice: priceNum,
     });
 
@@ -272,9 +272,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       <>
                         <button
                           onClick={() => {
-                            if (window.confirm('Tem certeza que deseja encerrar a sessão de leilões da liga?')) {
-                              onAdminAuctionAction('END_LEAGUE_AUCTION');
-                            }
+                            onAdminAuctionAction('END_LEAGUE_AUCTION');
                           }}
                           className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
                         >
@@ -283,9 +281,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         </button>
                         <button
                           onClick={() => {
-                            if (window.confirm('Retornar o leilão para o estado inicial de "Não Iniciado"?')) {
-                              onAdminAuctionAction('RESET_TO_NOT_STARTED');
-                            }
+                            onAdminAuctionAction('RESET_TO_NOT_STARTED');
                           }}
                           className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                         >
@@ -641,18 +637,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="font-bold text-slate-600 block mb-1">Clube</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ex: Real Betis"
-                      value={newClub}
-                      onChange={(e) => setNewClub(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-medium"
-                    />
-                  </div>
-
-                  <div>
                     <label className="font-bold text-slate-600 block mb-1">Preço Inicial de Abertura (€) — Mínimo € 10M</label>
                     <input
                       type="number"
@@ -706,7 +690,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-slate-400">{player.club}</p>
                       </div>
 
                       <div className="flex items-center gap-2">

@@ -239,13 +239,7 @@ export const ConceptToTargetsModal: React.FC<ConceptToTargetsModalProps> = ({
                             Titular
                           </span>
                         ) : null}
-                        <span className="text-[10px] text-slate-400 font-medium">
-                          ({player.nationality})
-                        </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 truncate">
-                        {player.club}
-                      </p>
                     </div>
                   </div>
 

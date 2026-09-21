@@ -175,34 +175,6 @@ export const AddExtraPlayerModal: React.FC<AddExtraPlayerModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Clube Atual
-              </label>
-              <input
-                type="text"
-                placeholder="Ex: Al-Hilal, Real Madrid..."
-                value={club}
-                onChange={(e) => setClub(e.target.value)}
-                className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Nacionalidade
-              </label>
-              <input
-                type="text"
-                placeholder="Ex: Brasil, França, Argentina..."
-                value={nationality}
-                onChange={(e) => setNationality(e.target.value)}
-                className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
                 Lance Mínimo Inicial (€) * (Min. € 10M)
               </label>
               <div className="relative">
