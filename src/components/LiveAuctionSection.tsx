@@ -86,22 +86,6 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Cálculo da contagem regressiva para abertura do leilão
-  const scheduledStartTime = auction.scheduledStartTime || (auction.lastUpdated ? auction.lastUpdated + 5400 * 1000 : nowTimestamp + 5400 * 1000);
-  const preAuctionDiffMs = Math.max(0, scheduledStartTime - nowTimestamp);
-  const preAuctionSecondsRemaining = Math.floor(preAuctionDiffMs / 1000);
-
-  const countdownDays = Math.floor(preAuctionSecondsRemaining / 86400);
-  const countdownHours = Math.floor((preAuctionSecondsRemaining % 86400) / 3600);
-  const countdownMinutes = Math.floor((preAuctionSecondsRemaining % 3600) / 60);
-  const countdownSeconds = preAuctionSecondsRemaining % 60;
-
-  const handleAdjustCountdown = async (secondsFromNow: number) => {
-    if (!isAdmin || !onAdminAuctionAction) return;
-    const newTarget = Date.now() + secondsFromNow * 1000;
-    await onAdminAuctionAction('SET_SCHEDULED_START', newTarget);
-  };
-
   // Active concurrent auction players with guaranteed fresh bid and price resolution
   const activeAuctionPlayers = React.useMemo(() => {
     const inAuctionList = players.filter((p) => p.status === 'IN_AUCTION');
@@ -890,7 +874,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                 {/* Representação em Tempo Real do Saldo em Conta, Débito e Estorno */}
                 {renderUserAccountBalanceRepresentation()}
 
-                {/* ⏱️ CRONÔMETRO COM CONTAGEM REGRESSIVA PARA TODOS VEREM BEM */}
+                {/* ⏱️ CRONÔMETRO OFICIAL DE 1H30M (EM STANDBY ATÉ O LEILÃO SER INICIADO) */}
                 <div className="my-6 p-5 sm:p-6 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-2xl border-2 border-emerald-500/50 shadow-xl text-white relative overflow-hidden">
                   <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
                   <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
@@ -899,60 +883,46 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-800">
                     <div className="flex items-center gap-2">
                       <span className="flex h-3 w-3 relative">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        <span className="inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                       </span>
-                      <span className="text-xs font-black tracking-wider uppercase text-emerald-400 flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-emerald-400" />
-                        Cronômetro Oficial de Contagem Regressiva
+                      <span className="text-xs font-black tracking-wider uppercase text-amber-400 flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-amber-400" />
+                        Cronômetro Oficial de Disputa (1h30m)
                       </span>
                     </div>
                     
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                      Janela de 1h30m por Disputa
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-600/50">
+                      ⏸️ Aguardando Início do Leilão
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-300 text-center mb-5 font-medium">
-                    {preAuctionSecondsRemaining > 0 
-                      ? '⏱️ Tempo restante para o início oficial do leilão e liberação das propostas:' 
-                      : '🔥 Horário atingido! A diretoria pode iniciar o leilão a qualquer momento!'}
+                  <p className="text-xs text-slate-300 text-center mb-5 font-medium leading-relaxed max-w-md mx-auto">
+                    ⏱️ <strong>O cronômetro começará a contagem regressiva automaticamente assim que o leilão for iniciado pela diretoria.</strong> Cada disputa de jogador terá a duração oficial de 1 hora e 30 minutos.
                   </p>
 
-                  {/* Digits Display */}
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3.5 max-w-md mx-auto">
-                    {countdownDays > 0 && (
-                      <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-slate-900/90 border border-slate-700 rounded-2xl shadow-inner">
-                        <span className="text-3xl sm:text-5xl font-mono font-black text-amber-400 tracking-tight">
-                          {String(countdownDays).padStart(2, '0')}
-                        </span>
-                        <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-400 mt-1">
-                          Dias
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-slate-900/90 border border-emerald-500/50 rounded-2xl shadow-inner">
+                  {/* Digits Display - Estático em 01:30:00 (inicia assim que o leilão for aberto) */}
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3.5 max-w-sm mx-auto">
+                    <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-slate-900/90 border border-slate-700 rounded-2xl shadow-inner">
                       <span className="text-3xl sm:text-5xl font-mono font-black text-white tracking-tight">
-                        {String(countdownHours).padStart(2, '0')}
+                        01
                       </span>
-                      <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-400 mt-1">
-                        Horas
+                      <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-400 mt-1">
+                        Hora
                       </span>
                     </div>
 
-                    <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-slate-900/90 border border-emerald-500/50 rounded-2xl shadow-inner">
+                    <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-slate-900/90 border border-slate-700 rounded-2xl shadow-inner">
                       <span className="text-3xl sm:text-5xl font-mono font-black text-white tracking-tight">
-                        {String(countdownMinutes).padStart(2, '0')}
+                        30
                       </span>
-                      <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-400 mt-1">
+                      <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-400 mt-1">
                         Minutos
                       </span>
                     </div>
 
-                    <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-slate-900/90 border border-amber-500/70 rounded-2xl shadow-inner">
-                      <span className="text-3xl sm:text-5xl font-mono font-black text-amber-300 tracking-tight animate-pulse">
-                        {String(countdownSeconds).padStart(2, '0')}
+                    <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-slate-900/90 border border-amber-500/60 rounded-2xl shadow-inner">
+                      <span className="text-3xl sm:text-5xl font-mono font-black text-amber-300 tracking-tight">
+                        00
                       </span>
                       <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-amber-400 mt-1">
                         Segundos
@@ -960,47 +930,11 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                     </div>
                   </div>
 
-                  {/* Admin adjustment quick toolbar */}
-                  {isAdmin && onAdminAuctionAction && (
-                    <div className="mt-5 pt-3.5 border-t border-slate-800 flex flex-wrap items-center justify-center gap-2">
-                      <span className="text-[11px] font-bold text-slate-400 mr-1 flex items-center gap-1">
-                        <Crown className="w-3.5 h-3.5 text-amber-400" />
-                        Definir Tempo (ADM):
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleAdjustCountdown(15 * 60)}
-                        className="px-2.5 py-1 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition-colors cursor-pointer"
-                        title="Definir contagem para 15 minutos"
-                      >
-                        15 min
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAdjustCountdown(30 * 60)}
-                        className="px-2.5 py-1 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition-colors cursor-pointer"
-                        title="Definir contagem para 30 minutos"
-                      >
-                        30 min
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAdjustCountdown(60 * 60)}
-                        className="px-2.5 py-1 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition-colors cursor-pointer"
-                        title="Definir contagem para 1 hora"
-                      >
-                        1 hora
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAdjustCountdown(90 * 60)}
-                        className="px-2.5 py-1 text-[11px] font-bold bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/60 rounded-lg transition-colors cursor-pointer"
-                        title="Definir contagem padrão oficial da liga: 1 hora e 30 minutos"
-                      >
-                        1h 30m (Oficial)
-                      </button>
-                    </div>
-                  )}
+                  <div className="mt-5 pt-3 border-t border-slate-800 text-center">
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      🔒 Regulamento Oficial Khedira League: Janela de 1h30m (5.400s) por rodada de lances.
+                    </span>
+                  </div>
                 </div>
               </div>
 
