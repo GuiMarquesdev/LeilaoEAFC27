@@ -218,7 +218,7 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
                     {isUserLeading ? '👑 Você está liderando esta disputa (Pode aumentar o lance)' : 'Disputa ativa por este atleta'}
                   </span>
                   <span className="text-[11px] opacity-80">
-                    Restam: {player.timerRemaining ? formatAuctionTimer(player.timerRemaining) : '24h'}
+                    Restam: {player.timerRemaining ? formatAuctionTimer(player.timerRemaining) : '1h 30m'}
                   </span>
                 </div>
               </div>

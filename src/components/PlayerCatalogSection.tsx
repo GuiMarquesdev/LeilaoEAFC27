@@ -8,7 +8,7 @@ import { Player, UserProfile, AuctionState, UserSquad } from '../types';
 import { 
   formatCurrency, formatAuctionTimer, getPositionBadge, getPositionCategory, 
   isPositionAllowedForDay, getDayLabel, getPlayerAuctionDay, matchesPlayerSearch,
-  getPlayerActiveBid, getPlayerEffectivePrice
+  getPlayerActiveBid, getPlayerEffectivePrice, getPlayerSectorName
 } from '../utils/formatters';
 import { QuickBidModal } from './QuickBidModal';
 import { AddExtraPlayerModal } from './AddExtraPlayerModal';
@@ -59,7 +59,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
   onSignFreeAgent,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewScope, setViewScope] = useState<'DAY_ONLY' | 'WATCHED_ONLY' | 'ALL_PHASES'>('DAY_ONLY');
+  const [viewScope, setViewScope] = useState<'ALL' | 'WATCHED_ONLY'>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'GOL' | 'DEF' | 'MEI' | 'ATA'>('ALL');
   const [exactPositionFilter, setExactPositionFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('ALL');
@@ -71,30 +71,18 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
   const [signingPlayerId, setSigningPlayerId] = useState<string | null>(null);
   const itemsPerPage = 20;
 
-  const currentAuctionDay = auction.auctionDay || 1;
-  const currentDayInfo = getDayLabel(currentAuctionDay);
-
   const userWonPlayersCount = currentUser
     ? players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === currentUser.id).length
     : 0;
   const isUserSquadFull = userWonPlayersCount >= 23;
 
-  // Total players allowed for the active day
-  const dayPlayers = useMemo(() => {
-    return players.filter((p) => isPositionAllowedForDay(p.position, currentAuctionDay));
-  }, [players, currentAuctionDay]);
-
-  // Scoped players based on view mode (Day Only vs Watched Only vs All Phases)
+  // Scoped players based on view mode (All Market vs Watched Only)
   const scopedPlayers = useMemo(() => {
     if (viewScope === 'WATCHED_ONLY') {
       return players.filter((p) => watchedPlayerIds.includes(p.id));
     }
-    // If user is actively searching, search across all phases so they can find any player
-    if (viewScope === 'ALL_PHASES' || searchTerm.trim().length > 0) {
-      return players;
-    }
-    return dayPlayers;
-  }, [players, viewScope, watchedPlayerIds, dayPlayers, searchTerm]);
+    return players;
+  }, [players, viewScope, watchedPlayerIds]);
 
   const handleFilterByPosition = (pos: string) => {
     if (exactPositionFilter === pos) {
@@ -194,25 +182,25 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Active Phase & Strict Anti-Cheat Rule Banner */}
+      {/* Unified Market Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 rounded-2xl p-4 sm:p-5 text-white shadow-md border border-slate-700">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3" />
-                Regulamento em Vigor • Anti-Burla
+                Mercado Unificado em Vigor
               </span>
               <span className="text-xs font-bold text-emerald-300">
-                {currentDayInfo.title}
+                Ataque, Meio-Campo e Defesa Juntos
               </span>
             </div>
             <h3 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
               <Calendar className="w-4 h-4 text-emerald-400" />
-              Mercado Restrito à Posição do Dia ({dayPlayers.length} Atletas Liberados)
+              Mercado Geral Aberto ({players.length} Atletas Disponíveis)
             </h3>
             <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              Para impedir que participantes burlem as regras ou deem lances fora do setor estabelecido, o mercado oficial só exibe e disponibiliza para negociação os jogadores da fase ativa: <strong className="text-emerald-300 font-bold">{currentDayInfo.positions.join(', ')}</strong>. Atletas de outras posições permanecem ocultos até o seu respectivo dia de leilão.
+              O leilão ocorre em mercado unificado sem divisão de fases por dias. Todos os atletas do setor ofensivo, meio-campo e defensivo estão liberados simultaneamente para propostas e lances.
             </p>
           </div>
         </div>
@@ -308,23 +296,23 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
           <button
             type="button"
             onClick={() => {
-              setViewScope('DAY_ONLY');
+              setViewScope('ALL');
               setCategoryFilter('ALL');
               setExactPositionFilter(null);
               setCurrentPage(1);
             }}
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-              viewScope === 'DAY_ONLY'
+              viewScope === 'ALL'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'text-slate-700 hover:bg-slate-200/80'
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>Fase Ativa: {currentDayInfo.title}</span>
+            <span>Todos os Jogadores (Mercado Unificado)</span>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-              viewScope === 'DAY_ONLY' ? 'bg-emerald-800 text-white' : 'bg-slate-200 text-slate-700'
+              viewScope === 'ALL' ? 'bg-emerald-800 text-white' : 'bg-slate-200 text-slate-700'
             }`}>
-              {dayPlayers.length}
+              {players.length}
             </span>
           </button>
 
@@ -350,29 +338,6 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
               {watchedPlayerIds.length}
             </span>
           </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setViewScope('ALL_PHASES');
-              setCategoryFilter('ALL');
-              setExactPositionFilter(null);
-              setCurrentPage(1);
-            }}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-              viewScope === 'ALL_PHASES'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-700 hover:bg-slate-200/80'
-            }`}
-          >
-            <Eye className="w-4 h-4" />
-            <span>Todas as 3 Fases (Explorar & Monitorar)</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-              viewScope === 'ALL_PHASES' ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-700'
-            }`}>
-              {players.length}
-            </span>
-          </button>
         </div>
 
         {onOpenWatchlist && (
@@ -380,7 +345,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
             type="button"
             onClick={onOpenWatchlist}
             className="flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300/80 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-2xs"
-            title="Abrir Central do Radar com filtros por fase"
+            title="Abrir Central do Radar com favoritos"
           >
             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
             <span>Abrir Painel do Radar</span>
@@ -393,23 +358,19 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-800 rounded">
-                Seção 3
+              <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 rounded">
+                Mercado Unificado
               </span>
               <h2 className="text-lg font-bold text-slate-900">
                 {viewScope === 'WATCHED_ONLY'
                   ? 'Meu Radar de Observação — Jogadores Selecionados'
-                  : viewScope === 'ALL_PHASES'
-                  ? 'Catálogo Geral — Todas as 3 Fases (125+ Jogadores)'
-                  : `Mercado de Craques (EAFC 27) — ${currentDayInfo.title}`}
+                  : 'Catálogo Geral de Jogadores (ATAQUE, MEIO E DEFESA JUNTOS)'}
               </h2>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               {viewScope === 'WATCHED_ONLY'
-                ? 'Monitore os atletas que você marcou como favoritos. Fique de olho nos lances e nas fases de cada um.'
-                : viewScope === 'ALL_PHASES'
-                ? 'Explore e marque atletas das 3 fases para colocar em observação com antecedência.'
-                : 'Consulte os craques da posição do dia, preços de abertura para lance inicial e situação no leilão.'}
+                ? 'Monitore os atletas favoritos. Fique de olho nos lances e valores de cada um.'
+                : 'Todas as posições liberadas simultaneamente: lance inicial, cobertura de propostas e 1h30m de disputa.'}
             </p>
           </div>
 
@@ -520,144 +481,60 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                 categoryFilter === 'ALL' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Todos da Fase ({dayPlayers.length})
+              Todos ({players.length})
             </button>
 
-            {currentAuctionDay === 1 && (
-              <>
-                <button
-                  onClick={() => {
-                    setCategoryFilter('GOL');
-                    setExactPositionFilter(null);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                    categoryFilter === 'GOL' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Goleiros (GOL)
-                </button>
-                <button
-                  onClick={() => {
-                    setCategoryFilter('DEF');
-                    setExactPositionFilter(null);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                    categoryFilter === 'DEF' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Zagueiros & Laterais
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => {
+                setCategoryFilter('GOL');
+                setExactPositionFilter(null);
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+                categoryFilter === 'GOL' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Goleiros (GOL)
+            </button>
 
-            {currentAuctionDay === 2 && (
-              <>
-                <button
-                  onClick={() => handleFilterByPosition('VOL')}
-                  className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                    exactPositionFilter === 'VOL' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Volantes (VOL)
-                </button>
-                <button
-                  onClick={() => handleFilterByPosition('MC')}
-                  className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                    exactPositionFilter === 'MC' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Meias Centrais (MC)
-                </button>
-                <button
-                  onClick={() => handleFilterByPosition('MEI')}
-                  className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                    exactPositionFilter === 'MEI' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Armadores (MEI)
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => {
+                setCategoryFilter('DEF');
+                setExactPositionFilter(null);
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+                categoryFilter === 'DEF' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Defesa (ZAG, LE, LD)
+            </button>
 
-            {currentAuctionDay === 3 && (
-              <>
-                <button
-                  onClick={() => handleFilterByPosition('ATA')}
-                  className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                    exactPositionFilter === 'ATA' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Centroavantes (ATA)
-                </button>
-                <button
-                  onClick={() => {
-                    setCategoryFilter('ATA');
-                    setExactPositionFilter(null);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                    categoryFilter === 'ATA' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Pontas & Ofensivos
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => {
+                setCategoryFilter('MEI');
+                setExactPositionFilter(null);
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+                categoryFilter === 'MEI' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Meio-Campo (VOL, MC, MEI)
+            </button>
 
-            {currentAuctionDay === 'ALL' && (
-              <>
-                <button
-                  onClick={() => {
-                    setCategoryFilter('GOL');
-                    setExactPositionFilter(null);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                    categoryFilter === 'GOL' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Goleiros
-                </button>
-                <button
-                  onClick={() => {
-                    setCategoryFilter('DEF');
-                    setExactPositionFilter(null);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                    categoryFilter === 'DEF' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Defesa
-                </button>
-                <button
-                  onClick={() => {
-                    setCategoryFilter('MEI');
-                    setExactPositionFilter(null);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                    categoryFilter === 'MEI' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Meio
-                </button>
-                <button
-                  onClick={() => {
-                    setCategoryFilter('ATA');
-                    setExactPositionFilter(null);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                    categoryFilter === 'ATA' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Ataque
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => {
+                setCategoryFilter('ATA');
+                setExactPositionFilter(null);
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+                categoryFilter === 'ATA' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Ataque & Pontas (ATA, PE, PD...)
+            </button>
 
             {exactPositionFilter && (
               <button
@@ -720,8 +597,8 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
-                <th className="py-3.5 px-3">
-                  <span>Fase</span>
+                <th className="py-3.5 px-3 text-center">
+                  <span>Setor</span>
                 </th>
                 <th
                   onClick={() => toggleSort('initialPrice')}
@@ -762,13 +639,13 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                   const isSold = player.status === 'SOLD';
                   const isWatched = watchedPlayerIds.includes(player.id);
                   const playerDay = getPlayerAuctionDay(player.position);
-                  const isAllowedToday = isPositionAllowedForDay(player.position, currentAuctionDay);
+                  const isAllowedToday = true;
 
                   const activeBid = isInAuction 
                     ? getPlayerActiveBid(player, auction)
                     : null;
                   const effectivePrice = getPlayerEffectivePrice(player, auction);
-                  const playerTimerRemaining = player.timerRemaining ?? (auction.currentPlayer?.id === player.id ? auction.timerRemaining : 86400);
+                  const playerTimerRemaining = player.timerRemaining ?? (auction.currentPlayer?.id === player.id ? auction.timerRemaining : 5400);
                   const queueIndex = auction.nominationQueue?.findIndex((q) => q.player.id === player.id) ?? -1;
                   const isQueued = queueIndex !== -1;
                   const queueItem = isQueued && auction.nominationQueue ? auction.nominationQueue[queueIndex] : null;
@@ -834,14 +711,18 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                         </button>
                       </td>
 
-                      {/* Phase Badge */}
-                      <td className="py-3.5 px-3 whitespace-nowrap">
+                      {/* Sector Badge */}
+                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
-                          playerDay === currentAuctionDay
+                          player.position === 'GOL'
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                            : ['ZAG', 'LE', 'LD'].includes(player.position)
+                            ? 'bg-blue-100 text-blue-900 border border-blue-300'
+                            : ['VOL', 'MC', 'MEI'].includes(player.position)
                             ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                            : 'bg-slate-100 text-slate-600 border border-slate-200'
+                            : 'bg-rose-100 text-rose-900 border border-rose-300'
                         }`}>
-                          Fase {playerDay}
+                          {getPlayerSectorName(player.position)}
                         </span>
                       </td>
 
@@ -1052,16 +933,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                                 );
                               }
 
-                              if (!isAllowedToday) {
-                                return (
-                                  <span
-                                    className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
-                                    title={`Indicações bloqueadas: Jogador pertence à Fase ${playerDay}`}
-                                  >
-                                    🔒 Fase {playerDay}
-                                  </span>
-                                );
-                              }
+                              // Sem bloqueio de fase: qualquer jogador pode receber indicação ou lance (1h30m)
 
                               if (auction.status === 'ENDED') {
                                 const cost = player.currentPrice || player.initialPrice;
@@ -1139,7 +1011,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                                   title={
                                     auction.status === 'NOT_STARTED'
                                       ? "Propostas bloqueadas: O leilão oficial ainda não foi iniciado pela Diretoria. Aguarde a abertura oficial para evitar inicializações precoces."
-                                      : "Fazer proposta oficial de 24 horas para este atleta"
+                                      : "Fazer proposta oficial de 1 hora e 30 minutos para este atleta"
                                   }
                                 >
                                   Fazer Proposta

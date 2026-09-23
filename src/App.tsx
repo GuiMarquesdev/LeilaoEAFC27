@@ -128,13 +128,14 @@ export default function App() {
       currentPlayer: null,
       currentBid: null,
       bidHistory: [],
-      timerRemaining: 86400,
+      timerRemaining: 5400,
       nominationTurnUserId: 'user-admin-default',
       nominationTimerRemaining: 30,
       isFreeNominationMode: false,
       minimumBidIncrement: 1000000,
       auctionDay: 'ALL',
       anonymousBidding: true,
+      scheduledStartTime: Date.now() + 5400 * 1000,
       lastUpdated: Date.now(),
     },
     squads: {},
@@ -142,11 +143,13 @@ export default function App() {
   });
 
   const handleOpenAdmin = (tab: 'auction' | 'players' | 'users' | 'danger' | 'report' = 'auction') => {
+    if (!currentUser || currentUser.role !== 'ADMIN') return;
     setAdminInitialTab(tab);
     setIsAdminOpen(true);
   };
 
   const handleOpenAdminReport = () => {
+    if (!currentUser || currentUser.role !== 'ADMIN') return;
     handleOpenAdmin('report');
   };
 
@@ -729,7 +732,7 @@ export default function App() {
       const data = await res.json();
       if (data.success) {
         setActiveTab('auction'); // jump to live auction tab!
-        addNotification('📢 Proposta aberta com sucesso! Disputa ativa por 24 horas.', 'success');
+        addNotification('📢 Proposta aberta com sucesso! Disputa ativa por 1 hora e 30 minutos.', 'success');
         if (data.player || data.auction) {
           setLeagueState((prev) => {
             if (!prev) return prev;
@@ -1296,8 +1299,8 @@ export default function App() {
           }
         }}
         onLogout={handleLogout}
-        onOpenAdmin={() => handleOpenAdmin('auction')}
-        onOpenAdminReport={handleOpenAdminReport}
+        onOpenAdmin={currentUser?.role === 'ADMIN' ? () => handleOpenAdmin('auction') : undefined}
+        onOpenAdminReport={currentUser?.role === 'ADMIN' ? handleOpenAdminReport : undefined}
         soundActive={soundActive}
         onToggleSound={handleToggleSound}
       />
@@ -1424,7 +1427,7 @@ export default function App() {
       />
 
       <AdminModal
-        isOpen={isAdminOpen}
+        isOpen={isAdminOpen && currentUser?.role === 'ADMIN'}
         onClose={() => setIsAdminOpen(false)}
         currentUser={currentUser}
         auction={leagueState.auction}

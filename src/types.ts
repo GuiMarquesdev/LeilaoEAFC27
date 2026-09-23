@@ -83,6 +83,7 @@ export interface AuctionState {
   minimumBidIncrement: number; // e.g., 1000000 (€1M)
   auctionDay: 1 | 2 | 3 | 'ALL'; // Dia 1: Defesa (GOL/ZAG/LE/LD), Dia 2: Meio (VOL/MC/MEI), Dia 3: Ataque (ATA/ME/MD/PE/PD/SA), 'ALL': Todas
   anonymousBidding: boolean; // Sigilo de Lances obrigatório conforme Ata Oficial
+  scheduledStartTime?: number; // Timestamp em ms para o início do leilão (contagem regressiva)
   lastUpdated: number;
 }
 

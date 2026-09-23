@@ -41,12 +41,11 @@ const TOURINHO_PASSWORD = process.env.TOURINHO_ADMIN_PASSWORD || 'fifakhedira201
 const PEREIRA_PASSWORD = process.env.PEREIRA_ADMIN_PASSWORD || 'fifakhedira2015';
 
 const MAX_SQUAD_PLAYERS = 23;
+const AUCTION_DURATION_SECONDS = 5400; // 1 hora e 30 minutos (90 minutos = 5400 segundos)
 
-function isPositionAllowedForDay(position: string, day: 1 | 2 | 3 | 'ALL'): boolean {
-  if (day === 'ALL') return true;
-  if (day === 1) return ['GOL', 'ZAG', 'LE', 'LD'].includes(position);
-  if (day === 2) return ['VOL', 'MC', 'MEI'].includes(position);
-  if (day === 3) return ['ATA', 'PD', 'PE', 'MD', 'ME', 'SA'].includes(position);
+function isPositionAllowedForDay(_position: string, _day?: 1 | 2 | 3 | 'ALL'): boolean {
+  // Regulamento Oficial Atualizado: Sem divisão de fases!
+  // ATAQUE, MEIO CAMPO, DEFESA e GOLEIROS todos liberados simultaneamente para disputa.
   return true;
 }
 
@@ -103,8 +102,9 @@ function getInitialState(): LeagueState {
       isFreeNominationMode: true,
       nominationQueue: [],
       minimumBidIncrement: 1000000,
-      auctionDay: 1, // Dia 1 - Sistema Defensivo
+      auctionDay: 'ALL', // Mercado Geral Unificado (Sem divisão de fases: ATAQUE, MEIO e DEFESA juntos)
       anonymousBidding: true, // Sigilo de Lances obrigatório conforme Ata Oficial
+      scheduledStartTime: Date.now() + 5400 * 1000, // Contagem regressiva padrão oficial de 1h30m
       lastUpdated: Date.now()
     },
     squads: {
@@ -238,9 +238,8 @@ try {
       if (leagueState.auction.status === 'IDLE' && !leagueState.auction.currentPlayer) {
         leagueState.auction.status = 'NOT_STARTED';
       }
-      if (!leagueState.auction.auctionDay) {
-        leagueState.auction.auctionDay = 1;
-      }
+      // Mercado Unificado: Todas as posições liberadas simultaneamente
+      leagueState.auction.auctionDay = 'ALL';
       if (leagueState.auction.anonymousBidding === undefined) {
         leagueState.auction.anonymousBidding = true;
       }
@@ -310,6 +309,17 @@ try {
         leagueState.auction.currentPlayer = match;
       }
     }
+
+    // Se o timer estiver acima de 1h 30m (5400s), ajustar para a nova regra de 1h30m
+    if (leagueState.auction && leagueState.auction.timerRemaining > AUCTION_DURATION_SECONDS) {
+      leagueState.auction.timerRemaining = AUCTION_DURATION_SECONDS;
+    }
+    (leagueState.players || []).forEach((p) => {
+      if (p.status === 'IN_AUCTION' && typeof p.timerRemaining === 'number' && p.timerRemaining > AUCTION_DURATION_SECONDS) {
+        p.timerRemaining = AUCTION_DURATION_SECONDS;
+        p.auctionExpiresAt = Date.now() + AUCTION_DURATION_SECONDS * 1000;
+      }
+    });
 
     fs.writeFileSync(DB_FILE, JSON.stringify(leagueState, null, 2));
   } else {
@@ -511,7 +521,7 @@ function finalizeSpecificPlayerAuction(player: Player) {
     if (nextInAuction) {
       leagueState.auction.currentPlayer = nextInAuction;
       leagueState.auction.currentBid = getHighestBidForPlayer(nextInAuction);
-      leagueState.auction.timerRemaining = nextInAuction.timerRemaining || 86400;
+      leagueState.auction.timerRemaining = nextInAuction.timerRemaining || AUCTION_DURATION_SECONDS;
     } else {
       leagueState.auction.currentPlayer = null;
       leagueState.auction.currentBid = null;
@@ -528,21 +538,21 @@ function finalizeSpecificPlayerAuction(player: Player) {
     leagueState.auction.bidHistory = [];
     leagueState.auction.timerRemaining = 0;
 
-    // Se houver jogadores postados na fila de interesse, inicia automaticamente o próximo para 24h
+    // Se houver jogadores postados na fila de interesse, inicia automaticamente o próximo para 1h30m
     if (leagueState.auction.nominationQueue && leagueState.auction.nominationQueue.length > 0) {
       const nextItem = leagueState.auction.nominationQueue.shift()!;
       const nextPlayer = leagueState.players.find((p) => p.id === nextItem.player.id);
       if (nextPlayer && nextPlayer.status === 'AVAILABLE') {
         nextPlayer.status = 'IN_AUCTION';
         nextPlayer.nominatedBy = nextItem.nominatedByUserId;
-        nextPlayer.timerRemaining = 86400;
-        nextPlayer.auctionExpiresAt = Date.now() + 86400 * 1000;
+        nextPlayer.timerRemaining = AUCTION_DURATION_SECONDS;
+        nextPlayer.auctionExpiresAt = Date.now() + AUCTION_DURATION_SECONDS * 1000;
 
         leagueState.auction.status = 'ACTIVE';
         leagueState.auction.currentPlayer = nextPlayer;
         leagueState.auction.currentBid = null;
         leagueState.auction.bidHistory = [];
-        leagueState.auction.timerRemaining = 86400; // 24 hours
+        leagueState.auction.timerRemaining = AUCTION_DURATION_SECONDS; // 1 hora e 30 minutos
         leagueState.auction.lastUpdated = Date.now();
 
         broadcast({
@@ -556,7 +566,7 @@ function finalizeSpecificPlayerAuction(player: Player) {
         broadcast({
           type: 'CHAT_NOTIFICATION',
           data: {
-            message: `📢 Próximo jogador da fila de interesse: ${nextPlayer.name} (${nextPlayer.position} - ${nextPlayer.club}), postado por ${nextItem.nominatedByUserName} (${nextItem.nominatedByTeamName})! Propostas abertas por 24 horas.`,
+            message: `📢 Próximo jogador da fila de interesse: ${nextPlayer.name} (${nextPlayer.position} - ${nextPlayer.club}), postado por ${nextItem.nominatedByUserName} (${nextItem.nominatedByTeamName})! Propostas abertas por 1 hora e 30 minutos.`,
             timestamp: Date.now(),
             type: 'info'
           }
@@ -626,6 +636,15 @@ setInterval(() => {
                 type: 'alert'
               }
             });
+          } else if (p.timerRemaining === 1800) {
+            broadcast({
+              type: 'CHAT_NOTIFICATION',
+              data: {
+                message: `⏳ Restam 30 minutos para o encerramento das propostas por ${p.name}!`,
+                timestamp: Date.now(),
+                type: 'alert'
+              }
+            });
           } else if (p.timerRemaining === 600) {
             broadcast({
               type: 'CHAT_NOTIFICATION',
@@ -666,7 +685,7 @@ setInterval(() => {
       }
     }
   } else if (leagueState.auction.status === 'IDLE') {
-    // Se estiver IDLE e houver jogadores na fila de interesse, inicia automaticamente a rodada de 24h
+    // Se estiver IDLE e houver jogadores na fila de interesse, inicia automaticamente a rodada de 1h30m
     if (leagueState.auction.nominationQueue && leagueState.auction.nominationQueue.length > 0) {
       const nextItem = leagueState.auction.nominationQueue.shift()!;
       const nextPlayer = leagueState.players.find((p) => p.id === nextItem.player.id);
@@ -678,7 +697,7 @@ setInterval(() => {
         leagueState.auction.currentPlayer = nextPlayer;
         leagueState.auction.currentBid = null;
         leagueState.auction.bidHistory = [];
-        leagueState.auction.timerRemaining = 86400;
+        leagueState.auction.timerRemaining = AUCTION_DURATION_SECONDS;
         leagueState.auction.lastUpdated = Date.now();
 
         broadcast({
@@ -692,7 +711,7 @@ setInterval(() => {
         broadcast({
           type: 'CHAT_NOTIFICATION',
           data: {
-            message: `📢 Próximo jogador da fila: ${nextPlayer.name} (${nextPlayer.position} - ${nextPlayer.club}), postado por ${nextItem.nominatedByUserName}! Propostas abertas por 24 horas.`,
+            message: `📢 Próximo jogador da fila: ${nextPlayer.name} (${nextPlayer.position} - ${nextPlayer.club}), postado por ${nextItem.nominatedByUserName}! Propostas abertas por 1 hora e 30 minutos.`,
             timestamp: Date.now(),
             type: 'info'
           }
@@ -1326,26 +1345,15 @@ async function startServer() {
     }
 
     if (player.status === 'IN_AUCTION' || leagueState.auction.currentPlayer?.id === player.id) {
-      res.status(400).json({ success: false, error: 'Este jogador já está no leilão ao vivo com propostas abertas de 24 horas!' });
+      res.status(400).json({ success: false, error: 'Este jogador já está no leilão ao vivo com propostas abertas de 1 hora e 30 minutos!' });
       return;
     }
 
-    // Validação do Cronograma Oficial por Posições (Dia 1, 2, 3 ou Fase Livre)
-    const currentDay = leagueState.auction.auctionDay || 'ALL';
-    if (!isPositionAllowedForDay(player.position, currentDay)) {
-      let dayDesc = '';
-      if (currentDay === 1) dayDesc = 'Dia 1 - Sistema Defensivo: Goleiros (GOL), Zagueiros (ZAG) e Laterais (LD/LE)';
-      else if (currentDay === 2) dayDesc = 'Dia 2 - Meio-Campo: Volantes (VOL) e Meio-campistas (MC/MEI)';
-      else if (currentDay === 3) dayDesc = 'Dia 3 - Setor Ofensivo: Pontas (ME/MD/PE/PD), Segundos Atacantes (SA) e Centroavantes (ATA)';
+    // Regulamento Oficial Khedira League: Sem divisão de fases
+    // ATAQUE, MEIO CAMPO, DEFESA e GOLEIROS todos liberados simultaneamente para abertura de leilão
+    leagueState.auction.auctionDay = 'ALL';
 
-      res.status(400).json({
-        success: false,
-        error: `Conforme o Regulamento Oficial da Khedira League, a disputa atual é restrita ao ${dayDesc}. O atleta ${player.name} (${player.position}) pertence a outra fase.`
-      });
-      return;
-    }
-
-    // Se leilão está em andamento (ACTIVE ou IDLE), abre imediatamente a rodada simultânea de 24h para o atleta
+    // Se leilão está em andamento (ACTIVE ou IDLE), abre imediatamente a rodada simultânea de 1h30m para o atleta
     const openingAmount = req.body.amount ? Number(req.body.amount) : player.initialPrice;
     if (user.budget < openingAmount) {
       res.status(400).json({ 
@@ -1394,8 +1402,8 @@ async function startServer() {
     if (!player.bidHistory) player.bidHistory = [];
     player.bidHistory.unshift(newBid);
     player.currentPrice = openingAmount;
-    player.timerRemaining = 86400; // 24 horas por atleta
-    player.auctionExpiresAt = Date.now() + 86400 * 1000;
+    player.timerRemaining = AUCTION_DURATION_SECONDS; // 1 hora e 30 minutos por atleta
+    player.auctionExpiresAt = Date.now() + AUCTION_DURATION_SECONDS * 1000;
 
     leagueState.auction.status = 'ACTIVE';
     leagueState.auction.currentPlayer = player;
@@ -1418,7 +1426,7 @@ async function startServer() {
     broadcast({
       type: 'CHAT_NOTIFICATION',
       data: {
-        message: `📢 Proposta aberta por ${player.name} (${player.position}) no valor de € ${(openingAmount / 1000000).toFixed(1)}M (${isAnonymous ? '*****' : user.teamName})! Disputa ativa por 24 horas.`,
+        message: `📢 Proposta aberta por ${player.name} (${player.position}) no valor de € ${(openingAmount / 1000000).toFixed(1)}M (${isAnonymous ? '*****' : user.teamName})! Disputa ativa por 1 hora e 30 minutos.`,
         timestamp: Date.now(),
         type: 'info'
       }
@@ -1486,12 +1494,14 @@ async function startServer() {
 
     targetPlayer.status = 'IN_AUCTION';
     targetPlayer.nominatedBy = item.nominatedByUserId;
+    targetPlayer.timerRemaining = AUCTION_DURATION_SECONDS;
+    targetPlayer.auctionExpiresAt = Date.now() + AUCTION_DURATION_SECONDS * 1000;
 
     leagueState.auction.status = 'ACTIVE';
     leagueState.auction.currentPlayer = targetPlayer;
     leagueState.auction.currentBid = null;
     leagueState.auction.bidHistory = [];
-    leagueState.auction.timerRemaining = 86400; // 24 horas
+    leagueState.auction.timerRemaining = AUCTION_DURATION_SECONDS; // 1 hora e 30 minutos
     leagueState.auction.lastUpdated = Date.now();
 
     saveState();
@@ -1543,23 +1553,8 @@ async function startServer() {
       return;
     }
 
-    // Regra Inviolável Anti-Burla: Validar rigorosamente se o jogador em disputa pertence à fase do dia
-    const currentDay = leagueState.auction.auctionDay || 'ALL';
-    if (!isPositionAllowedForDay(player.position, currentDay)) {
-      res.status(400).json({
-        success: false,
-        error: `Regulamento da Khedira League: lances bloqueados! O leilão ativo hoje é restrito ao ${
-          currentDay === 1
-            ? 'Dia 1 (Sistema Defensivo: GOL, ZAG, LE, LD)'
-            : currentDay === 2
-            ? 'Dia 2 (Meio-Campo: VOL, MC, MEI)'
-            : currentDay === 3
-            ? 'Dia 3 (Setor Ofensivo: ATA, PD, PE, MD, ME, SA)'
-            : 'Fase Geral'
-        }. O atleta ${player.name} (${player.position}) não pertence à fase ativa.`
-      });
-      return;
-    }
+    // Regulamento Oficial: Sem divisão de fases (ATAQUE, MEIO e DEFESA juntos)
+    leagueState.auction.auctionDay = 'ALL';
 
     // Calculate true current highest bid for this player
     let currentHighest = player.currentBid?.amount || 0;
@@ -1657,9 +1652,9 @@ async function startServer() {
     player.bidHistory.unshift(newBid);
     player.currentPrice = bidAmount;
 
-    // 24h timer or anti-snipe 5 min
+    // 1h30min timer or anti-snipe 5 min
     if (!player.timerRemaining || player.timerRemaining <= 0) {
-      player.timerRemaining = 86400; // 24 hours
+      player.timerRemaining = AUCTION_DURATION_SECONDS; // 1 hora e 30 minutos
     } else if (player.timerRemaining < 300) {
       player.timerRemaining = 300;
     }
@@ -2185,6 +2180,27 @@ async function startServer() {
       : (adminUser ? `${adminUser.name} (${adminUser.adminTitle || 'Admin'})` : 'A Diretoria');
 
     switch (action) {
+      case 'SET_SCHEDULED_START': {
+        const targetTime = typeof value === 'number' ? value : Number(value);
+        if (!isNaN(targetTime)) {
+          leagueState.auction.scheduledStartTime = targetTime;
+          leagueState.auction.lastUpdated = Date.now();
+          saveState();
+          broadcastState();
+          broadcast({
+            type: 'CHAT_NOTIFICATION',
+            data: {
+              message: `⏱️ ${adminLeaderLabel} ajustou o cronômetro oficial de contagem regressiva para o início do leilão!`,
+              timestamp: Date.now(),
+              type: 'info'
+            }
+          });
+          res.json({ success: true, auction: leagueState.auction });
+          return;
+        }
+        res.status(400).json({ success: false, error: 'Horário inválido' });
+        return;
+      }
       case 'START_LEAGUE_AUCTION':
         leagueState.auction.status = 'ACTIVE';
         leagueState.auction.lastUpdated = Date.now();
@@ -2198,45 +2214,19 @@ async function startServer() {
         });
         break;
       case 'SET_AUCTION_DAY': {
-        const validDay = (value === 1 || value === 2 || value === 3 || value === 'ALL') ? value : 'ALL';
-        leagueState.auction.auctionDay = validDay;
+        leagueState.auction.auctionDay = 'ALL';
         leagueState.auction.lastUpdated = Date.now();
-
-        // Se houver leilão ativo com jogador de posição diferente da nova fase, cancela e devolve ao mercado
-        if (leagueState.auction.currentPlayer && !isPositionAllowedForDay(leagueState.auction.currentPlayer.position, validDay)) {
-          const removedName = leagueState.auction.currentPlayer.name;
-          leagueState.auction.currentPlayer.status = 'AVAILABLE';
-          leagueState.auction.currentPlayer = null;
-          leagueState.auction.currentBid = null;
-          leagueState.auction.bidHistory = [];
-          if (leagueState.auction.status === 'ACTIVE') {
-            leagueState.auction.status = 'IDLE';
-          }
-          broadcast({
-            type: 'CHAT_NOTIFICATION',
-            data: {
-              message: `⚠️ Leilão de ${removedName} cancelado automaticamente pois a fase do dia foi alterada.`,
-              timestamp: Date.now(),
-              type: 'alert'
-            }
-          });
-        }
-
-        let dayDesc = '';
-        if (validDay === 1) dayDesc = 'Dia 1 - Sistema Defensivo (GOL, ZAG, LD/LE)';
-        else if (validDay === 2) dayDesc = 'Dia 2 - Meio-Campo (VOL, MC, MEI)';
-        else if (validDay === 3) dayDesc = 'Dia 3 - Setor Ofensivo (Pontas, Segundos Atacantes e Centroavantes)';
-        else dayDesc = 'Fase Livre - Todas as posições liberadas';
-
         broadcast({
           type: 'CHAT_NOTIFICATION',
           data: {
-            message: `📅 ${adminLeaderLabel} definiu o Cronograma Oficial do Leilão: ${dayDesc}!`,
+            message: `📅 ${adminLeaderLabel} confirmou o Mercado Geral Unificado da Khedira League: ATAQUE, MEIO CAMPO E DEFESA simultâneos!`,
             timestamp: Date.now(),
             type: 'info'
           }
         });
-        break;
+        broadcastState();
+        res.json({ success: true, message: 'Mercado configurado para Mercado Geral Unificado (ATAQUE, MEIO e DEFESA simultâneos).' });
+        return;
       }
       case 'TOGGLE_ANONYMOUS_BIDDING':
         leagueState.auction.anonymousBidding = !leagueState.auction.anonymousBidding;
@@ -2341,7 +2331,7 @@ async function startServer() {
         break;
       }
       case 'RESET_TIMER':
-        leagueState.auction.timerRemaining = Number(value) || 86400;
+        leagueState.auction.timerRemaining = Number(value) || AUCTION_DURATION_SECONDS;
         break;
       case 'CANCEL_AUCTION':
         if (leagueState.auction.currentPlayer) {

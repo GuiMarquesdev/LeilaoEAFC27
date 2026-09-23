@@ -81,7 +81,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [isResetting, setIsResetting] = useState(false);
   const [resetFeedback, setResetFeedback] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  if (!isOpen || !currentUser || currentUser.role !== 'ADMIN') return null;
 
   const soldPlayers = players.filter((p) => p.status === 'SOLD');
   const totalMoneyInvested = users.reduce((acc, u) => acc + (u.spent || 0), 0);
@@ -386,38 +386,49 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
                 <div className="flex flex-col gap-1">
                   <button
-                    onClick={() => onAdminAuctionAction('RESET_TIMER', 86400)}
+                    onClick={() => onAdminAuctionAction('RESET_TIMER', 5400)}
                     disabled={auction.status === 'IDLE'}
                     className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-40 cursor-pointer w-full"
-                    title="Ajusta o cronômetro para 24 horas (padrão oficial)"
+                    title="Ajusta o cronômetro para 1 hora e 30 minutos (padrão oficial)"
                   >
                     <RotateCcw className="w-4 h-4" />
-                    <span>Resetar Timer (24h)</span>
+                    <span>Resetar Timer (1h30m)</span>
                   </button>
                   {auction.status !== 'IDLE' && (
-                    <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-slate-500">
+                    <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-slate-500 flex-wrap">
                       <span>Presets:</span>
                       <button 
-                        onClick={() => onAdminAuctionAction('RESET_TIMER', 86400)} 
-                        className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
+                        onClick={() => onAdminAuctionAction('RESET_TIMER', 5400)} 
+                        className="px-1.5 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded cursor-pointer"
+                        title="1 hora e 30 minutos"
                       >
-                        24h
+                        1h30m
                       </button>
                       <button 
                         onClick={() => onAdminAuctionAction('RESET_TIMER', 3600)} 
                         className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
+                        title="1 hora"
                       >
                         1h
                       </button>
                       <button 
+                        onClick={() => onAdminAuctionAction('RESET_TIMER', 1800)} 
+                        className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
+                        title="30 minutos"
+                      >
+                        30m
+                      </button>
+                      <button 
                         onClick={() => onAdminAuctionAction('RESET_TIMER', 600)} 
                         className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
+                        title="10 minutos"
                       >
                         10m
                       </button>
                       <button 
                         onClick={() => onAdminAuctionAction('RESET_TIMER', 60)} 
                         className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
+                        title="1 minuto"
                       >
                         1m
                       </button>
@@ -454,97 +465,34 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 </div>
               </div>
 
-              {/* CRONOGRAMA OFICIAL DE 3 DIAS (ATA KHEDIRA LEAGUE) */}
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+              {/* MERCADO UNIFICADO SEM FASES (ATAQUE, MEIO CAMPO E DEFESA JUNTOS) */}
+              <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-emerald-600" />
-                    <span>Cronograma do Leilão (3 Dias - Ata Oficial)</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Mercado Unificado (Sem Fases de Dias)</span>
                   </span>
-                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    Fase Atual: {getDayLabel(auction.auctionDay || 'ALL').title}
+                  <span className="text-xs font-semibold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                    Ataque, Meio e Defesa Juntos
                   </span>
                 </div>
-                <p className="text-xs text-slate-600">
-                  Defina qual fase/dia do cronograma está em vigor para restringir as indicações de atletas conforme as posições acordadas na Ata:
+                <p className="text-xs text-slate-700 leading-relaxed">
+                  A regra de divisão por 3 dias e fases de posições foi removida conforme a nova diretriz da Liga. Todos os atletas do setor ofensivo, meio-campo e defensivo estão liberados simultaneamente para propostas e lances.
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => onAdminAuctionAction('SET_AUCTION_DAY', 1)}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      auction.auctionDay === 1
-                        ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-500/20 shadow-xs'
-                        : 'bg-white border-slate-200 hover:border-blue-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-extrabold px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
-                        DIA 1
-                      </span>
-                      {auction.auctionDay === 1 && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                    </div>
-                    <span className="text-xs font-bold text-slate-900 block">Sistema Defensivo</span>
-                    <span className="text-[11px] text-slate-500">GOL, ZAG, LE, LD</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onAdminAuctionAction('SET_AUCTION_DAY', 2)}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      auction.auctionDay === 2
-                        ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-500/20 shadow-xs'
-                        : 'bg-white border-slate-200 hover:border-amber-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-extrabold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded">
-                        DIA 2
-                      </span>
-                      {auction.auctionDay === 2 && <Check className="w-3.5 h-3.5 text-amber-600" />}
-                    </div>
-                    <span className="text-xs font-bold text-slate-900 block">Meio-Campo</span>
-                    <span className="text-[11px] text-slate-500">VOL, MC, MEI</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onAdminAuctionAction('SET_AUCTION_DAY', 3)}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      auction.auctionDay === 3
-                        ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-500/20 shadow-xs'
-                        : 'bg-white border-slate-200 hover:border-rose-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-extrabold px-1.5 py-0.5 bg-rose-100 text-rose-800 rounded">
-                        DIA 3
-                      </span>
-                      {auction.auctionDay === 3 && <Check className="w-3.5 h-3.5 text-rose-600" />}
-                    </div>
-                    <span className="text-xs font-bold text-slate-900 block">Setor Ofensivo</span>
-                    <span className="text-[11px] text-slate-500">ATA, PE, PD, ME, MD, SA</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onAdminAuctionAction('SET_AUCTION_DAY', 'ALL')}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      auction.auctionDay === 'ALL' || !auction.auctionDay
-                        ? 'bg-purple-50 border-purple-400 ring-2 ring-purple-500/20 shadow-xs'
-                        : 'bg-white border-slate-200 hover:border-purple-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-extrabold px-1.5 py-0.5 bg-purple-100 text-purple-800 rounded">
-                        LIVRE
-                      </span>
-                      {(auction.auctionDay === 'ALL' || !auction.auctionDay) && <Check className="w-3.5 h-3.5 text-purple-600" />}
-                    </div>
-                    <span className="text-xs font-bold text-slate-900 block">Fase Geral / Livre</span>
-                    <span className="text-[11px] text-slate-500">Todas as posições</span>
-                  </button>
+                <div className="p-3 bg-white rounded-xl border border-emerald-200/80 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 bg-emerald-600 text-white rounded">
+                      MERCADO ABERTO
+                    </span>
+                    <span className="text-xs font-bold text-slate-900">
+                      GOL, ZAG, LE, LD, VOL, MC, MEI, ATA, PE, PD, ME, MD, SA
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" />
+                    Todas as posições permitidas
+                  </span>
                 </div>
               </div>
 

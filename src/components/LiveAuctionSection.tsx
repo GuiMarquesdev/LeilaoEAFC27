@@ -6,7 +6,7 @@ import {
   AlertCircle, Shield, Plus, Crown, Volume2, SkipForward,
   Play, Square, Sparkles, Trophy, Users as UsersIcon, RotateCcw,
   Lock, Unlock, FileText, ShieldAlert, ShieldCheck, Calendar, Star,
-  ListOrdered, Trash2, Loader2, Wallet, Coins, LayoutGrid
+  ListOrdered, Trash2, Loader2, Wallet, Coins, LayoutGrid, X, Filter
 } from 'lucide-react';
 import { AuctionState, Player, UserProfile, Bid } from '../types';
 import { formatCurrency, getPositionBadge, getDayLabel, isPositionAllowedForDay, getUserRoleBadge, formatAuctionTimer, getPlayerActiveBid, getPlayerEffectivePrice } from '../utils/formatters';
@@ -58,6 +58,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 }) => {
   const [customBidAmount, setCustomBidAmount] = useState<string>('');
   const [searchNominate, setSearchNominate] = useState<string>('');
+  const [positionFilterNominate, setPositionFilterNominate] = useState<string>('ALL');
   const [submittingBid, setSubmittingBid] = useState<boolean>(false);
   const [nominateLoading, setNominateLoading] = useState<boolean>(false);
   const [bidError, setBidError] = useState<string | null>(null);
@@ -74,6 +75,32 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
   const currentPlayer = auction.currentPlayer;
   const currentBid = auction.currentBid;
   const isAdmin = currentUser?.role === 'ADMIN';
+
+  // Relógio em tempo real com atualização segundo a segundo para contagem regressiva
+  const [nowTimestamp, setNowTimestamp] = useState<number>(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowTimestamp(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Cálculo da contagem regressiva para abertura do leilão
+  const scheduledStartTime = auction.scheduledStartTime || (auction.lastUpdated ? auction.lastUpdated + 5400 * 1000 : nowTimestamp + 5400 * 1000);
+  const preAuctionDiffMs = Math.max(0, scheduledStartTime - nowTimestamp);
+  const preAuctionSecondsRemaining = Math.floor(preAuctionDiffMs / 1000);
+
+  const countdownDays = Math.floor(preAuctionSecondsRemaining / 86400);
+  const countdownHours = Math.floor((preAuctionSecondsRemaining % 86400) / 3600);
+  const countdownMinutes = Math.floor((preAuctionSecondsRemaining % 3600) / 60);
+  const countdownSeconds = preAuctionSecondsRemaining % 60;
+
+  const handleAdjustCountdown = async (secondsFromNow: number) => {
+    if (!isAdmin || !onAdminAuctionAction) return;
+    const newTarget = Date.now() + secondsFromNow * 1000;
+    await onAdminAuctionAction('SET_SCHEDULED_START', newTarget);
+  };
 
   // Active concurrent auction players with guaranteed fresh bid and price resolution
   const activeAuctionPlayers = React.useMemo(() => {
@@ -115,7 +142,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
   const focusedBid = getPlayerActiveBid(focusedPlayer, auction);
   const focusedEffectivePrice = getPlayerEffectivePrice(focusedPlayer, auction);
-  const focusedTimerRemaining = focusedPlayer?.timerRemaining ?? (auction.currentPlayer?.id === focusedPlayer?.id ? auction.timerRemaining : 86400);
+  const focusedTimerRemaining = focusedPlayer?.timerRemaining ?? (auction.currentPlayer?.id === focusedPlayer?.id ? auction.timerRemaining : 5400);
 
   const userWonPlayersCount = currentUser
     ? players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === currentUser.id).length
@@ -139,20 +166,44 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
   const currentAuctionDay = auction.auctionDay || 1;
   const currentDayInfo = getDayLabel(currentAuctionDay);
 
-  // Available players for nomination - APENAS JOGADORES DA POSIÇÃO DO DIA
-  const availablePlayers = players.filter(
-    (p) => p.status === 'AVAILABLE' && isPositionAllowedForDay(p.position, currentAuctionDay)
-  );
-  const filteredAvailablePlayers = availablePlayers.filter(
-    (p) =>
-      p.name.toLowerCase().includes(searchNominate.toLowerCase()) ||
-      p.club.toLowerCase().includes(searchNominate.toLowerCase()) ||
-      p.position.toLowerCase().includes(searchNominate.toLowerCase())
-  ).slice(0, 8); // Top 8 suggestions
+  // Available players for nomination - TODOS OS ATLETAS REGISTRADOS SEM RESTRIÇÃO DE FASES E SEM LIMITAÇÃO DE SLICE
+  const availablePlayers = React.useMemo(() => {
+    return players.filter((p) => p.status === 'AVAILABLE');
+  }, [players]);
 
-  const isCurrentPlayerAllowedToday = focusedPlayer
-    ? isPositionAllowedForDay(focusedPlayer.position, currentAuctionDay)
-    : true;
+  const nominationCounts = React.useMemo(() => {
+    return {
+      ALL: availablePlayers.length,
+      GOL: availablePlayers.filter((p) => p.position === 'GOL').length,
+      ZAG: availablePlayers.filter((p) => p.position === 'ZAG').length,
+      LAT: availablePlayers.filter((p) => ['LE', 'LD'].includes(p.position)).length,
+      MEI: availablePlayers.filter((p) => ['VOL', 'MC', 'MEI', 'MD', 'ME'].includes(p.position)).length,
+      ATA: availablePlayers.filter((p) => ['ATA', 'PE', 'PD', 'SA'].includes(p.position)).length,
+    };
+  }, [availablePlayers]);
+
+  const filteredAvailablePlayers = React.useMemo(() => {
+    const q = searchNominate.toLowerCase().trim();
+    return availablePlayers.filter((p) => {
+      // Position filter
+      if (positionFilterNominate === 'GOL' && p.position !== 'GOL') return false;
+      if (positionFilterNominate === 'ZAG' && p.position !== 'ZAG') return false;
+      if (positionFilterNominate === 'LAT' && !['LE', 'LD'].includes(p.position)) return false;
+      if (positionFilterNominate === 'MEI' && !['VOL', 'MC', 'MEI', 'MD', 'ME'].includes(p.position)) return false;
+      if (positionFilterNominate === 'ATA' && !['ATA', 'PE', 'PD', 'SA'].includes(p.position)) return false;
+
+      // Text search
+      if (!q) return true;
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.club.toLowerCase().includes(q) ||
+        p.position.toLowerCase().includes(q) ||
+        (p.nationality && p.nationality.toLowerCase().includes(q))
+      );
+    });
+  }, [availablePlayers, searchNominate, positionFilterNominate]);
+
+  const isCurrentPlayerAllowedToday = true;
 
   // Calculate minimum bid required for focused player
   const focusedHighest = focusedBid?.amount || (focusedEffectivePrice > (focusedPlayer?.initialPrice || 0) ? focusedEffectivePrice : 0);
@@ -209,12 +260,6 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
     if (!currentUser) return;
     
     const targetPlayer = (targetPlayerId ? players.find((p) => p.id === targetPlayerId) : null) || focusedPlayer || currentPlayer;
-
-    // Strict Anti-Burla Validation
-    if (targetPlayer && !isPositionAllowedForDay(targetPlayer.position, currentAuctionDay)) {
-      setBidError(`Lances Bloqueados: O leilão de hoje é exclusivo para ${getDayLabel(currentAuctionDay).title}. Este atleta (${targetPlayer.position}) não pertence à fase ativa e não pode receber lances!`);
-      return;
-    }
 
     if (amount > currentUser.budget) {
       setBidError(`Saldo insuficiente! Seu saldo é ${formatCurrency(currentUser.budget)}`);
@@ -549,11 +594,11 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
     );
   };
 
-  // Timer color and percentage (24 hours = 86,400s per auction round)
-  const timerMax = 86400;
+  // Timer color and percentage (1 hora e 30 minutos = 5.400s por rodada de leilão)
+  const timerMax = 5400;
   const timerPercent = Math.min(100, Math.max(0, (focusedTimerRemaining / timerMax) * 100));
   const isUrgentTimer = focusedTimerRemaining <= 600; // Last 10 minutes
-  const isWarningTimer = focusedTimerRemaining <= 3600; // Last 1 hour
+  const isWarningTimer = focusedTimerRemaining <= 1800; // Last 30 minutes
 
   return (
     <div className="space-y-6">
@@ -604,7 +649,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                     O leilão oficial da Khedira League foi encerrado pelo administrador.
                   </span>
                 ) : isAuctionActive ? (
-                  <>Disputa ao vivo por <span className="text-emerald-600">{currentPlayer?.name}</span> • Propostas por 24 horas</>
+                  <>Disputa ao vivo por <span className="text-emerald-600">{currentPlayer?.name}</span> • Propostas por 1 hora e 30 minutos</>
                 ) : (
                   <span className="text-emerald-700 font-extrabold">
                     ⚽ Leilão Aberto: Qualquer participante pode postar jogadores de interesse!
@@ -689,63 +734,26 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
         </div>
       </div>
 
-      {/* 1.1 Barra de Alinhamento Oficial (Ata & Cronograma dos 3 Dias & Sigilo de Lances) */}
+      {/* 1.1 Barra de Alinhamento Oficial (Mercado Aberto Unificado & Sigilo de Lances) */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-start sm:items-center gap-3">
           <div>
             <div>
               <h4 className="text-sm font-extrabold text-white flex items-center gap-1.5">
-                <span>Fase Atual: {getDayLabel(auction.auctionDay || 'ALL').title}</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Mercado Aberto Unificado • Sem Divisão de Fases</span>
               </h4>
-              <p className="text-[11px] text-slate-400">
-                {getDayLabel(auction.auctionDay || 'ALL').subtitle}
+              <p className="text-[11px] text-slate-300">
+                Ataque, Meio-Campo, Defesa e Goleiros todos liberados simultaneamente para disputa.
               </p>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
-          {isAdmin && onAdminAuctionAction && (
-            <div className="flex items-center gap-1.5 bg-slate-800/90 p-1 rounded-xl border border-slate-700 text-xs">
-              <span className="text-[10px] font-bold text-slate-400 pl-1.5">Dia:</span>
-              <button
-                onClick={() => onAdminAuctionAction('SET_AUCTION_DAY', 1)}
-                className={`px-2 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
-                  auction.auctionDay === 1 ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
-                }`}
-                title="Dia 1: Sistema Defensivo (GOL, ZAG, LD/LE)"
-              >
-                1 (Defesa)
-              </button>
-              <button
-                onClick={() => onAdminAuctionAction('SET_AUCTION_DAY', 2)}
-                className={`px-2 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
-                  auction.auctionDay === 2 ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
-                }`}
-                title="Dia 2: Meio-Campo (VOL, MC, MEI)"
-              >
-                2 (Meio)
-              </button>
-              <button
-                onClick={() => onAdminAuctionAction('SET_AUCTION_DAY', 3)}
-                className={`px-2 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
-                  auction.auctionDay === 3 ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
-                }`}
-                title="Dia 3: Setor Ofensivo (ATA, PE, PD, ME, MD, SA)"
-              >
-                3 (Ataque)
-              </button>
-              <button
-                onClick={() => onAdminAuctionAction('SET_AUCTION_DAY', 'ALL')}
-                className={`px-2 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer ${
-                  auction.auctionDay === 'ALL' || !auction.auctionDay ? 'bg-purple-600 text-white' : 'text-slate-300 hover:bg-slate-700'
-                }`}
-                title="Fase Livre: Todas as posições"
-              >
-                Livre
-              </button>
-            </div>
-          )}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-950/70 border border-emerald-500/40 rounded-xl text-emerald-300 text-xs font-bold">
+            <span>🟢 Todos os Setores Ativos</span>
+          </div>
 
           {isAdmin && onOpenAdminReport && (
             <button
@@ -778,114 +786,72 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span className="text-xs font-black uppercase tracking-wider text-slate-200">
-              Tipos Oficiais de Leilão & Cronograma (Seguido à Risca)
+              Setores em Disputa • Mercado Simultâneo Aberto
             </span>
           </div>
-          <span className="text-[11px] font-bold text-slate-400 bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-700">
-            Regra Anti-Burla Ativa • Apenas lances e indicações na posição do dia
+          <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-500/40">
+            Regra Oficial: Sem fases • ATAQUE, MEIO CAMPO e DEFESA disponíveis simultaneamente
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* DIA 1: DEFESA */}
-          <div className={`p-3.5 rounded-xl border transition-all ${
-            auction.auctionDay === 1
-              ? 'bg-emerald-950/40 border-emerald-500 shadow-md ring-1 ring-emerald-500'
-              : 'bg-slate-800/60 border-slate-700/80 opacity-75'
-          }`}>
+          {/* SETOR OFENSIVO: ATAQUE */}
+          <div className="p-3.5 rounded-xl border bg-emerald-950/30 border-emerald-500/60 shadow-xs transition-all">
             <div className="flex items-center justify-between mb-1.5">
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
-                auction.auctionDay === 1 ? 'bg-emerald-500 text-slate-950 font-black' : 'bg-slate-700 text-slate-300'
-              }`}>
-                DIA 1 • DEFESA
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500 text-white">
+                SETOR OFENSIVO
               </span>
-              {auction.auctionDay === 1 ? (
-                <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  FASE ATIVA HOJE
-                </span>
-              ) : (
-                <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                  <Lock className="w-3 h-3" /> Bloqueado
-                </span>
-              )}
+              <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                DISPONÍVEL
+              </span>
             </div>
-            <h5 className="text-xs font-black text-white">Sistema Defensivo & Goleiros</h5>
+            <h5 className="text-xs font-black text-white">Ataque & Goleadores</h5>
             <p className="text-[11px] text-slate-300 mt-1">
-              Exclusivo para: <strong className="text-white">GOL, ZAG, LD, LE</strong>.
+              Atletas: <strong className="text-white">ATA, PE, PD, ME, MD, SA</strong>
             </p>
-            <span className="text-[10px] text-slate-400 block mt-1.5 font-medium">
-              {auction.auctionDay === 1 
-                ? '🟢 Lances e indicações liberados para defensores.' 
-                : '🔒 Lances bloqueados até esta fase.'}
+            <span className="text-[10px] text-emerald-300 block mt-1.5 font-medium">
+              🟢 Lances e indicações liberados (1h30m de disputa).
             </span>
           </div>
 
-          {/* DIA 2: MEIO-CAMPO */}
-          <div className={`p-3.5 rounded-xl border transition-all ${
-            auction.auctionDay === 2
-              ? 'bg-emerald-950/40 border-emerald-500 shadow-md ring-1 ring-emerald-500'
-              : 'bg-slate-800/60 border-slate-700/80 opacity-75'
-          }`}>
+          {/* MEIO-CAMPO */}
+          <div className="p-3.5 rounded-xl border bg-emerald-950/30 border-emerald-500/60 shadow-xs transition-all">
             <div className="flex items-center justify-between mb-1.5">
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
-                auction.auctionDay === 2 ? 'bg-emerald-500 text-slate-950 font-black' : 'bg-slate-700 text-slate-300'
-              }`}>
-                DIA 2 • MEIO
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500 text-slate-950">
+                MEIO-CAMPO
               </span>
-              {auction.auctionDay === 2 ? (
-                <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  FASE ATIVA HOJE
-                </span>
-              ) : (
-                <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                  <Lock className="w-3 h-3" /> Bloqueado
-                </span>
-              )}
+              <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                DISPONÍVEL
+              </span>
             </div>
-            <h5 className="text-xs font-black text-white">Meio-Campo & Criação</h5>
+            <h5 className="text-xs font-black text-white">Armação & Controle</h5>
             <p className="text-[11px] text-slate-300 mt-1">
-              Exclusivo para: <strong className="text-white">VOL, MC, MEI</strong>.
+              Atletas: <strong className="text-white">VOL, MC, MEI</strong>
             </p>
-            <span className="text-[10px] text-slate-400 block mt-1.5 font-medium">
-              {auction.auctionDay === 2 
-                ? '🟢 Lances e indicações liberados para meio-campistas.' 
-                : '🔒 Lances bloqueados até esta fase.'}
+            <span className="text-[10px] text-emerald-300 block mt-1.5 font-medium">
+              🟢 Lances e indicações liberados (1h30m de disputa).
             </span>
           </div>
 
-          {/* DIA 3: SETOR OFENSIVO */}
-          <div className={`p-3.5 rounded-xl border transition-all ${
-            auction.auctionDay === 3
-              ? 'bg-emerald-950/40 border-emerald-500 shadow-md ring-1 ring-emerald-500'
-              : 'bg-slate-800/60 border-slate-700/80 opacity-75'
-          }`}>
+          {/* DEFESA & GOLEIROS */}
+          <div className="p-3.5 rounded-xl border bg-emerald-950/30 border-emerald-500/60 shadow-xs transition-all">
             <div className="flex items-center justify-between mb-1.5">
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
-                auction.auctionDay === 3 ? 'bg-emerald-500 text-slate-950 font-black' : 'bg-slate-700 text-slate-300'
-              }`}>
-                DIA 3 • ATAQUE
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-blue-600 text-white">
+                SISTEMA DEFENSIVO
               </span>
-              {auction.auctionDay === 3 ? (
-                <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  FASE ATIVA HOJE
-                </span>
-              ) : (
-                <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                  <Lock className="w-3 h-3" /> Bloqueado
-                </span>
-              )}
+              <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                DISPONÍVEL
+              </span>
             </div>
-            <h5 className="text-xs font-black text-white">Setor Ofensivo & Goleadores</h5>
+            <h5 className="text-xs font-black text-white">Defesa & Goleiros</h5>
             <p className="text-[11px] text-slate-300 mt-1">
-              Exclusivo para: <strong className="text-white">ATA, PE, PD, ME, MD, SA</strong>.
+              Atletas: <strong className="text-white">GOL, ZAG, LD, LE</strong>
             </p>
-            <span className="text-[10px] text-slate-400 block mt-1.5 font-medium">
-              {auction.auctionDay === 3 
-                ? '🟢 Lances e indicações liberados para atacantes.' 
-                : '🔒 Lances bloqueados até esta fase.'}
+            <span className="text-[10px] text-emerald-300 block mt-1.5 font-medium">
+              🟢 Lances e indicações liberados (1h30m de disputa).
             </span>
           </div>
         </div>
@@ -934,6 +900,119 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
                 {/* Representação em Tempo Real do Saldo em Conta, Débito e Estorno */}
                 {renderUserAccountBalanceRepresentation()}
+
+                {/* ⏱️ CRONÔMETRO COM CONTAGEM REGRESSIVA PARA TODOS VEREM BEM */}
+                <div className="my-6 p-5 sm:p-6 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-2xl border-2 border-emerald-500/50 shadow-xl text-white relative overflow-hidden">
+                  <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+                  <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+
+                  {/* Header badge */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-3 w-3 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                      </span>
+                      <span className="text-xs font-black tracking-wider uppercase text-emerald-400 flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-emerald-400" />
+                        Cronômetro Oficial de Contagem Regressiva
+                      </span>
+                    </div>
+                    
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                      Janela de 1h30m por Disputa
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-300 text-center mb-5 font-medium">
+                    {preAuctionSecondsRemaining > 0 
+                      ? '⏱️ Tempo restante para o início oficial do leilão e liberação das propostas:' 
+                      : '🔥 Horário atingido! A diretoria pode iniciar o leilão a qualquer momento!'}
+                  </p>
+
+                  {/* Digits Display */}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3.5 max-w-md mx-auto">
+                    {countdownDays > 0 && (
+                      <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-slate-900/90 border border-slate-700 rounded-2xl shadow-inner">
+                        <span className="text-3xl sm:text-5xl font-mono font-black text-amber-400 tracking-tight">
+                          {String(countdownDays).padStart(2, '0')}
+                        </span>
+                        <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-400 mt-1">
+                          Dias
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-slate-900/90 border border-emerald-500/50 rounded-2xl shadow-inner">
+                      <span className="text-3xl sm:text-5xl font-mono font-black text-white tracking-tight">
+                        {String(countdownHours).padStart(2, '0')}
+                      </span>
+                      <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-400 mt-1">
+                        Horas
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-slate-900/90 border border-emerald-500/50 rounded-2xl shadow-inner">
+                      <span className="text-3xl sm:text-5xl font-mono font-black text-white tracking-tight">
+                        {String(countdownMinutes).padStart(2, '0')}
+                      </span>
+                      <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-400 mt-1">
+                        Minutos
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-slate-900/90 border border-amber-500/70 rounded-2xl shadow-inner">
+                      <span className="text-3xl sm:text-5xl font-mono font-black text-amber-300 tracking-tight animate-pulse">
+                        {String(countdownSeconds).padStart(2, '0')}
+                      </span>
+                      <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-amber-400 mt-1">
+                        Segundos
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Admin adjustment quick toolbar */}
+                  {isAdmin && onAdminAuctionAction && (
+                    <div className="mt-5 pt-3.5 border-t border-slate-800 flex flex-wrap items-center justify-center gap-2">
+                      <span className="text-[11px] font-bold text-slate-400 mr-1 flex items-center gap-1">
+                        <Crown className="w-3.5 h-3.5 text-amber-400" />
+                        Definir Tempo (ADM):
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustCountdown(15 * 60)}
+                        className="px-2.5 py-1 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition-colors cursor-pointer"
+                        title="Definir contagem para 15 minutos"
+                      >
+                        15 min
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustCountdown(30 * 60)}
+                        className="px-2.5 py-1 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition-colors cursor-pointer"
+                        title="Definir contagem para 30 minutos"
+                      >
+                        30 min
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustCountdown(60 * 60)}
+                        className="px-2.5 py-1 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition-colors cursor-pointer"
+                        title="Definir contagem para 1 hora"
+                      >
+                        1 hora
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustCountdown(90 * 60)}
+                        className="px-2.5 py-1 text-[11px] font-bold bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/60 rounded-lg transition-colors cursor-pointer"
+                        title="Definir contagem padrão oficial da liga: 1 hora e 30 minutos"
+                      >
+                        1h 30m (Oficial)
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Action Box based on Role */}
@@ -978,7 +1057,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                       </h4>
                       <ul className="text-[11px] text-slate-600 mt-1 space-y-1 list-disc list-inside">
                         <li>Seu orçamento inicial fixo e recorde está garantido em <strong className="text-emerald-800">€ 400.0M</strong>.</li>
-                        <li>O leilão seguirá a divisão em 3 dias por posições (Dia 1 Defesa, Dia 2 Meio, Dia 3 Ataque).</li>
+                        <li>Mercado Aberto Unificado: Ataque, Meio-Campo e Defesa liberados juntos simultaneamente.</li>
                         <li>Os lances contarão com sigilo (lances anônimos) para máxima estratégia.</li>
                         <li>Explore os craques disponíveis na aba <strong>3. Todos os Jogadores</strong> e adicione extras se desejar (mín. € 10M).</li>
                         <li>Fique com o áudio ligado para ouvir os avisos de lances e martelo batido!</li>
@@ -1287,9 +1366,11 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                 </div>
               )}
             </div>
-          ) : isAuctionActive && (focusedPlayer || currentPlayer) ? (
-            /* STATE C: ACTIVE AUCTION CARD & SIMULTANEOUS DISPUTES */
-            <div className="space-y-4">
+          ) : (
+            <>
+              {isAuctionActive && (focusedPlayer || currentPlayer) ? (
+                /* STATE C: ACTIVE AUCTION CARD & SIMULTANEOUS DISPUTES */
+                <div className="space-y-4">
               {/* Representação em Tempo Real do Saldo em Conta, Débito e Estorno */}
               {renderUserAccountBalanceRepresentation()}
 
@@ -1312,7 +1393,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                     {activeAuctionPlayers.map((p) => {
                       const pBid = getPlayerActiveBid(p, auction);
                       const pPrice = getPlayerEffectivePrice(p, auction);
-                      const pTimer = p.timerRemaining ?? (auction.currentPlayer?.id === p.id ? auction.timerRemaining : 86400);
+                      const pTimer = p.timerRemaining ?? (auction.currentPlayer?.id === p.id ? auction.timerRemaining : 5400);
                       const isSelected = ((focusedPlayer || currentPlayer)?.id === p.id);
                       const isUserLeading = pBid?.userId === currentUser?.id;
                       const pBadge = getPositionBadge(p.position);
@@ -1413,16 +1494,22 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                       </div>
 
                       {/* Big Visual Countdown Timer */}
-                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-extrabold ${
+                      <div className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl border-2 shadow-xs transition-all ${
                         isUrgentTimer
-                          ? 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse'
+                          ? 'bg-rose-950 text-rose-300 border-rose-500 animate-pulse'
                           : isWarningTimer
-                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            ? 'bg-amber-950 text-amber-300 border-amber-500'
+                            : 'bg-slate-950 text-emerald-400 border-emerald-500/60'
                       }`}>
-                        <Clock className="w-4 h-4" />
-                        <span>{formatAuctionTimer(activeTimer)}</span>
-                        <span className="text-xs font-medium opacity-80">restantes (Janela de 24h)</span>
+                        <Clock className={`w-4 h-4 ${isUrgentTimer ? 'text-rose-400 animate-spin' : 'text-emerald-400'}`} />
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-black text-base sm:text-lg tracking-tight">
+                            {formatAuctionTimer(activeTimer)}
+                          </span>
+                          <span className="text-[11px] font-bold text-slate-300 hidden sm:inline">
+                            (Janela de 1h30m)
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -1704,112 +1791,189 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
               })()}
             </div>
           ) : (
-            /* STATE D: IDLE / NOMINATION STAGE */
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
-              <div className="text-center py-6 border-b border-slate-100">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center mb-3 p-1.5 shadow-xs">
-                  <JudgeGavelIcon className="w-full h-full drop-shadow-xs" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-black text-slate-900 font-['Outfit',sans-serif]">
-                  Poste um Jogador de Interesse
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto mt-1 leading-relaxed">
-                  São os próprios participantes que postam os jogadores de interesse! Todos os membros podem postar atletas a partir da lista oficial de jogadores registrados. O jogador postado terá propostas abertas por <strong>24 horas</strong>.
-                </p>
-
-                {/* Representação em Tempo Real do Saldo em Conta, Débito e Estorno */}
+            /* IDLE BANNER WHEN NO PLAYER IS CURRENTLY IN DISPUTE */
+            <div className="bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 border-2 border-dashed border-amber-300 rounded-2xl p-6 text-center shadow-xs">
+              <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center mb-2.5 p-1 shadow-xs">
+                <JudgeGavelIcon className="w-full h-full drop-shadow-xs" />
+              </div>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 font-['Outfit',sans-serif]">
+                Aguardando Nova Disputa de Atletas
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto mt-1 leading-relaxed">
+                Nenhum atleta em leilão no momento. Escolha qualquer jogador na lista de registrados abaixo e clique em <strong>Postar</strong> para abrir a disputa de <strong>1 hora e 30 minutos</strong>!
+              </p>
+              <div className="mt-3">
                 {renderUserAccountBalanceRepresentation()}
               </div>
+            </div>
+          )}
 
-              {/* Quick Nomination Box */}
-              <div className="pt-5 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-slate-700">
-                    Jogadores Registrados Disponíveis para Iniciar Disputa (24h):
+          {/* PERSISTENT NOMINATION STAGE: ALL REGISTERED PLAYERS LIST (ALWAYS VISIBLE!) */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+            <div className="pb-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 font-['Outfit',sans-serif] flex items-center gap-2">
+                  <JudgeGavelIcon className="w-5 h-5 text-amber-600 inline" />
+                  <span>Postar Jogador de Interesse</span>
+                  <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    Disputas Simultâneas Permitidas
                   </span>
-                  <div className="relative w-full sm:w-64">
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Pesquise, filtre e poste qualquer atleta da lista registrada para abrir disputa de 1h30m, mesmo enquanto outros atletas estiverem em leilão!
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Nomination Box */}
+            <div className="pt-4 space-y-4">
+                {/* Search and Counts Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2 border-b border-slate-100">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <Filter className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Jogadores Registrados Disponíveis para Iniciar Disputa</span>
+                    </span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5">
+                      Mostrando <strong className="text-emerald-700 font-bold">{filteredAvailablePlayers.length}</strong> de <strong className="text-slate-800 font-bold">{availablePlayers.length}</strong> atletas no sistema
+                    </span>
+                  </div>
+
+                  {/* Search Input with Clear Button */}
+                  <div className="relative w-full md:w-72">
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
                     <input
                       type="text"
                       placeholder="Buscar por nome ou posição..."
                       value={searchNominate}
                       onChange={(e) => setSearchNominate(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full pl-8 pr-8 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white transition-all shadow-2xs"
                     />
+                    {searchNominate && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchNominate('')}
+                        className="absolute right-2 top-2 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
+                        title="Limpar busca"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[460px] overflow-y-auto pr-1">
-                  {filteredAvailablePlayers.map((player) => {
-                    const badge = getPositionBadge(player.position);
-                    const isAllowedToday = isPositionAllowedForDay(player.position, auction.auctionDay || 'ALL');
-                    const isQueued = auction.nominationQueue?.some((q) => q.player.id === player.id);
-
+                {/* Fast Position / Sector Filter Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {[
+                    { id: 'ALL', label: 'Todos', count: nominationCounts.ALL },
+                    { id: 'GOL', label: 'Goleiros', count: nominationCounts.GOL },
+                    { id: 'ZAG', label: 'Zagueiros', count: nominationCounts.ZAG },
+                    { id: 'LAT', label: 'Laterais', count: nominationCounts.LAT },
+                    { id: 'MEI', label: 'Meio-Campo', count: nominationCounts.MEI },
+                    { id: 'ATA', label: 'Ataque', count: nominationCounts.ATA },
+                  ].map((filter) => {
+                    const isSelected = positionFilterNominate === filter.id;
                     return (
-                      <div
-                        key={player.id}
-                        className={`p-3 rounded-xl border flex items-center justify-between gap-2 transition-all ${
-                          isAllowedToday
-                            ? 'bg-slate-50 hover:bg-slate-100/80 border-slate-200/80'
-                            : 'bg-slate-100/60 border-slate-200 opacity-60'
+                      <button
+                        key={filter.id}
+                        type="button"
+                        onClick={() => setPositionFilterNominate(filter.id)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white shadow-2xs'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                         }`}
                       >
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className={`px-1.5 py-0.2 text-[10px] font-bold rounded ${badge.bgClass} ${badge.textClass}`}>
-                              {player.position}
-                            </span>
-                            <span className="text-xs font-bold text-slate-900 truncate">
-                              {player.name}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 truncate">
-                            Início: <strong className="text-slate-700">{formatCurrency(player.initialPrice, true)}</strong>
-                          </p>
-                          {!isAllowedToday && (
-                            <span className="text-[10px] text-amber-700 font-semibold flex items-center gap-1 mt-0.5">
-                              <Lock className="w-2.5 h-2.5" />
-                              Restrito ao dia da sua posição
-                            </span>
-                          )}
-                        </div>
-
-                        {isQueued ? (
-                          <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
-                            📋 Na Fila
-                          </span>
-                        ) : isUserSquadFull ? (
-                          <span
-                            title="Seu clube já atingiu o limite máximo de 23 jogadores no elenco"
-                            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-200 text-slate-500 shrink-0 cursor-not-allowed"
-                          >
-                            Elenco 23/23
-                          </span>
-                        ) : currentUser ? (
-                          <button
-                            onClick={() => handleSelectNominate(player.id)}
-                            disabled={nominateLoading || !isAllowedToday}
-                            title={!isAllowedToday ? `Posição ${player.position} não liberada na fase de hoje` : 'Postar jogador no leilão (24h de propostas)'}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-colors shadow-2xs ${
-                              isAllowedToday
-                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
-                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                            } disabled:opacity-50`}
-                          >
-                            Postar (24h)
-                          </button>
-                        ) : (
-                          <button
-                            onClick={onOpenAuth}
-                            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors cursor-pointer shrink-0"
-                          >
-                            Entrar p/ Postar
-                          </button>
-                        )}
-                      </div>
+                        <span>{filter.label}</span>
+                        <span className={`px-1.5 py-0.2 text-[10px] font-black rounded-full ${
+                          isSelected ? 'bg-emerald-800 text-emerald-100' : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {filter.count}
+                        </span>
+                      </button>
                     );
                   })}
                 </div>
+
+                {/* Complete Available Players List */}
+                {filteredAvailablePlayers.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[520px] overflow-y-auto pr-1">
+                    {filteredAvailablePlayers.map((player) => {
+                      const badge = getPositionBadge(player.position);
+                      const isQueued = auction.nominationQueue?.some((q) => q.player.id === player.id);
+
+                      return (
+                        <div
+                          key={player.id}
+                          className="p-3 rounded-xl border flex items-center justify-between gap-2 transition-all bg-slate-50 hover:bg-slate-100/80 border-slate-200/80 hover:border-emerald-300"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className={`px-1.5 py-0.2 text-[10px] font-bold rounded ${badge.bgClass} ${badge.textClass}`}>
+                                {player.position}
+                              </span>
+                              <span className="text-xs font-bold text-slate-900 truncate">
+                                {player.name}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 truncate">
+                              Início: <strong className="text-emerald-700">{formatCurrency(player.initialPrice, true)}</strong>
+                            </p>
+                          </div>
+
+                          {isQueued ? (
+                            <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                              📋 Na Fila
+                            </span>
+                          ) : isUserSquadFull ? (
+                            <span
+                              title="Seu clube já atingiu o limite máximo de 23 jogadores no elenco"
+                              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-200 text-slate-500 shrink-0 cursor-not-allowed"
+                            >
+                              Elenco 23/23
+                            </span>
+                          ) : currentUser ? (
+                            <button
+                              onClick={() => handleSelectNominate(player.id)}
+                              disabled={nominateLoading}
+                              title="Postar jogador no leilão"
+                              className="px-3.5 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-colors shadow-2xs bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer disabled:opacity-50"
+                            >
+                              Postar
+                            </button>
+                          ) : (
+                            <button
+                              onClick={onOpenAuth}
+                              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors cursor-pointer shrink-0"
+                            >
+                              Entrar p/ Postar
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-8 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center space-y-2">
+                    <p className="text-xs font-bold text-slate-700">
+                      Nenhum jogador encontrado com os filtros atuais.
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      Tente alterar a posição selecionada ou limpar a busca por texto.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchNominate('');
+                        setPositionFilterNominate('ALL');
+                      }}
+                      className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1.5 mt-1"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Limpar Filtros</span>
+                    </button>
+                  </div>
+                )}
 
                 {!currentUser && (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-center text-xs text-amber-900">
@@ -1818,20 +1982,21 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                 )}
               </div>
             </div>
-          )}
+          </>
+        )}
 
-          {/* Fila de Jogadores de Interesse (Próximas Disputas de 24 Horas) */}
+          {/* Fila de Jogadores de Interesse (Próximas Disputas de 1h30m) */}
           <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-2 mb-4 pb-3 border-b border-slate-100">
               <div className="min-w-0">
                 <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 sm:gap-2 flex-wrap">
                   <span>Fila de Jogadores de Interesse</span>
                   <span className="px-2 py-0.5 text-[10px] font-black rounded-md bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
-                    Próximas Disputas de 24h
+                    Próximas Disputas de 1h30m
                   </span>
                 </h4>
                 <p className="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
-                  Jogadores postados pelos próprios participantes. Entram em leilão de 24h automaticamente em ordem de postagem.
+                  Jogadores postados pelos próprios participantes. Entram em leilão de 1h30m automaticamente em ordem de postagem.
                 </p>
               </div>
               <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-bold rounded-xl sm:rounded-full bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 text-slate-700 border border-slate-200/90 transition-all duration-150 shrink-0 self-start sm:self-center select-none shadow-2xs whitespace-nowrap cursor-default">
@@ -1899,7 +2064,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
             ) : (
               <div className="text-center py-6 px-4 bg-slate-50/70 border border-dashed border-slate-200 rounded-xl">
                 <p className="text-xs text-slate-500">
-                  Nenhum jogador na fila de espera no momento. Navegue na lista ou use o campo de postagem para adicionar craques de seu interesse para as próximas rodadas de 24 horas!
+                  Nenhum jogador na fila de espera no momento. Navegue na lista ou use o campo de postagem para adicionar craques de seu interesse para as próximas rodadas de 1 hora e 30 minutos!
                 </p>
               </div>
             )}

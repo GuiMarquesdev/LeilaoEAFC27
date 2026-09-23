@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  X, Star, Eye, Flame, Gavel, Calendar, CheckCircle2, 
-  AlertCircle, ChevronRight, Search, Trophy, ArrowUpRight, ShieldCheck 
+  X, Star, Eye, Flame, Gavel, CheckCircle2, 
+  Search, ArrowUpRight, User 
 } from 'lucide-react';
 import { Player, UserProfile, AuctionState } from '../types';
-import { formatCurrency, getPositionBadge, getDayLabel, getPlayerAuctionDay, isPositionAllowedForDay, matchesPlayerSearch, getPlayerActiveBid, getPlayerEffectivePrice } from '../utils/formatters';
+import { formatCurrency, getPositionBadge, matchesPlayerSearch, getPlayerActiveBid, getPlayerEffectivePrice, getPlayerSectorName } from '../utils/formatters';
 
 interface WatchlistModalProps {
   isOpen: boolean;
@@ -31,7 +31,7 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
   onNavigateToAuction,
   onNavigateToCatalog,
 }) => {
-  const [filterPhase, setFilterPhase] = useState<'ALL' | 1 | 2 | 3>('ALL');
+  const [filterSector, setFilterSector] = useState<'ALL' | 'DEF' | 'MEI' | 'ATA'>('ALL');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'IN_AUCTION' | 'AVAILABLE' | 'SOLD'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -46,8 +46,9 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
 
   const filteredList = useMemo(() => {
     return watchedPlayers.filter((player) => {
-      const day = getPlayerAuctionDay(player.position);
-      if (filterPhase !== 'ALL' && day !== filterPhase) return false;
+      if (filterSector === 'DEF' && !['GOL', 'ZAG', 'LE', 'LD'].includes(player.position)) return false;
+      if (filterSector === 'MEI' && !['VOL', 'MC', 'MEI'].includes(player.position)) return false;
+      if (filterSector === 'ATA' && !['ATA', 'PE', 'PD', 'ME', 'MD', 'SA'].includes(player.position)) return false;
 
       // Status check
       const isCurrentlyInAuction = auction.status === 'ACTIVE' && auction.currentPlayer?.id === player.id;
@@ -61,11 +62,10 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
 
       return true;
     });
-  }, [watchedPlayers, filterPhase, filterStatus, searchTerm, auction.status, auction.currentPlayer]);
+  }, [watchedPlayers, filterSector, filterStatus, searchTerm, auction.status, auction.currentPlayer]);
 
   if (!isOpen) return null;
 
-  const currentAuctionDay = auction.auctionDay || 1;
   const activePlayerInAuction = auction.status === 'ACTIVE' ? auction.currentPlayer : null;
   const isWatchedPlayerActiveNow = activePlayerInAuction && watchedPlayerIds.includes(activePlayerInAuction.id);
 
@@ -92,37 +92,33 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
               </span>
             </div>
             <p className="text-xs text-amber-100 font-medium">
-              Monitore em tempo real se seus craques favoritos das 3 fases estão recebendo lances ou foram leiloados.
+              Monitore em tempo real se seus craques favoritos estão recebendo propostas ou foram leiloados.
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer z-10"
+            className="p-2 rounded-full hover:bg-white/20 text-white transition-colors cursor-pointer z-10"
             title="Fechar"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Live Alert if an observed player is currently on auction */}
+        {/* Live Banner Alert if an observed player is currently under bidding */}
         {isWatchedPlayerActiveNow && activePlayerInAuction && (
-          <div className="bg-rose-50 border-b border-rose-200 px-6 py-3 flex items-center justify-between gap-4">
+          <div className="bg-rose-50 border-b border-rose-200 p-4 flex items-center justify-between gap-3 text-rose-900 animate-pulse">
             <div className="flex items-center gap-2.5">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-600"></span>
-              </span>
+              <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0">
+                <Flame className="w-4 h-4 fill-white" />
+              </div>
               <div>
-                <p className="text-xs font-black text-rose-900 flex items-center gap-1.5">
-                  <Flame className="w-3.5 h-3.5 text-rose-600 fill-rose-600 animate-bounce" />
-                  SEU JOGADOR OBSERVADO ESTÁ EM LEILÃO AGORA:
-                  <span className="underline">{activePlayerInAuction.name}</span>
-                </p>
-                <p className="text-[11px] text-rose-700">
-                  Lance Atual: <strong>{formatCurrency(auction.currentBid ? auction.currentBid.amount : activePlayerInAuction.initialPrice)}</strong>
-                  {auction.currentBid ? ` • Liderado por ${auction.currentBid.teamName}` : ' • Aguardando primeiro lance'}
-                </p>
+                <span className="text-[10px] font-black uppercase tracking-wider text-rose-600 block">
+                  Atenção: Atleta do seu Radar em Leilão!
+                </span>
+                <span className="text-xs sm:text-sm font-extrabold text-slate-900">
+                  {activePlayerInAuction.name} ({activePlayerInAuction.position}) — Disputa Aberta
+                </span>
               </div>
             </div>
 
@@ -143,39 +139,39 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
 
         {/* Filters and Search Bar */}
         <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          {/* Phase Filter Tabs */}
+          {/* Sector Filter Tabs */}
           <div className="flex items-center gap-1 p-1 bg-white rounded-xl border border-slate-200 text-xs overflow-x-auto">
             <button
-              onClick={() => setFilterPhase('ALL')}
+              onClick={() => setFilterSector('ALL')}
               className={`px-3 py-1 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                filterPhase === 'ALL' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                filterSector === 'ALL' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Todas as Fases ({watchedPlayers.length})
+              Todos ({watchedPlayers.length})
             </button>
             <button
-              onClick={() => setFilterPhase(1)}
+              onClick={() => setFilterSector('DEF')}
               className={`px-3 py-1 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                filterPhase === 1 ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                filterSector === 'DEF' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Fase 1 - Defesa ({watchedPlayers.filter((p) => getPlayerAuctionDay(p.position) === 1).length})
+              Defesa & GOL ({watchedPlayers.filter((p) => ['GOL', 'ZAG', 'LE', 'LD'].includes(p.position)).length})
             </button>
             <button
-              onClick={() => setFilterPhase(2)}
+              onClick={() => setFilterSector('MEI')}
               className={`px-3 py-1 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                filterPhase === 2 ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                filterSector === 'MEI' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Fase 2 - Meio ({watchedPlayers.filter((p) => getPlayerAuctionDay(p.position) === 2).length})
+              Meio-Campo ({watchedPlayers.filter((p) => ['VOL', 'MC', 'MEI'].includes(p.position)).length})
             </button>
             <button
-              onClick={() => setFilterPhase(3)}
+              onClick={() => setFilterSector('ATA')}
               className={`px-3 py-1 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                filterPhase === 3 ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                filterSector === 'ATA' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Fase 3 - Ataque ({watchedPlayers.filter((p) => getPlayerAuctionDay(p.position) === 3).length})
+              Ataque ({watchedPlayers.filter((p) => ['ATA', 'PE', 'PD', 'ME', 'MD', 'SA'].includes(p.position)).length})
             </button>
           </div>
 
@@ -202,10 +198,10 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
               <p className="text-xs text-slate-500 max-w-md mx-auto mt-1.5 leading-relaxed">
                 {watchedPlayerIds.length === 0 ? (
                   <>
-                    Você pode marcar qualquer atleta das <strong>3 fases (Defesa, Meio-Campo e Ataque)</strong> com a estrela <Star className="w-3.5 h-3.5 inline text-amber-500 fill-amber-400" /> no Mercado de Craques para acompanhar em tempo real quando receberem lances!
+                    Você pode marcar qualquer atleta no Mercado de Craques para acompanhar em tempo real quando receberem propostas!
                   </>
                 ) : (
-                  'Tente alterar os filtros de fase ou limpar o campo de busca.'
+                  'Tente alterar os filtros de setor ou limpar o campo de busca.'
                 )}
               </p>
 
@@ -218,22 +214,20 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                   className="mt-4 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-colors inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Eye className="w-4 h-4" />
-                  <span>Explorar Mercado & Adicionar Craques</span>
+                  <span>Explorar Mercado de Craques</span>
                 </button>
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {filteredList.map((player) => {
                 const posBadge = getPositionBadge(player.position);
-                const playerDay = getPlayerAuctionDay(player.position);
-                const dayInfo = getDayLabel(playerDay);
+                const sectorName = getPlayerSectorName(player.position);
                 const isCurrentlyActive = (auction.status === 'ACTIVE' && auction.currentPlayer?.id === player.id) || player.status === 'IN_AUCTION';
+                const isSold = player.status === 'SOLD';
+                const isAvailable = player.status === 'AVAILABLE';
                 const playerActiveBid = isCurrentlyActive ? getPlayerActiveBid(player, auction) : null;
                 const playerEffectivePrice = getPlayerEffectivePrice(player, auction);
-                const isSold = player.status === 'SOLD';
-                const isAvailable = player.status === 'AVAILABLE' && !isCurrentlyActive;
-                const isDayActive = playerDay === currentAuctionDay || currentAuctionDay === 'ALL';
 
                 return (
                   <div
@@ -246,12 +240,12 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                         : 'bg-white border-slate-200 hover:border-amber-300 hover:shadow-sm'
                     }`}
                   >
-                    {/* Top Row: Name, Position & Phase Badge */}
+                    {/* Top Row: Name, Position & Sector Badge */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-700 text-sm border border-slate-200 shadow-2xs">
-                            {player.name.substring(0, 2).toUpperCase()}
+                          <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-sm border border-slate-200 shadow-2xs">
+                            <User className="w-5 h-5 text-slate-400" />
                           </div>
                           <span className={`absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${posBadge.bgClass} ${posBadge.textClass} border ${posBadge.borderClass}`}>
                             {player.position}
@@ -269,6 +263,11 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                               </span>
                             )}
                           </div>
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                            <span>{player.club}</span>
+                            <span>•</span>
+                            <span className="font-semibold text-slate-700">{sectorName}</span>
+                          </div>
                         </div>
                       </div>
 
@@ -278,23 +277,12 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                         className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors cursor-pointer"
                         title="Remover do Radar de Observação"
                       >
-                        <Star className="w-5 h-5 fill-amber-400 text-amber-500" />
+                        <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
                       </button>
                     </div>
 
-                    {/* Middle: Phase info & Real-time Status Badge */}
-                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                        playerDay === 1
-                          ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                          : playerDay === 2
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                          : 'bg-purple-50 text-purple-800 border border-purple-200'
-                      }`}>
-                        Fase {playerDay}: {playerDay === 1 ? 'Defesa' : playerDay === 2 ? 'Meio' : 'Ataque'}
-                      </span>
-
-                      {/* Status */}
+                    {/* Mid: Status Indicator */}
+                    <div className="flex items-center justify-between text-xs">
                       {isCurrentlyActive ? (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white flex items-center gap-1 animate-pulse">
                           <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
@@ -306,10 +294,8 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                           VENDIDO
                         </span>
                       ) : (
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
-                          isDayActive ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {isDayActive ? '🟢 Disponível na Fase Atual' : `⏳ Aguarda Fase ${playerDay}`}
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          🟢 Disponível no Leilão
                         </span>
                       )}
                     </div>
@@ -359,7 +345,7 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                             <span>Dar Lance</span>
                           </button>
                         )
-                      ) : isAvailable && isDayActive && canNominateNow && onNominate ? (
+                      ) : isAvailable && canNominateNow && onNominate ? (
                         (() => {
                           const isQueued = auction.nominationQueue?.some((q) => q.player.id === player.id);
                           if (isQueued) {
@@ -413,16 +399,15 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Sua lista é pessoal e privada. Ninguém mais tem acesso aos jogadores que você está observando.</span>
+        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+          <div className="text-xs text-slate-500">
+            {watchedPlayers.length} atletas sob monitoramento
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer w-full sm:w-auto"
+            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition-colors cursor-pointer"
           >
-            Fechar Radar
+            Fechar
           </button>
         </div>
       </div>

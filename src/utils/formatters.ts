@@ -80,25 +80,17 @@ export function formatCurrency(amount: number, compact = false): string {
   return `€ ${amount.toLocaleString('pt-BR')}`;
 }
 
-export function isPositionAllowedForDay(position: string, day: 1 | 2 | 3 | 'ALL'): boolean {
-  if (day === 'ALL') return true;
-
-  // Dia 1 - Sistema Defensivo: GOL, ZAG, LD/LE
-  if (day === 1) {
-    return ['GOL', 'ZAG', 'LE', 'LD'].includes(position);
-  }
-
-  // Dia 2 - Meio-Campo: VOL, MC, MEI
-  if (day === 2) {
-    return ['VOL', 'MC', 'MEI'].includes(position);
-  }
-
-  // Dia 3 - Setor Ofensivo: ME, MD, PE, PD, SA, ATA
-  if (day === 3) {
-    return ['ATA', 'PD', 'PE', 'MD', 'ME', 'SA'].includes(position);
-  }
-
+export function isPositionAllowedForDay(_position: string, _day?: 1 | 2 | 3 | 'ALL'): boolean {
+  // Regulamento Oficial Khedira League: Sem divisão de fases!
+  // ATAQUE, MEIO CAMPO, DEFESA e GOLEIROS todos liberados juntos.
   return true;
+}
+
+export function getPlayerSectorName(position: string): 'Goleiro' | 'Defesa' | 'Meio-Campo' | 'Ataque' {
+  if (position === 'GOL') return 'Goleiro';
+  if (['ZAG', 'LE', 'LD'].includes(position)) return 'Defesa';
+  if (['VOL', 'MC', 'MEI'].includes(position)) return 'Meio-Campo';
+  return 'Ataque';
 }
 
 export function getPlayerAuctionDay(position: string): 1 | 2 | 3 {
@@ -107,34 +99,12 @@ export function getPlayerAuctionDay(position: string): 1 | 2 | 3 {
   return 3;
 }
 
-export function getDayLabel(day: 1 | 2 | 3 | 'ALL'): { title: string; subtitle: string; positions: string[] } {
-  switch (day) {
-    case 1:
-      return {
-        title: 'Dia 1 - Sistema Defensivo',
-        subtitle: 'Período exclusivo para Goleiros (GOL), Zagueiros (ZAG) e Laterais (LD/LE)',
-        positions: ['GOL', 'ZAG', 'LE', 'LD']
-      };
-    case 2:
-      return {
-        title: 'Dia 2 - Meio-Campo',
-        subtitle: 'Período exclusivo para Volantes (VOL) e Meio-campistas (MC/MEI)',
-        positions: ['VOL', 'MC', 'MEI']
-      };
-    case 3:
-      return {
-        title: 'Dia 3 - Setor Ofensivo',
-        subtitle: 'Período exclusivo para Pontas (ME/MD/PE/PD), Segundos Atacantes (SA) e Centroavantes (ATA)',
-        positions: ['ATA', 'PD', 'PE', 'MD', 'ME', 'SA']
-      };
-    case 'ALL':
-    default:
-      return {
-        title: 'Fase Livre - Todas as Posições',
-        subtitle: 'Lances e indicações permitidos para qualquer setor de campo',
-        positions: ['GOL', 'ZAG', 'LE', 'LD', 'VOL', 'MC', 'MEI', 'MD', 'ME', 'PE', 'PD', 'SA', 'ATA']
-      };
-  }
+export function getDayLabel(_day?: 1 | 2 | 3 | 'ALL'): { title: string; subtitle: string; positions: string[] } {
+  return {
+    title: 'Mercado Aberto (Sem Fases)',
+    subtitle: 'Ataque, Meio-Campo e Defesa liberados juntos simultaneamente',
+    positions: ['GOL', 'ZAG', 'LE', 'LD', 'VOL', 'MC', 'MEI', 'MD', 'ME', 'PE', 'PD', 'SA', 'ATA']
+  };
 }
 
 export function getPositionBadge(position: PlayerPosition): {

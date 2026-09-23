@@ -4,7 +4,7 @@ import {
   CheckCircle2, ArrowUpRight, Sparkles, AlertCircle 
 } from 'lucide-react';
 import { Player, AuctionState, UserProfile } from '../types';
-import { formatCurrency, getPositionBadge, getPlayerAuctionDay, getPlayerActiveBid, getPlayerEffectivePrice } from '../utils/formatters';
+import { formatCurrency, getPositionBadge, getPlayerActiveBid, getPlayerEffectivePrice, getPlayerSectorName } from '../utils/formatters';
 
 interface WatchlistRadarWidgetProps {
   watchedPlayerIds: string[];
@@ -42,7 +42,7 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
                 Radar de Observação: Nenhum atleta selecionado
               </h4>
               <p className="text-[11px] text-slate-500">
-                Favorite atletas das 3 fases no Mercado (Seção 3) para acompanhar lances e vendas aqui em tempo real.
+                Favorite atletas no Mercado (Seção 3) para acompanhar lances e vendas aqui em tempo real.
               </p>
             </div>
           </div>
@@ -95,7 +95,7 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
               )}
             </div>
             <p className="text-[11px] text-slate-500">
-              Acompanhe lances e status dos seus jogadores monitorados em todas as 3 fases.
+              Acompanhe lances e status dos seus jogadores monitorados no mercado unificado.
             </p>
           </div>
         </div>
@@ -123,11 +123,10 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
             {watchedPlayers.slice(0, 6).map((player) => {
               const posBadge = getPositionBadge(player.position);
-              const playerDay = getPlayerAuctionDay(player.position);
+              const sectorName = getPlayerSectorName(player.position);
               const isCurrentlyActive = (auction.status === 'ACTIVE' && auction.currentPlayer?.id === player.id) || player.status === 'IN_AUCTION';
               const effectivePrice = getPlayerEffectivePrice(player, auction);
               const isSold = player.status === 'SOLD';
-              const isDayActive = playerDay === currentAuctionDay || currentAuctionDay === 'ALL';
 
               return (
                 <div
@@ -149,8 +148,8 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
                         <h5 className="font-bold text-slate-900 text-xs leading-tight">
                           {player.name}
                         </h5>
-                        <span className="text-[10px] text-slate-500 block">
-                          Fase {playerDay}
+                        <span className="text-[10px] text-slate-500 block font-medium">
+                          {sectorName}
                         </span>
                       </div>
                     </div>
@@ -193,7 +192,7 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-700">
                           Vendido
                         </span>
-                      ) : isDayActive && canNominate && onNominate ? (
+                      ) : canNominate && onNominate ? (
                         (() => {
                           const isAuctionInProgress = auction.status !== 'NOT_STARTED' && auction.status !== 'ENDED';
                           return (
@@ -217,7 +216,7 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
                         })()
                       ) : (
                         <span className="text-[9px] text-slate-400 font-medium">
-                          {isDayActive ? 'Aguardando' : `Fase ${playerDay}`}
+                          Aguardando
                         </span>
                       )}
                     </div>

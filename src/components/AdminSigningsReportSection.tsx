@@ -323,7 +323,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
         </div>
       </div>
 
-      {/* 2. Phase Selector Buttons */}
+      {/* 2. Sector Selector Buttons */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* ALL */}
         <button
@@ -343,13 +343,13 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
             </span>
             <span className="text-xs font-bold">{allSoldPlayers.length} atletas</span>
           </div>
-          <h4 className="text-xs sm:text-sm font-extrabold">Todas as Fases</h4>
+          <h4 className="text-xs sm:text-sm font-extrabold">Mercado Unificado</h4>
           <span className={`text-[11px] block mt-0.5 ${selectedPhase === 'ALL' ? 'text-slate-300' : 'text-slate-500'}`}>
             Balanço consolidado da liga
           </span>
         </button>
 
-        {/* FASE 1: DEFESA */}
+        {/* DEFESA */}
         <button
           type="button"
           onClick={() => setSelectedPhase(1)}
@@ -363,7 +363,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
             <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
               selectedPhase === 1 ? 'bg-blue-300 text-blue-950' : 'bg-blue-50 text-blue-700'
             }`}>
-              FASE 1 • DEFESA
+              DEFESA
             </span>
             <span className="text-xs font-bold">{phase1Sold.length} atletas</span>
           </div>
@@ -373,7 +373,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
           </span>
         </button>
 
-        {/* FASE 2: MEIO-CAMPO */}
+        {/* MEIO-CAMPO */}
         <button
           type="button"
           onClick={() => setSelectedPhase(2)}
@@ -387,7 +387,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
             <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
               selectedPhase === 2 ? 'bg-amber-300 text-amber-950' : 'bg-amber-50 text-amber-700'
             }`}>
-              FASE 2 • MEIO
+              MEIO-CAMPO
             </span>
             <span className="text-xs font-bold">{phase2Sold.length} atletas</span>
           </div>
@@ -397,7 +397,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
           </span>
         </button>
 
-        {/* FASE 3: SETOR OFENSIVO */}
+        {/* SETOR OFENSIVO */}
         <button
           type="button"
           onClick={() => setSelectedPhase(3)}
@@ -411,7 +411,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
             <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
               selectedPhase === 3 ? 'bg-rose-300 text-rose-950' : 'bg-rose-50 text-rose-700'
             }`}>
-              FASE 3 • ATAQUE
+              ATAQUE
             </span>
             <span className="text-xs font-bold">{phase3Sold.length} atletas</span>
           </div>
