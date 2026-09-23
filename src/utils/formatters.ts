@@ -1,4 +1,69 @@
-import { PlayerPosition } from '../types';
+import { PlayerPosition, Player, AuctionState, Bid } from '../types';
+
+export function getPlayerActiveBid(player: Player | null | undefined, auction?: AuctionState | null): Bid | null {
+  if (!player) return null;
+
+  const candidates: Bid[] = [];
+
+  // 1. Direct currentBid on player
+  if (player.currentBid && typeof player.currentBid.amount === 'number' && player.currentBid.amount > 0) {
+    candidates.push(player.currentBid);
+  }
+
+  // 2. Global auction currentBid if player matches currentPlayer
+  if (auction?.currentPlayer?.id === player.id && auction.currentBid && typeof auction.currentBid.amount === 'number' && auction.currentBid.amount > 0) {
+    candidates.push(auction.currentBid);
+  }
+
+  // 3. Player's own bidHistory
+  if (player.bidHistory && player.bidHistory.length > 0) {
+    for (const b of player.bidHistory) {
+      if (b && typeof b.amount === 'number' && b.amount > 0) {
+        candidates.push(b);
+      }
+    }
+  }
+
+  // 4. Global auction.bidHistory for this specific player
+  if (auction?.bidHistory && auction.bidHistory.length > 0) {
+    for (const b of auction.bidHistory) {
+      if (b && (b.playerId === player.id || (b.playerName && b.playerName === player.name)) && typeof b.amount === 'number' && b.amount > 0) {
+        candidates.push(b);
+      }
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Pick candidate with highest amount; if tie, newest timestamp
+  candidates.sort((a, b) => {
+    if (b.amount !== a.amount) {
+      return b.amount - a.amount;
+    }
+    return (b.timestamp || 0) - (a.timestamp || 0);
+  });
+
+  return candidates[0];
+}
+
+export function getPlayerEffectivePrice(player: Player | null | undefined, auction?: AuctionState | null): number {
+  if (!player) return 0;
+
+  // If sold, return final sold amount
+  if (player.status === 'SOLD' && player.soldTo?.amount) {
+    return player.soldTo.amount;
+  }
+
+  // Find the highest active bid amount
+  const activeBid = getPlayerActiveBid(player, auction);
+  const activeBidAmount = activeBid && typeof activeBid.amount === 'number' ? activeBid.amount : 0;
+
+  // Check player currentPrice and initialPrice
+  const playerCurrentPrice = typeof player.currentPrice === 'number' ? player.currentPrice : 0;
+  const initialPrice = typeof player.initialPrice === 'number' && player.initialPrice > 0 ? player.initialPrice : 10000000;
+
+  return Math.max(activeBidAmount, playerCurrentPrice, initialPrice);
+}
 
 export function formatCurrency(amount: number, compact = false): string {
   if (compact) {

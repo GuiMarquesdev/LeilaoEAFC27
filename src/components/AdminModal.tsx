@@ -445,17 +445,13 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   <span>Modo Livre Anúncio: {auction.isFreeNominationMode ? 'ATIVO' : 'DESATIVADO'}</span>
                 </button>
 
-                <button
-                  onClick={() => onAdminAuctionAction('TOGGLE_ANONYMOUS_BIDDING', !auction.anonymousBidding)}
-                  className={`p-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border cursor-pointer ${
-                    auction.anonymousBidding !== false
-                      ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
-                      : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                  }`}
+                <div
+                  className="p-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border bg-emerald-50 text-emerald-950 border-emerald-300"
+                  title="O regulamento da Khedira League determina o sigilo permanente das propostas durante a disputa ao vivo"
                 >
-                  {auction.anonymousBidding !== false ? <Lock className="w-4 h-4 text-emerald-600" /> : <Unlock className="w-4 h-4 text-slate-500" />}
-                  <span>Sigilo de Lances: {auction.anonymousBidding !== false ? 'ATIVO' : 'DESATIVADO'}</span>
-                </button>
+                  <Lock className="w-4 h-4 text-emerald-600" />
+                  <span>Sigilo de Lances: OBRIGATÓRIO (Ativo)</span>
+                </div>
               </div>
 
               {/* CRONOGRAMA OFICIAL DE 3 DIAS (ATA KHEDIRA LEAGUE) */}
@@ -811,48 +807,28 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         </div>
                       </div>
 
-                    {/* Budget & Reset controls */}
+                    {/* Budget & Squad status */}
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2 text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-500">Orçamento:</span>
-                        {editingUserId === u.id ? (
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              step="5000000"
-                              value={editBudgetValue}
-                              onChange={(e) => setEditBudgetValue(e.target.value)}
-                              className="w-32 px-2 py-1 text-xs border rounded-lg font-bold"
-                            />
-                            <button
-                              onClick={() => handleSaveBudget(u.id)}
-                              className="px-2 py-1 bg-emerald-600 text-white font-bold rounded text-[10px]"
-                            >
-                              Salvar
-                            </button>
-                            <button
-                              onClick={() => setEditingUserId(null)}
-                              className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px]"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="font-extrabold text-emerald-700">
-                              {formatCurrency(u.budget)}
-                            </span>
-                            <button
-                              onClick={() => {
-                                setEditingUserId(u.id);
-                                setEditBudgetValue(String(u.budget));
-                              }}
-                              className="text-[10px] text-slate-500 hover:text-slate-800 font-bold underline"
-                            >
-                              Ajustar
-                            </button>
-                          </div>
-                        )}
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-500">Saldo:</span>
+                          <span className="font-extrabold text-emerald-700">
+                            {formatCurrency(u.budget)}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            (Base: €400M fixo)
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-slate-500">Elenco:</span>
+                          <span className={`font-black text-xs px-2 py-0.5 rounded ${
+                            players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === u.id).length >= 23
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-slate-100 text-slate-800'
+                          }`}>
+                            {players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === u.id).length}/23 atletas
+                          </span>
+                        </div>
                       </div>
 
                       <button
@@ -861,7 +837,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                             onAdminResetUser(u.id);
                           }
                         }}
-                        className="text-xs text-rose-600 hover:text-rose-700 font-bold"
+                        className="text-xs text-rose-600 hover:text-rose-700 font-bold cursor-pointer"
                       >
                         Resetar Time / Saldo
                       </button>
@@ -983,10 +959,20 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
                     <div className="font-bold text-slate-800 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      4. Preservação de Usuários e Clubes
+                      4. Zeramento do Histórico de Lances
                     </div>
                     <p className="text-slate-600 leading-relaxed text-[11px]">
-                      Nenhuma conta, login, clube ou permissão de administrador é deletada. O histórico de participantes continua 100% mantido.
+                      O histórico de lances da rodada e todas as propostas ativas de atletas são 100% zerados e limpos.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                    <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      5. Preservação de Usuários e Clubes
+                    </div>
+                    <p className="text-slate-600 leading-relaxed text-[11px]">
+                      Nenhuma conta, login, clube ou permissão de administrador é deletada. O cadastro de participantes continua mantido.
                     </p>
                   </div>
                 </div>
@@ -1040,6 +1026,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               </div>
               <ul className="list-disc pl-4 space-y-1 text-amber-900/90 text-[11px]">
                 <li>Todos os <strong>{soldPlayers.length} jogadores</strong> atualmente em clubes voltarão a ficar disponíveis no mercado.</li>
+                <li>O <strong>histórico de lances da rodada</strong> e todas as propostas ativas serão completamente zerados.</li>
                 <li>As escalações e pranchetas táticas de todos os clubes serão esvaziadas.</li>
                 <li>O saldo de todos os <strong>{users.length} participantes</strong> será restaurado para <strong>€ 400.000.000 (€ 400M)</strong>.</li>
                 <li>Um anúncio oficial será transmitido em tempo real na tela de todos os participantes.</li>

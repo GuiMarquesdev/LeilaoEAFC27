@@ -120,8 +120,8 @@ export interface LeagueState {
 
 export type WSMessage = 
   | { type: 'STATE_SYNC'; data: LeagueState }
-  | { type: 'NEW_BID'; data: { bid: Bid; auction: AuctionState } }
-  | { type: 'AUCTION_STARTED'; data: { player: Player; auction: AuctionState } }
+  | { type: 'NEW_BID'; data: { bid: Bid; auction: AuctionState; player?: Player } }
+  | { type: 'AUCTION_STARTED'; data: { player: Player; auction: AuctionState; bid?: Bid } }
   | { type: 'AUCTION_HAMMER'; data: { winner: UserProfile; player: Player; finalPrice: number } }
   | { type: 'NOMINATION_TURN_CHANGE'; data: { userId: string | null; userName?: string } }
   | { type: 'CHAT_NOTIFICATION'; data: { message: string; timestamp: number; type?: 'info' | 'bid' | 'hammer' | 'alert' } };

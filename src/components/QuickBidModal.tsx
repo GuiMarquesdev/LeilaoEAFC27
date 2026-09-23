@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Player, UserProfile, AuctionState } from '../types';
-import { formatCurrency, getPositionBadge, formatAuctionTimer } from '../utils/formatters';
+import { formatCurrency, getPositionBadge, formatAuctionTimer, getPlayerActiveBid, getPlayerEffectivePrice } from '../utils/formatters';
 
 interface QuickBidModalProps {
   player: Player | null;
@@ -13,6 +13,8 @@ interface QuickBidModalProps {
   onClose: () => void;
   currentUser: UserProfile | null;
   auction: AuctionState;
+  availableBudget?: number;
+  heldBudget?: number;
   onConfirmBid: (amount: number, playerId: string) => Promise<boolean>;
   onOpenAuth: () => void;
 }
@@ -23,6 +25,8 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
   onClose,
   currentUser,
   auction,
+  availableBudget,
+  heldBudget = 0,
   onConfirmBid,
   onOpenAuth,
 }) => {
@@ -34,12 +38,14 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
   if (!isOpen || !player) return null;
 
   const badge = getPositionBadge(player.position);
-  const currentHighest = player.currentBid ? player.currentBid.amount : 0;
+  const activeBid = getPlayerActiveBid(player, auction);
+  const effectivePrice = getPlayerEffectivePrice(player, auction);
+  const currentHighest = activeBid ? activeBid.amount : (player.currentPrice && player.currentPrice > player.initialPrice ? player.currentPrice : 0);
   const minRequired = currentHighest > 0
     ? currentHighest + (auction.minimumBidIncrement || 1000000)
     : player.initialPrice;
 
-  const isUserLeading = Boolean(currentUser && player.currentBid && player.currentBid.userId === currentUser.id);
+  const isUserLeading = Boolean(currentUser && activeBid && activeBid.userId === currentUser.id);
 
   // Initialize with minRequired
   useEffect(() => {
@@ -71,18 +77,24 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
       return;
     }
 
-    if (isUserLeading) {
-      setErrorMessage('Sua equipe já possui a maior proposta ativa por este atleta!');
-      return;
-    }
-
+    // Note: If isUserLeading, the manager is raising their own bid (lance de proteção)
     if (bidAmount < minRequired) {
       setErrorMessage(`O valor mínimo exigido é de € ${(minRequired / 1000000).toFixed(1)}M.`);
       return;
     }
 
-    if (bidAmount > currentUser.budget) {
-      setErrorMessage(`Saldo insuficiente! Seu saldo atual é de € ${(currentUser.budget / 1000000).toFixed(1)}M.`);
+    // Se o usuário já está liderando este atleta, o valor do lance atual dele já está computado
+    const alreadyCommittedOnThisPlayer = isUserLeading ? (activeBid?.amount || 0) : 0;
+    const effectiveAvailableBudget = currentUser
+      ? (availableBudget !== undefined ? availableBudget + alreadyCommittedOnThisPlayer : currentUser.budget)
+      : 0;
+
+    if (bidAmount > effectiveAvailableBudget) {
+      if (heldBudget > 0 && availableBudget !== undefined) {
+        setErrorMessage(`Saldo disponível insuficiente! Você tem € ${(currentUser.budget / 1000000).toFixed(1)}M no total, mas € ${(heldBudget / 1000000).toFixed(1)}M está retido em outros atletas. Saldo livre: € ${(effectiveAvailableBudget / 1000000).toFixed(1)}M.`);
+      } else {
+        setErrorMessage(`Saldo insuficiente! Seu saldo atual é de € ${(currentUser.budget / 1000000).toFixed(1)}M.`);
+      }
       return;
     }
 
@@ -112,7 +124,12 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
     }
   };
 
-  const isInsufficientBudget = currentUser ? bidAmount > currentUser.budget : false;
+  const alreadyCommittedOnThisPlayer = isUserLeading ? (activeBid?.amount || 0) : 0;
+  const effectiveAvailableBudget = currentUser
+    ? (availableBudget !== undefined ? availableBudget + alreadyCommittedOnThisPlayer : currentUser.budget)
+    : 0;
+
+  const isInsufficientBudget = currentUser ? bidAmount > effectiveAvailableBudget : false;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
@@ -129,7 +146,7 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black text-white flex items-center gap-1.5">
-                <span>{player.currentBid ? 'Cobrir Proposta' : 'Fazer Proposta Oficial'}</span>
+                <span>{activeBid ? 'Cobrir Proposta' : 'Fazer Proposta Oficial'}</span>
               </h3>
               <p className="text-[11px] text-slate-300 font-medium">
                 Leilão Simultâneo • Khedira League
@@ -164,17 +181,17 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
               {player.name}
             </h4>
             <p className="text-xs text-slate-500 truncate">
-              {player.club} • {player.nationality}
+              {player.nationality}
             </p>
 
             <div className="flex items-center gap-3 mt-1 text-[11px]">
               <span className="text-slate-500">
                 Abertura: <strong className="text-slate-800 font-bold">{formatCurrency(player.initialPrice, true)}</strong>
               </span>
-              {player.currentBid ? (
+              {activeBid ? (
                 <span className="text-amber-700 font-bold flex items-center gap-1">
                   <Flame className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
-                  Último: {formatCurrency(player.currentBid.amount, true)}
+                  Último: {formatCurrency(effectivePrice, true)}
                 </span>
               ) : (
                 <span className="text-emerald-700 font-bold">
@@ -188,7 +205,7 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
         {/* Modal Body & Bidding Form */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
           {/* Active dispute status pill */}
-          {player.currentBid && (
+          {activeBid && (
             <div className={`p-3 rounded-2xl border text-xs flex items-center justify-between gap-2 ${
               isUserLeading 
                 ? 'bg-amber-50 border-amber-300 text-amber-900' 
@@ -198,7 +215,7 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
                 <Clock className="w-4 h-4 shrink-0 text-rose-500 animate-pulse" />
                 <div>
                   <span className="font-bold block">
-                    {isUserLeading ? '👑 Você está liderando esta disputa!' : 'Disputa ativa por este atleta'}
+                    {isUserLeading ? '👑 Você está liderando esta disputa (Pode aumentar o lance)' : 'Disputa ativa por este atleta'}
                   </span>
                   <span className="text-[11px] opacity-80">
                     Restam: {player.timerRemaining ? formatAuctionTimer(player.timerRemaining) : '24h'}
@@ -206,7 +223,7 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
                 </div>
               </div>
               <span className="font-black text-sm">
-                {formatCurrency(player.currentBid.amount, true)}
+                {formatCurrency(effectivePrice, true)}
               </span>
             </div>
           )}
@@ -287,14 +304,28 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
 
           {/* User Balance Check */}
           {currentUser && (
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
-              <span className="text-slate-600 flex items-center gap-1">
-                <Coins className="w-3.5 h-3.5 text-amber-500" />
-                Seu Orçamento Disponível:
-              </span>
-              <span className={`font-black ${isInsufficientBudget ? 'text-rose-600' : 'text-slate-900'}`}>
-                {formatCurrency(currentUser.budget, true)}
-              </span>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 flex items-center gap-1">
+                  <Coins className="w-3.5 h-3.5 text-amber-500" />
+                  Saldo Total em Conta:
+                </span>
+                <span className="font-black text-slate-900">
+                  {formatCurrency(currentUser.budget, true)}
+                </span>
+              </div>
+              {heldBudget > 0 && availableBudget !== undefined && (
+                <div className="flex items-center justify-between text-[11px] text-amber-800 pt-1 border-t border-slate-200/60">
+                  <span>Retido em outros atletas:</span>
+                  <span className="font-bold">-{formatCurrency(heldBudget, true)}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/60">
+                <span className="text-emerald-700 font-bold">Disponível p/ este atleta:</span>
+                <span className={`font-black ${isInsufficientBudget ? 'text-rose-600' : 'text-emerald-700'}`}>
+                  {formatCurrency(effectiveAvailableBudget, true)}
+                </span>
+              </div>
             </div>
           )}
 
@@ -323,11 +354,9 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={submitting || isInsufficientBudget || isUserLeading}
+              disabled={submitting || isInsufficientBudget}
               className={`flex-2 py-3 font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
-                isUserLeading
-                  ? 'bg-amber-100 text-amber-800 border border-amber-300 cursor-not-allowed'
-                  : isInsufficientBudget
+                isInsufficientBudget
                   ? 'bg-rose-100 text-rose-700 border border-rose-300 cursor-not-allowed'
                   : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white active:scale-98'
               } disabled:opacity-50`}
@@ -337,14 +366,16 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Registrando...</span>
                 </>
-              ) : isUserLeading ? (
-                <span>👑 Sua Equipe já Lidera</span>
               ) : isInsufficientBudget ? (
                 <span>Saldo Insuficiente</span>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 text-emerald-200" />
-                  <span>Confirmar Proposta ({formatCurrency(bidAmount, true)})</span>
+                  <span>
+                    {isUserLeading
+                      ? `Aumentar Proposta (${formatCurrency(bidAmount, true)})`
+                      : `Confirmar Proposta (${formatCurrency(bidAmount, true)})`}
+                  </span>
                 </>
               )}
             </button>

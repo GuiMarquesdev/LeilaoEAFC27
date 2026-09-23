@@ -2,16 +2,18 @@ import React, { useState, useMemo } from 'react';
 import { 
   Search, Filter, ArrowUpDown, Flame, Gavel, 
   CheckCircle2, Lock, Sparkles, ExternalLink, X, ShieldAlert, ShieldCheck, Calendar, Star, Eye,
-  Clock, TrendingUp, ArrowRight, Radio, Coins
+  Clock, TrendingUp, ArrowRight, Radio, Coins, UserPlus, UserCheck, AlertTriangle
 } from 'lucide-react';
 import { Player, UserProfile, AuctionState, UserSquad } from '../types';
 import { 
   formatCurrency, formatAuctionTimer, getPositionBadge, getPositionCategory, 
-  isPositionAllowedForDay, getDayLabel, getPlayerAuctionDay, matchesPlayerSearch 
+  isPositionAllowedForDay, getDayLabel, getPlayerAuctionDay, matchesPlayerSearch,
+  getPlayerActiveBid, getPlayerEffectivePrice
 } from '../utils/formatters';
 import { QuickBidModal } from './QuickBidModal';
+import { AddExtraPlayerModal } from './AddExtraPlayerModal';
 
-type StatusFilterType = 'ALL' | 'AVAILABLE' | 'SOLD' | 'IN_AUCTION' | 'WITH_PROPOSAL' | 'IN_QUEUE';
+type StatusFilterType = 'ALL' | 'AVAILABLE' | 'SOLD' | 'IN_AUCTION' | 'WITH_PROPOSAL' | 'IN_QUEUE' | 'FREE_AGENTS';
 
 interface PlayerCatalogSectionProps {
   players: Player[];
@@ -28,6 +30,14 @@ interface PlayerCatalogSectionProps {
   onOpenAdmin: () => void;
   onNavigateToSquad: () => void;
   onNavigateToAuction?: () => void;
+  onAddExtraPlayer?: (data: {
+    name: string;
+    position: string;
+    club?: string;
+    nationality?: string;
+    initialPrice: number;
+  }) => Promise<boolean>;
+  onSignFreeAgent?: (playerId: string) => Promise<boolean>;
 }
 
 export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
@@ -45,6 +55,8 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
   onOpenAdmin,
   onNavigateToSquad,
   onNavigateToAuction,
+  onAddExtraPlayer,
+  onSignFreeAgent,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewScope, setViewScope] = useState<'DAY_ONLY' | 'WATCHED_ONLY' | 'ALL_PHASES'>('DAY_ONLY');
@@ -55,6 +67,8 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPlayerForBid, setSelectedPlayerForBid] = useState<Player | null>(null);
+  const [isAddExtraModalOpen, setIsAddExtraModalOpen] = useState(false);
+  const [signingPlayerId, setSigningPlayerId] = useState<string | null>(null);
   const itemsPerPage = 20;
 
   const currentAuctionDay = auction.auctionDay || 1;
@@ -93,13 +107,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
   };
 
   const getPlayerCurrentValue = (p: Player): number => {
-    if ((p.status === 'IN_AUCTION' || auction.currentPlayer?.id === p.id) && auction.currentBid) {
-      return auction.currentBid.amount;
-    }
-    if (p.status === 'SOLD' && p.soldTo) {
-      return p.soldTo.amount;
-    }
-    return p.initialPrice;
+    return getPlayerEffectivePrice(p, auction);
   };
 
   // Filter & sort logic
@@ -124,14 +132,14 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
         }
 
         // Status & Proposal filter
-        if (statusFilter === 'AVAILABLE') {
-          if (player.status !== 'AVAILABLE') return false;
+        if (statusFilter === 'AVAILABLE' || statusFilter === 'FREE_AGENTS') {
+          if (player.status !== 'AVAILABLE' || !!player.soldTo) return false;
         } else if (statusFilter === 'SOLD') {
           if (player.status !== 'SOLD') return false;
         } else if (statusFilter === 'IN_AUCTION') {
           if (player.status !== 'IN_AUCTION' && auction.currentPlayer?.id !== player.id) return false;
         } else if (statusFilter === 'WITH_PROPOSAL') {
-          const hasActiveBid = (player.status === 'IN_AUCTION' || auction.currentPlayer?.id === player.id) && !!auction.currentBid;
+          const hasActiveBid = (player.status === 'IN_AUCTION' || auction.currentPlayer?.id === player.id) && !!getPlayerActiveBid(player, auction);
           const isSoldWithBid = player.status === 'SOLD' && !!player.soldTo;
           if (!hasActiveBid && !isSoldWithBid) return false;
         } else if (statusFilter === 'IN_QUEUE') {
@@ -248,9 +256,14 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                       <span className="text-slate-500">•</span>
                       <span className="text-slate-300 font-medium">
                         {auction.currentBid.userId === currentUser?.id ? (
-                          <strong className="text-emerald-400 font-black">Você está liderando a disputa!</strong>
-                        ) : auction.anonymousBidding ? (
-                          <span className="text-slate-400 italic">Proposta Sigilosa (Ata Oficial)</span>
+                          <strong className="text-emerald-400 font-black">
+                            <span className="font-mono font-bold tracking-wider">*****</span> (Você está liderando!)
+                          </strong>
+                        ) : auction.anonymousBidding !== false ? (
+                          <span className="text-slate-300 flex items-center gap-1">
+                            Liderado por: <span className="font-mono font-black tracking-wider text-white">*****</span>
+                            <span className="text-xs text-slate-400 italic">(Sigilo de Lances)</span>
+                          </span>
                         ) : (
                           <span>Liderado por <strong className="text-white">{auction.currentBid.teamName}</strong></span>
                         )}
@@ -376,7 +389,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
       </div>
 
       {/* Header & Stats Banner */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -399,7 +412,84 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                 : 'Consulte os craques da posição do dia, preços de abertura para lance inicial e situação no leilão.'}
             </p>
           </div>
+
+          {/* Action to Add Extra Player Outside the Database */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              id="btn-add-extra-player"
+              onClick={() => {
+                if (auction.status === 'ACTIVE') {
+                  alert(
+                    'Regra Oficial: A inclusão de jogadores extras fora da base é permitida somente quando o leilão estiver fechado ou pausado. Durante o leilão ativo, não é permitido adicionar jogadores.'
+                  );
+                  return;
+                }
+                if (!currentUser) {
+                  onOpenAuth();
+                  return;
+                }
+                setIsAddExtraModalOpen(true);
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                auction.status === 'ACTIVE'
+                  ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed hover:bg-slate-100'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95'
+              }`}
+              title={
+                auction.status === 'ACTIVE'
+                  ? 'Bloqueado: Jogadores fora da base só podem ser incluídos quando o leilão estiver pausado ou fechado.'
+                  : 'Adicionar manualmente jogador fora da base (Lance Mínimo: € 10.000.000)'
+              }
+            >
+              {auction.status === 'ACTIVE' ? (
+                <Lock className="w-3.5 h-3.5 text-slate-400" />
+              ) : (
+                <UserPlus className="w-3.5 h-3.5" />
+              )}
+              <span>+ Adicionar Jogador Fora da Base</span>
+              {auction.status === 'ACTIVE' && (
+                <span className="text-[10px] font-normal opacity-75 hidden md:inline">
+                  (Pausado/Fechado)
+                </span>
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Post-Auction Free Agents Banner */}
+        {auction.status === 'ENDED' && (
+          <div className="p-4 bg-gradient-to-r from-emerald-900 to-teal-900 text-white rounded-2xl border border-emerald-700/60 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                <UserCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400">
+                    Mercado Pós-Leilão Aberto
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black border border-emerald-500/30">
+                    Agentes Livres (Free Agents)
+                  </span>
+                </div>
+                <p className="text-xs text-emerald-100/90 mt-0.5 leading-relaxed">
+                  Clubes e participantes tardios podem montar seus elencos contratando diretamente atletas que <strong>ninguém arrematou</strong> no leilão pelo valor base com seu saldo restante, até atingir o limite regulamentar de <strong>23 jogadores</strong>.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('FREE_AGENTS');
+                setCurrentPage(1);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs shrink-0 transition-colors cursor-pointer shadow-xs"
+            >
+              Ver Agentes Livres
+            </button>
+          </div>
+        )}
 
         {/* Controls, Filters & Search */}
         <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -592,6 +682,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
               className="w-full px-3 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
             >
               <option value="ALL">Status: Todos ({scopedPlayers.length})</option>
+              <option value="FREE_AGENTS">⭐ Agentes Livres (Não Arrematados)</option>
               <option value="WITH_PROPOSAL">🔥 Com Proposta / Lances</option>
               <option value="IN_AUCTION">🟡 Em Leilão Agora</option>
               <option value="IN_QUEUE">📋 Na Fila de Espera</option>
@@ -674,8 +765,9 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                   const isAllowedToday = isPositionAllowedForDay(player.position, currentAuctionDay);
 
                   const activeBid = isInAuction 
-                    ? (player.currentBid || (auction.currentPlayer?.id === player.id ? auction.currentBid : null)) 
+                    ? getPlayerActiveBid(player, auction)
                     : null;
+                  const effectivePrice = getPlayerEffectivePrice(player, auction);
                   const playerTimerRemaining = player.timerRemaining ?? (auction.currentPlayer?.id === player.id ? auction.timerRemaining : 86400);
                   const queueIndex = auction.nominationQueue?.findIndex((q) => q.player.id === player.id) ?? -1;
                   const isQueued = queueIndex !== -1;
@@ -770,18 +862,23 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                             <div className="space-y-1">
                               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 font-black text-xs">
                                 <Flame className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
-                                <span>Último Lance: {formatCurrency(activeBid.amount)}</span>
+                                <span>Último Lance: {formatCurrency(effectivePrice)}</span>
                               </div>
                               <div className="text-[11px] flex items-center gap-1.5 flex-wrap">
                                 <span className="font-bold text-emerald-600">
-                                  +{formatCurrency(activeBid.amount - player.initialPrice, true)} ágio
+                                  +{formatCurrency(effectivePrice - player.initialPrice, true)} ágio
                                 </span>
                                 <span className="text-slate-300">•</span>
                                 <span className="font-medium text-slate-600">
                                   {activeBid.userId === currentUser?.id ? (
-                                    <strong className="text-emerald-700 font-extrabold">Você está liderando</strong>
-                                  ) : auction.anonymousBidding ? (
-                                    <span className="text-slate-500 italic">Proposta Sigilosa</span>
+                                    <span className="text-emerald-700 font-extrabold flex items-center gap-1">
+                                      <span className="font-mono font-bold tracking-wider">*****</span>
+                                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1 rounded">Você lidera</span>
+                                    </span>
+                                  ) : auction.anonymousBidding !== false ? (
+                                    <span className="text-slate-600 flex items-center gap-1">
+                                      Por: <span className="font-mono font-black tracking-wider text-slate-800">*****</span>
+                                    </span>
                                   ) : (
                                     <span>Por: <strong>{activeBid.teamName}</strong></span>
                                   )}
@@ -856,10 +953,15 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                         )}
 
                         {isSold && player.soldTo && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                            <Lock className="w-3 h-3 text-slate-500" />
-                            Vendido
-                          </span>
+                          <div className="flex flex-col items-start gap-0.5">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                              <Lock className="w-3 h-3 text-slate-500" />
+                              <span>Vendido</span>
+                            </span>
+                            <span className="text-[10px] text-slate-600 font-bold truncate max-w-[130px]" title={`Arrematado por ${player.soldTo.teamName}`}>
+                              {player.soldTo.teamName}
+                            </span>
+                          </div>
                         )}
 
                         {!isInAuction && !isSold && isQueued && (
@@ -961,6 +1063,60 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                                 );
                               }
 
+                              if (auction.status === 'ENDED') {
+                                const cost = player.currentPrice || player.initialPrice;
+                                const canAfford = currentUser ? currentUser.budget >= cost : false;
+                                return (
+                                  <button
+                                    type="button"
+                                    disabled={signingPlayerId === player.id || !canAfford || isUserSquadFull}
+                                    onClick={async () => {
+                                      if (!currentUser) {
+                                        onOpenAuth();
+                                        return;
+                                      }
+                                      if (isUserSquadFull) {
+                                        alert('Seu clube já atingiu o limite de 23 jogadores no elenco!');
+                                        return;
+                                      }
+                                      if (!canAfford) {
+                                        alert(`Saldo insuficiente! Custo: € ${(cost / 1000000).toFixed(1)}M. Saldo em conta: € ${(currentUser.budget / 1000000).toFixed(1)}M.`);
+                                        return;
+                                      }
+                                      if (window.confirm(`Deseja contratar ${player.name} (${player.position}) como Agente Livre por € ${(cost / 1000000).toFixed(1)}M?`)) {
+                                        setSigningPlayerId(player.id);
+                                        try {
+                                          if (onSignFreeAgent) {
+                                            await onSignFreeAgent(player.id);
+                                          }
+                                        } finally {
+                                          setSigningPlayerId(null);
+                                        }
+                                      }
+                                    }}
+                                    className={`px-3 py-1.5 text-xs font-black rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${
+                                      canAfford && !isUserSquadFull
+                                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95'
+                                        : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                                    }`}
+                                    title={
+                                      !canAfford
+                                        ? `Saldo insuficiente (€ ${(cost / 1000000).toFixed(1)}M)`
+                                        : isUserSquadFull
+                                        ? 'Limite de 23 jogadores atingido'
+                                        : `Contratar agente livre por € ${(cost / 1000000).toFixed(1)}M`
+                                    }
+                                  >
+                                    <UserCheck className="w-3.5 h-3.5" />
+                                    <span>
+                                      {signingPlayerId === player.id
+                                        ? 'Contratando...'
+                                        : `Contratar (${formatCurrency(cost)})`}
+                                    </span>
+                                  </button>
+                                );
+                              }
+
                               const isAuctionInProgress = auction.status !== 'NOT_STARTED' && auction.status !== 'ENDED';
 
                               return (
@@ -983,8 +1139,6 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                                   title={
                                     auction.status === 'NOT_STARTED'
                                       ? "Propostas bloqueadas: O leilão oficial ainda não foi iniciado pela Diretoria. Aguarde a abertura oficial para evitar inicializações precoces."
-                                      : auction.status === 'ENDED'
-                                      ? "Propostas encerradas: O leilão oficial da Khedira League foi encerrado."
                                       : "Fazer proposta oficial de 24 horas para este atleta"
                                   }
                                 >
@@ -1056,6 +1210,21 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
             }
           }}
           onOpenAuth={onOpenAuth}
+        />
+      )}
+
+      {/* Modal to add extra player outside base */}
+      {isAddExtraModalOpen && (
+        <AddExtraPlayerModal
+          isOpen={isAddExtraModalOpen}
+          onClose={() => setIsAddExtraModalOpen(false)}
+          isAuctionActive={auction.status === 'ACTIVE'}
+          onSubmit={async (data) => {
+            if (onAddExtraPlayer) {
+              return await onAddExtraPlayer(data);
+            }
+            return false;
+          }}
         />
       )}
     </div>

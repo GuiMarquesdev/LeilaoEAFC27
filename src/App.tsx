@@ -5,7 +5,7 @@ import {
   RefreshCw, CheckCircle2, AlertCircle, Info, ExternalLink 
 } from 'lucide-react';
 
-import { LeagueState, UserProfile, WSMessage, Player, UserSquad } from './types';
+import { LeagueState, UserProfile, WSMessage, Player, UserSquad, Bid } from './types';
 import { INITIAL_FORMATIONS, INITIAL_PLAYERS } from './data/initialPlayers';
 import { isCompatiblePosition, formatCurrency } from './utils/formatters';
 import { apiUrl, getWebSocketUrl } from './utils/api';
@@ -235,9 +235,57 @@ export default function App() {
               break;
 
             case 'NEW_BID':
-              setLeagueState((prev) => (prev ? { ...prev, auction: msg.data.auction } : prev));
+              setLeagueState((prev) => {
+                if (!prev) return prev;
+                const incomingPlayer = msg.data.player;
+                const incomingBid = msg.data.bid;
+                const incomingAuction = msg.data.auction;
+
+                const updatedPlayers = prev.players.map((p) => {
+                  if (incomingPlayer && p.id === incomingPlayer.id) {
+                    return {
+                      ...p,
+                      ...incomingPlayer,
+                      status: 'IN_AUCTION' as const,
+                      currentPrice: incomingBid?.amount || incomingPlayer.currentPrice || p.currentPrice,
+                      currentBid: incomingBid || incomingPlayer.currentBid || p.currentBid,
+                      timerRemaining: incomingPlayer.timerRemaining ?? p.timerRemaining,
+                      auctionExpiresAt: incomingPlayer.auctionExpiresAt ?? p.auctionExpiresAt,
+                      bidHistory: incomingBid
+                        ? [incomingBid, ...(p.bidHistory || []).filter((b) => b.id !== incomingBid.id)]
+                        : (incomingPlayer.bidHistory || p.bidHistory)
+                    };
+                  }
+                  if (incomingBid && p.id === incomingBid.playerId) {
+                    return {
+                      ...p,
+                      status: 'IN_AUCTION' as const,
+                      currentPrice: incomingBid.amount,
+                      currentBid: incomingBid,
+                      bidHistory: [incomingBid, ...(p.bidHistory || []).filter((b) => b.id !== incomingBid.id)]
+                    };
+                  }
+                  return p;
+                });
+
+                const mergedAuction = incomingAuction || prev.auction;
+                const updatedBidHistory = incomingBid
+                  ? [incomingBid, ...(mergedAuction?.bidHistory || []).filter((b) => b.id !== incomingBid.id)]
+                  : (mergedAuction?.bidHistory || []);
+
+                return {
+                  ...prev,
+                  auction: {
+                    ...mergedAuction,
+                    bidHistory: updatedBidHistory,
+                    currentBid: incomingBid || mergedAuction?.currentBid,
+                    currentPlayer: incomingPlayer || mergedAuction?.currentPlayer
+                  },
+                  players: updatedPlayers
+                };
+              });
               playBidSound();
-              if (msg.data.auction.currentPlayer && watchedPlayerIdsRef.current.includes(msg.data.auction.currentPlayer.id)) {
+              if (msg.data.auction?.currentPlayer && watchedPlayerIdsRef.current.includes(msg.data.auction.currentPlayer.id)) {
                 const isMyBid = currentUserRef.current?.id === msg.data.auction.currentBid?.userId;
                 if (!isMyBid && msg.data.auction.currentBid) {
                   addNotification(
@@ -249,7 +297,33 @@ export default function App() {
               break;
 
             case 'AUCTION_STARTED':
-              setLeagueState((prev) => (prev ? { ...prev, auction: msg.data.auction } : prev));
+              setLeagueState((prev) => {
+                if (!prev) return prev;
+                const incomingPlayer = msg.data.player;
+                const incomingAuction = msg.data.auction;
+                const incomingBid = msg.data.bid;
+
+                const updatedPlayers = prev.players.map((p) => {
+                  if (incomingPlayer && p.id === incomingPlayer.id) {
+                    return {
+                      ...p,
+                      ...incomingPlayer,
+                      status: 'IN_AUCTION' as const,
+                      currentPrice: incomingPlayer.currentPrice || incomingBid?.amount || p.currentPrice,
+                      currentBid: incomingPlayer.currentBid || incomingBid || p.currentBid,
+                      timerRemaining: incomingPlayer.timerRemaining ?? p.timerRemaining,
+                      auctionExpiresAt: incomingPlayer.auctionExpiresAt ?? p.auctionExpiresAt,
+                    };
+                  }
+                  return p;
+                });
+
+                return {
+                  ...prev,
+                  auction: incomingAuction,
+                  players: updatedPlayers
+                };
+              });
               if (watchedPlayerIdsRef.current.includes(msg.data.player.id)) {
                 addNotification(
                   `⭐ RADAR: ${msg.data.player.name} (${msg.data.player.position}) ENTROU EM LEILÃO AGORA!`,
@@ -561,7 +635,6 @@ export default function App() {
     addNotification('Você saiu da sua conta.', 'info');
   };
 
-  // Auction: Place bid
   // Auction: Place bid (supports concurrent players)
   const handleBid = async (amount: number, playerId?: string): Promise<boolean> => {
     if (!currentUser) {
@@ -579,6 +652,53 @@ export default function App() {
       const data = await res.json();
       if (data.success) {
         addNotification(`💰 Proposta de € ${(amount / 1000000).toFixed(1)}M registrada com sucesso!`, 'success');
+        if (data.player || data.auction || data.bid) {
+          setLeagueState((prev) => {
+            if (!prev) return prev;
+            const updatedAuction = data.auction || prev.auction;
+            const updatedPlayer = data.player;
+            const newBid = data.bid;
+
+            const updatedPlayers = prev.players.map((p) => {
+              if (updatedPlayer && p.id === updatedPlayer.id) {
+                return {
+                  ...p,
+                  ...updatedPlayer,
+                  currentPrice: newBid?.amount || updatedPlayer.currentPrice || p.currentPrice,
+                  currentBid: newBid || updatedPlayer.currentBid || p.currentBid,
+                  bidHistory: newBid
+                    ? [newBid, ...(updatedPlayer.bidHistory || p.bidHistory || []).filter(b => b.id !== newBid.id)]
+                    : (updatedPlayer.bidHistory || p.bidHistory)
+                };
+              }
+              if (newBid && p.id === newBid.playerId) {
+                return {
+                  ...p,
+                  status: 'IN_AUCTION' as const,
+                  currentPrice: newBid.amount,
+                  currentBid: newBid,
+                  bidHistory: [newBid, ...(p.bidHistory || []).filter(b => b.id !== newBid.id)]
+                };
+              }
+              return p;
+            });
+
+            const mergedBidHistory = newBid
+              ? [newBid, ...(updatedAuction?.bidHistory || []).filter((b: Bid) => b.id !== newBid.id)]
+              : (updatedAuction?.bidHistory || []);
+
+            return {
+              ...prev,
+              auction: {
+                ...updatedAuction,
+                bidHistory: mergedBidHistory,
+                currentBid: newBid || updatedAuction?.currentBid,
+                currentPlayer: updatedPlayer || updatedAuction?.currentPlayer
+              },
+              players: updatedPlayers
+            };
+          });
+        }
         await fetchState();
         return true;
       } else {
@@ -610,6 +730,21 @@ export default function App() {
       if (data.success) {
         setActiveTab('auction'); // jump to live auction tab!
         addNotification('📢 Proposta aberta com sucesso! Disputa ativa por 24 horas.', 'success');
+        if (data.player || data.auction) {
+          setLeagueState((prev) => {
+            if (!prev) return prev;
+            const updatedAuction = data.auction || prev.auction;
+            const updatedPlayer = data.player;
+            const updatedPlayers = updatedPlayer
+              ? prev.players.map((p) => (p.id === updatedPlayer.id ? { ...p, ...updatedPlayer } : p))
+              : prev.players;
+            return {
+              ...prev,
+              auction: updatedAuction,
+              players: updatedPlayers
+            };
+          });
+        }
         await fetchState();
         return true;
       } else {
@@ -619,6 +754,83 @@ export default function App() {
     } catch (err) {
       console.error('Nominate error:', err);
       addNotification('Falha de conexão com o servidor de leilões.', 'error');
+      return false;
+    }
+  };
+
+  // Add extra player outside the base database
+  const handleAddExtraPlayer = async (data: {
+    name: string;
+    position: string;
+    club?: string;
+    nationality?: string;
+    initialPrice: number;
+  }): Promise<boolean> => {
+    if (!currentUser) {
+      setIsAuthOpen(true);
+      return false;
+    }
+    try {
+      const res = await fetch(apiUrl('/api/players/add-extra'), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: currentUser.id,
+          name: data.name,
+          position: data.position,
+          club: data.club,
+          nationality: data.nationality,
+          initialPrice: data.initialPrice,
+        }),
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        addNotification(`✅ Craque ${data.name} adicionado à lista pública da Liga!`, 'success');
+        await fetchState();
+        return true;
+      } else {
+        addNotification(resData.error || 'Erro ao adicionar jogador extra.', 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error('Add extra player error:', err);
+      addNotification('Falha de conexão ao adicionar jogador.', 'error');
+      return false;
+    }
+  };
+
+  // Sign Free Agent post-auction
+  const handleSignFreeAgent = async (playerId: string): Promise<boolean> => {
+    if (!currentUser) {
+      setIsAuthOpen(true);
+      return false;
+    }
+    try {
+      const res = await fetch(apiUrl('/api/auction/sign-free-agent'), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: currentUser.id,
+          playerId,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addNotification(`🎉 Contratação confirmada! ${data.player?.name} agora faz parte do seu clube.`, 'success');
+        if (data.user) {
+          setCurrentUser(data.user);
+        }
+        await fetchState();
+        return true;
+      } else {
+        addNotification(data.error || 'Erro ao contratar agente livre.', 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error('Sign free agent error:', err);
+      addNotification('Falha de conexão com o servidor.', 'error');
       return false;
     }
   };
@@ -949,6 +1161,37 @@ export default function App() {
       const data = await res.json();
       if (data.success) {
         addNotification(data.message || 'Reset de mercado executado! Todos os jogadores retornaram ao mercado e o saldo integral foi devolvido aos clubes.', 'alert');
+        setLeagueState((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            players: data.players || prev.players.map((p) => ({
+              ...p,
+              status: 'AVAILABLE' as const,
+              soldTo: undefined,
+              nominatedBy: undefined,
+              currentPrice: p.initialPrice,
+              currentBid: null,
+              bidHistory: [],
+              timerRemaining: undefined,
+              auctionExpiresAt: undefined,
+            })),
+            auction: data.auction || {
+              ...prev.auction,
+              status: 'NOT_STARTED' as const,
+              currentPlayer: null,
+              currentBid: null,
+              bidHistory: [],
+              nominationQueue: [],
+              timerRemaining: 0,
+            },
+            users: prev.users.map((u) => ({
+              ...u,
+              budget: prev.defaultBudget,
+              spent: 0
+            }))
+          };
+        });
         await fetchState();
         return true;
       }
@@ -1085,6 +1328,7 @@ export default function App() {
             onOpenAdmin={() => handleOpenAdmin('auction')}
             onOpenAdminReport={handleOpenAdminReport}
             onAdminAuctionAction={handleAdminAuctionAction}
+            onNavigateToSquad={() => setActiveTab('squad')}
           />
         )}
 
@@ -1130,6 +1374,8 @@ export default function App() {
             onOpenAdmin={() => handleOpenAdmin('auction')}
             onNavigateToSquad={() => setActiveTab('squad')}
             onNavigateToAuction={() => setActiveTab('auction')}
+            onAddExtraPlayer={handleAddExtraPlayer}
+            onSignFreeAgent={handleSignFreeAgent}
           />
         )}
       </main>

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Volume2, VolumeX, Shield, ShieldCheck, User, Users, Flame, LayoutGrid, DollarSign, FileText, UserPlus, LogOut, Star } from 'lucide-react';
+import { Volume2, VolumeX, Shield, ShieldCheck, User, Users, Flame, LayoutGrid, FileText, UserPlus, LogOut, Star } from 'lucide-react';
 import { UserProfile, AuctionState } from '../types';
-import { formatCurrency, getUserRoleBadge } from '../utils/formatters';
+import { getUserRoleBadge } from '../utils/formatters';
 
 interface NavbarProps {
   activeTab: 'auction' | 'squad' | 'catalog';
@@ -173,11 +173,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                           {getUserRoleBadge(currentUser).badgeLabel}
                         </span>
                       )}
-                    </div>
-                    <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                      <DollarSign className="w-3 h-3 -mr-0.5" />
-                      <span>{formatCurrency(currentUser.budget, true)}</span>
-                      <span className="text-slate-400 font-normal">livre</span>
                     </div>
                   </div>
                 </button>

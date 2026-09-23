@@ -4,7 +4,7 @@ import {
   CheckCircle2, ArrowUpRight, Sparkles, AlertCircle 
 } from 'lucide-react';
 import { Player, AuctionState, UserProfile } from '../types';
-import { formatCurrency, getPositionBadge, getPlayerAuctionDay } from '../utils/formatters';
+import { formatCurrency, getPositionBadge, getPlayerAuctionDay, getPlayerActiveBid, getPlayerEffectivePrice } from '../utils/formatters';
 
 interface WatchlistRadarWidgetProps {
   watchedPlayerIds: string[];
@@ -124,7 +124,8 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
             {watchedPlayers.slice(0, 6).map((player) => {
               const posBadge = getPositionBadge(player.position);
               const playerDay = getPlayerAuctionDay(player.position);
-              const isCurrentlyActive = auction.status === 'ACTIVE' && auction.currentPlayer?.id === player.id;
+              const isCurrentlyActive = (auction.status === 'ACTIVE' && auction.currentPlayer?.id === player.id) || player.status === 'IN_AUCTION';
+              const effectivePrice = getPlayerEffectivePrice(player, auction);
               const isSold = player.status === 'SOLD';
               const isDayActive = playerDay === currentAuctionDay || currentAuctionDay === 'ALL';
 
@@ -170,7 +171,7 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
                       {isCurrentlyActive ? (
                         <span className="font-black text-rose-600 flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping"></span>
-                          {formatCurrency(auction.currentBid ? auction.currentBid.amount : player.initialPrice)}
+                          {formatCurrency(effectivePrice)}
                         </span>
                       ) : isSold ? (
                         <span className="font-bold text-slate-500">

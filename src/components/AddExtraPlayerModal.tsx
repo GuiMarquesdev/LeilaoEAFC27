@@ -1,200 +1,239 @@
 import React, { useState } from 'react';
-import { X, UserPlus, AlertCircle, CheckCircle2, ShieldCheck, DollarSign } from 'lucide-react';
-import { PlayerPosition, UserProfile } from '../types';
+import { X, Plus, AlertCircle, Shield, UserPlus, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 
 interface AddExtraPlayerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentUser: UserProfile | null;
-  onAddExtraPlayer: (data: {
+  onSubmit: (data: {
     name: string;
-    position: PlayerPosition;
-    club: string;
-    nationality: string;
+    position: string;
+    club?: string;
+    nationality?: string;
     initialPrice: number;
   }) => Promise<boolean>;
+  isAuctionActive: boolean;
 }
 
-const POSITIONS: { value: PlayerPosition; label: string; group: string }[] = [
-  { value: 'GOL', label: 'GOL - Goleiro', group: 'Defesa' },
-  { value: 'ZAG', label: 'ZAG - Zagueiro', group: 'Defesa' },
-  { value: 'LD', label: 'LD - Lateral Direito', group: 'Defesa' },
-  { value: 'LE', label: 'LE - Lateral Esquerdo', group: 'Defesa' },
-  { value: 'VOL', label: 'VOL - Volante', group: 'Meio' },
-  { value: 'MC', label: 'MC - Meia Central', group: 'Meio' },
-  { value: 'MEI', label: 'MEI - Meia Atacante / Armador', group: 'Meio' },
-  { value: 'MD', label: 'MD - Meia Direito', group: 'Ataque' },
-  { value: 'ME', label: 'ME - Meia Esquerdo', group: 'Ataque' },
-  { value: 'PD', label: 'PD - Ponta Direita', group: 'Ataque' },
-  { value: 'PE', label: 'PE - Ponta Esquerda', group: 'Ataque' },
-  { value: 'SA', label: 'SA - Segundo Atacante', group: 'Ataque' },
-  { value: 'ATA', label: 'ATA - Centroavante', group: 'Ataque' },
+const POSITIONS = [
+  { group: 'Goleiros', list: ['GOL'] },
+  { group: 'Defensores', list: ['ZAG', 'LE', 'LD'] },
+  { group: 'Meio-Campistas', list: ['VOL', 'MC', 'MEI'] },
+  { group: 'Atacantes', list: ['ATA', 'PD', 'PE'] }
 ];
 
 export const AddExtraPlayerModal: React.FC<AddExtraPlayerModalProps> = ({
   isOpen,
   onClose,
-  currentUser,
-  onAddExtraPlayer,
+  onSubmit,
+  isAuctionActive,
 }) => {
   const [name, setName] = useState('');
-  const [position, setPosition] = useState<PlayerPosition>('ATA');
+  const [position, setPosition] = useState('ATA');
   const [club, setClub] = useState('');
-  const [nationality, setNationality] = useState('Brasil');
-  const [initialPrice, setInitialPrice] = useState('10000000'); // default €10M
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [nationality, setNationality] = useState('');
+  const [initialPrice, setInitialPrice] = useState<number>(10000000); // Mínimo € 10.000.000
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
+
+    if (isAuctionActive) {
+      setErrorMessage(
+        'Regra Oficial: A inclusão de jogadores extras fora da base é permitida apenas quando o leilão estiver pausado ou fechado. Quando o leilão estiver ativo, novos atletas não podem ser inseridos.'
+      );
+      return;
+    }
+
     if (!name.trim()) {
-      setErrorMsg('Informe o nome do atleta.');
+      setErrorMessage('Informe o nome completo ou de jogo do atleta.');
       return;
     }
 
-    const price = Number(initialPrice);
-    if (isNaN(price) || price < 10000000) {
-      setErrorMsg('Conforme a Ata Oficial, o lance mínimo para jogadores extras deve ser de pelo menos € 10 Milhões (€ 10M).');
+    if (initialPrice < 10000000) {
+      setErrorMessage(
+        'Conforme a Ata Oficial, o lance mínimo obrigatório para qualquer jogador extra fora da base é de € 10.000.000 (€ 10M).'
+      );
       return;
     }
 
-    setIsSubmitting(true);
-    setErrorMsg(null);
     try {
-      const ok = await onAddExtraPlayer({
+      setSubmitting(true);
+      const success = await onSubmit({
         name: name.trim(),
         position,
-        club: club.trim() || 'Sem Clube (Livre)',
+        club: club.trim() || 'Livre no Mercado',
         nationality: nationality.trim() || 'Internacional',
-        initialPrice: price,
+        initialPrice,
       });
 
-      if (ok) {
-        setSuccessMsg(`Atleta ${name.trim()} incluído na lista oficial com lance inicial de ${formatCurrency(price, true)}!`);
-        setTimeout(() => {
-          setSuccessMsg(null);
-          setName('');
-          setClub('');
-          onClose();
-        }, 1500);
-      } else {
-        setErrorMsg('Erro ao cadastrar jogador extra.');
+      if (success) {
+        setName('');
+        setClub('');
+        setNationality('');
+        setInitialPrice(10000000);
+        onClose();
       }
-    } catch {
-      setErrorMsg('Falha de comunicação com o servidor.');
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Erro ao cadastrar jogador extra.');
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div className="bg-white rounded-2xl max-w-lg w-full flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
+      <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50/60">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
-              <UserPlus className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <UserPlus className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Adicionar Jogador Extra à Lista
-              </h2>
-              <p className="text-xs text-slate-500">
-                Inclusão Sob Demanda • Khedira League
+              <h3 className="text-sm font-black text-slate-900">
+                Adicionar Jogador Fora da Base
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                Lista pública de craques adicionados manualmente pelos participantes
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200/60 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Rule Highlight Card */}
-        <div className="p-4 bg-amber-50/80 border-b border-amber-200/80 text-xs text-amber-950 flex items-start gap-2.5">
-          <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-          <p className="leading-relaxed">
-            <strong>Regra Oficial (Seção 2 da Ata):</strong> Qualquer atleta não constante na lista inicial pode ser requisitado imediatamente por qualquer clube, tendo como regra estrita o <strong>lance mínimo obrigatório de € 10 Milhões de Euros (€ 10M)</strong>.
-          </p>
-        </div>
+        {/* Content & Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+          {/* Rules Banner */}
+          <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1.5 text-xs text-amber-950">
+            <div className="flex items-center gap-1.5 font-bold text-amber-900">
+              <Shield className="w-3.5 h-3.5 text-amber-700" />
+              <span>Regulamento Oficial da Liga (Seção 2 da Ata)</span>
+            </div>
+            <ul className="list-disc list-inside space-y-1 text-[11px] text-amber-900/90 leading-relaxed">
+              <li>
+                <strong>Momento Permitido:</strong> Apenas com o leilão <em>fechado ou pausado</em>. Bloqueado durante disputa ativa.
+              </li>
+              <li>
+                <strong>Lance Mínimo Obrigatório:</strong> € 10.000.000 (€ 10M) para qualquer jogador extra.
+              </li>
+              <li>
+                <strong>Visibilidade Pública:</strong> O jogador entra na lista pública de todos os participantes.
+              </li>
+            </ul>
+          </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {errorMsg && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-semibold text-rose-800 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMsg}</span>
+          {errorMessage && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2 text-xs text-rose-800 font-medium">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
             </div>
           )}
 
-          {successMsg && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>{successMsg}</span>
-            </div>
-          )}
-
+          {/* Nome do Atleta */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Nome Completo do Jogador *
+              Nome do Jogador <span className="text-rose-600">*</span>
             </label>
             <input
               type="text"
               required
-              placeholder="Ex: Neymar Jr, Endrick, Estêvão..."
+              placeholder="Ex: Endrick, Lamine Yamal, Vitor Roque..."
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold"
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-semibold"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Posição */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Posição em Campo <span className="text-rose-600">*</span>
+            </label>
+            <div className="grid grid-cols-5 gap-1.5">
+              {['GOL', 'ZAG', 'LE', 'LD', 'VOL', 'MC', 'MEI', 'ATA', 'PD', 'PE'].map((pos) => (
+                <button
+                  type="button"
+                  key={pos}
+                  onClick={() => setPosition(pos)}
+                  className={`py-1.5 text-xs font-extrabold rounded-lg border transition-all cursor-pointer ${
+                    position === pos
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                  }`}
+                >
+                  {pos}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Clube e Nacionalidade */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Posição do Jogador *
+                Clube Atual <span className="text-slate-400 font-normal">(Opcional)</span>
               </label>
-              <select
-                value={position}
-                onChange={(e) => setPosition(e.target.value as PlayerPosition)}
-                className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold"
-              >
-                {POSITIONS.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                placeholder="Ex: Real Madrid"
+                value={club}
+                onChange={(e) => setClub(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Lance Mínimo Inicial (€) * (Min. € 10M)
+                Nacionalidade <span className="text-slate-400 font-normal">(Opcional)</span>
               </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="10000000"
-                  step="1000000"
-                  required
-                  value={initialPrice}
-                  onChange={(e) => setInitialPrice(e.target.value)}
-                  className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold text-emerald-800"
-                />
+              <input
+                type="text"
+                placeholder="Ex: Brasil"
+                value={nationality}
+                onChange={(e) => setNationality(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
+          {/* Lance Mínimo Obrigatório */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold text-slate-700">
+                Lance Mínimo Obrigatório
+              </label>
+              <span className="text-xs font-extrabold text-emerald-700">
+                {formatCurrency(initialPrice)}
+              </span>
+            </div>
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+              <div>
+                <span className="text-xs font-mono font-bold text-slate-800">
+                  € 10.000.000 (Mínimo Fixado)
+                </span>
+                <p className="text-[10px] text-slate-500">
+                  Todo jogador fora da base inicia obrigatoriamente com o teto mínimo de €10M.
+                </p>
               </div>
-              <span className="text-[10px] text-slate-400 mt-0.5 block">
-                Equivale a: <strong>{formatCurrency(Number(initialPrice) || 0, true)}</strong>
+              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-md uppercase">
+                Obrigatório
               </span>
             </div>
           </div>
 
-          <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+          {/* Actions */}
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
@@ -204,11 +243,21 @@ export const AddExtraPlayerModal: React.FC<AddExtraPlayerModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="px-5 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              disabled={submitting || isAuctionActive}
+              className={`flex items-center gap-1.5 px-5 py-2 text-xs font-black rounded-xl text-white shadow-xs transition-all cursor-pointer ${
+                submitting || isAuctionActive
+                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-700 active:scale-95'
+              }`}
             >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>{isSubmitting ? 'Cadastrando...' : 'Adicionar Jogador'}</span>
+              {submitting ? (
+                <span>Cadastrando...</span>
+              ) : (
+                <>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Cadastrar Atleta na Lista Pública</span>
+                </>
+              )}
             </button>
           </div>
         </form>

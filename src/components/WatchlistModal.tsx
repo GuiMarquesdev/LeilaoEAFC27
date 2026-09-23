@@ -4,7 +4,7 @@ import {
   AlertCircle, ChevronRight, Search, Trophy, ArrowUpRight, ShieldCheck 
 } from 'lucide-react';
 import { Player, UserProfile, AuctionState } from '../types';
-import { formatCurrency, getPositionBadge, getDayLabel, getPlayerAuctionDay, isPositionAllowedForDay, matchesPlayerSearch } from '../utils/formatters';
+import { formatCurrency, getPositionBadge, getDayLabel, getPlayerAuctionDay, isPositionAllowedForDay, matchesPlayerSearch, getPlayerActiveBid, getPlayerEffectivePrice } from '../utils/formatters';
 
 interface WatchlistModalProps {
   isOpen: boolean;
@@ -228,7 +228,9 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                 const posBadge = getPositionBadge(player.position);
                 const playerDay = getPlayerAuctionDay(player.position);
                 const dayInfo = getDayLabel(playerDay);
-                const isCurrentlyActive = auction.status === 'ACTIVE' && auction.currentPlayer?.id === player.id;
+                const isCurrentlyActive = (auction.status === 'ACTIVE' && auction.currentPlayer?.id === player.id) || player.status === 'IN_AUCTION';
+                const playerActiveBid = isCurrentlyActive ? getPlayerActiveBid(player, auction) : null;
+                const playerEffectivePrice = getPlayerEffectivePrice(player, auction);
                 const isSold = player.status === 'SOLD';
                 const isAvailable = player.status === 'AVAILABLE' && !isCurrentlyActive;
                 const isDayActive = playerDay === currentAuctionDay || currentAuctionDay === 'ALL';
@@ -319,8 +321,8 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                           {isCurrentlyActive ? 'Lance no momento:' : isSold ? 'Arrematado por:' : 'Preço Base:'}
                         </span>
                         <div className="text-xs sm:text-sm font-black text-slate-900">
-                          {isCurrentlyActive && auction.currentBid
-                            ? formatCurrency(auction.currentBid.amount)
+                          {isCurrentlyActive
+                            ? formatCurrency(playerEffectivePrice)
                             : isSold && player.soldTo
                             ? formatCurrency(player.soldTo.amount)
                             : formatCurrency(player.initialPrice)}
@@ -330,9 +332,11 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                             Comprador: {player.soldTo.teamName}
                           </span>
                         )}
-                        {isCurrentlyActive && auction.currentBid && (
+                        {isCurrentlyActive && playerActiveBid && (
                           <span className="text-[10px] text-rose-700 font-bold block truncate max-w-[140px]">
-                            Maior lance: {auction.currentBid.teamName}
+                            Maior lance: {auction.anonymousBidding !== false
+                              ? (playerActiveBid.userId === currentUser?.id ? '***** (Você)' : '*****')
+                              : (playerActiveBid.teamName || 'Clube')}
                           </span>
                         )}
                       </div>
