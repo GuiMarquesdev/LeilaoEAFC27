@@ -602,67 +602,67 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* 1. Status Banner */}
-      <div className={`border rounded-2xl p-4 shadow-xs transition-all ${
-        isAuctionNotStarted
-          ? 'bg-amber-50/80 border-amber-300'
-          : isAuctionEnded
-            ? 'bg-slate-100 border-slate-300'
-            : 'bg-white border-slate-200'
-      }`}>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className={`text-xs font-bold uppercase tracking-wider ${
-                  isAuctionNotStarted
-                    ? 'text-amber-800'
-                    : isAuctionEnded
-                      ? 'text-slate-600'
-                      : isAuctionActive
-                        ? 'text-emerald-700'
-                        : 'text-slate-500'
-                }`}>
-                  {isAuctionNotStarted ? (
-                    '⏳ Status: Preparação & Espera'
-                  ) : isAuctionEnded ? (
-                    '🏁 Status: Leilão Encerrado'
-                  ) : isAuctionActive ? (
-                    '🟢 Leilão em Andamento'
-                  ) : (
-                    '🔄 Rodada de Anúncio de Jogador'
+      {/* 1. Status Banner - Exclusivo para Administradores da Liga */}
+      {isAdmin && (
+        <div className={`border rounded-2xl p-4 shadow-xs transition-all ${
+          isAuctionNotStarted
+            ? 'bg-amber-50/80 border-amber-300'
+            : isAuctionEnded
+              ? 'bg-slate-100 border-slate-300'
+              : 'bg-white border-slate-200'
+        }`}>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-bold uppercase tracking-wider ${
+                    isAuctionNotStarted
+                      ? 'text-amber-800'
+                      : isAuctionEnded
+                        ? 'text-slate-600'
+                        : isAuctionActive
+                          ? 'text-emerald-700'
+                          : 'text-slate-500'
+                  }`}>
+                    {isAuctionNotStarted ? (
+                      '⏳ Status: Preparação & Espera'
+                    ) : isAuctionEnded ? (
+                      '🏁 Status: Leilão Encerrado'
+                    ) : isAuctionActive ? (
+                      '🟢 Leilão em Andamento'
+                    ) : (
+                      '🔄 Rodada de Anúncio de Jogador'
+                    )}
+                  </span>
+                  {auction.isFreeNominationMode && !isAuctionNotStarted && !isAuctionEnded && (
+                    <span className="px-2 py-0.5 text-[10px] font-bold bg-purple-100 text-purple-800 rounded-full">
+                      Modo Livre (Qualquer um anuncia)
+                    </span>
                   )}
-                </span>
-                {auction.isFreeNominationMode && !isAuctionNotStarted && !isAuctionEnded && (
-                  <span className="px-2 py-0.5 text-[10px] font-bold bg-purple-100 text-purple-800 rounded-full">
-                    Modo Livre (Qualquer um anuncia)
-                  </span>
-                )}
+                </div>
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">
+                  {isAuctionNotStarted ? (
+                    <span className="text-amber-950 font-bold">
+                      Leilão ainda não iniciado, participantes se preparem para logo em breve darmos início ao leilão
+                    </span>
+                  ) : isAuctionEnded ? (
+                    <span className="text-slate-800 font-bold">
+                      O leilão oficial da Khedira League foi encerrado pelo administrador.
+                    </span>
+                  ) : isAuctionActive ? (
+                    <>Disputa ao vivo por <span className="text-emerald-600">{currentPlayer?.name}</span> • Propostas por 1 hora e 30 minutos</>
+                  ) : (
+                    <span className="text-emerald-700 font-extrabold">
+                      ⚽ Leilão Aberto: Qualquer participante pode postar jogadores de interesse!
+                    </span>
+                  )}
+                </h3>
               </div>
-              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">
-                {isAuctionNotStarted ? (
-                  <span className="text-amber-950 font-bold">
-                    Leilão ainda não iniciado, participantes se preparem para logo em breve darmos início ao leilão
-                  </span>
-                ) : isAuctionEnded ? (
-                  <span className="text-slate-800 font-bold">
-                    O leilão oficial da Khedira League foi encerrado pelo administrador.
-                  </span>
-                ) : isAuctionActive ? (
-                  <>Disputa ao vivo por <span className="text-emerald-600">{currentPlayer?.name}</span> • Propostas por 1 hora e 30 minutos</>
-                ) : (
-                  <span className="text-emerald-700 font-extrabold">
-                    ⚽ Leilão Aberto: Qualquer participante pode postar jogadores de interesse!
-                  </span>
-                )}
-              </h3>
             </div>
-          </div>
 
-          {/* Right Action / Controls on Banner */}
-          {isAuctionNotStarted ? (
-            <div className="flex items-center gap-2 self-end sm:self-center">
-              {isAdmin ? (
+            {/* Right Action / Controls on Banner */}
+            {isAuctionNotStarted ? (
+              <div className="flex items-center gap-2 self-end sm:self-center">
                 <button
                   id="btn-admin-start-auction-banner"
                   onClick={handleStartLeagueAuction}
@@ -672,40 +672,29 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                   <Play className="w-3.5 h-3.5 fill-current" />
                   <span>{isStartingAuction ? 'Iniciando...' : 'Iniciar Leilão Oficial'}</span>
                 </button>
-              ) : (
-                <span className="text-xs font-semibold text-amber-800 bg-amber-100/90 px-3 py-1.5 rounded-xl border border-amber-300 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-amber-700 animate-spin" />
-                  <span>Aguardando o comissário iniciar</span>
-                </span>
-              )}
-            </div>
-          ) : isAuctionEnded ? (
-            <div className="flex items-center gap-2 self-end sm:self-center">
-              {isAdmin && (
-                <>
-                  <button
-                    id="btn-admin-reopen-auction-banner"
-                    onClick={handleStartLeagueAuction}
-                    disabled={isStartingAuction}
-                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Reabrir Leilão</span>
-                  </button>
-                  <button
-                    id="btn-admin-reset-notstarted-banner"
-                    onClick={handleResetToNotStarted}
-                    className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Voltar para Não Iniciado</span>
-                  </button>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 self-end sm:self-center">
-              {isAdmin && (
+              </div>
+            ) : isAuctionEnded ? (
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <button
+                  id="btn-admin-reopen-auction-banner"
+                  onClick={handleStartLeagueAuction}
+                  disabled={isStartingAuction}
+                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Reabrir Leilão</span>
+                </button>
+                <button
+                  id="btn-admin-reset-notstarted-banner"
+                  onClick={handleResetToNotStarted}
+                  className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Voltar para Não Iniciado</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 self-end sm:self-center">
                 <button
                   type="button"
                   id="btn-admin-end-auction-banner"
@@ -721,18 +710,18 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                   )}
                   <span>{isEndingAuction ? 'Encerrando...' : 'Encerrar Leilão'}</span>
                 </button>
-              )}
 
-              {auction.nominationQueue && auction.nominationQueue.length > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-800">
-                  <ListOrdered className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Fila: {auction.nominationQueue.length} {auction.nominationQueue.length === 1 ? 'craque' : 'craques'}</span>
-                </div>
-              )}
-            </div>
-          )}
+                {auction.nominationQueue && auction.nominationQueue.length > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-800">
+                    <ListOrdered className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Fila: {auction.nominationQueue.length} {auction.nominationQueue.length === 1 ? 'craque' : 'craques'}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 1.1 Barra de Alinhamento Oficial (Mercado Aberto Unificado & Sigilo de Lances) */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
