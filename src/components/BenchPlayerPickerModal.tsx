@@ -187,7 +187,9 @@ export const BenchPlayerPickerModal: React.FC<BenchPlayerPickerModalProps> = ({
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <span className="font-semibold text-slate-600">{getDayLabel(day)}</span>
+                        <span>{player.club}</span>
+                        <span>•</span>
+                        <span className="font-semibold text-slate-600">{getDayLabel(day).title}</span>
                       </div>
                     </div>
                   </div>

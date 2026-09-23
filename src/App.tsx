@@ -52,9 +52,12 @@ export default function App() {
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wsFailuresRef = useRef<number>(0);
 
-  // Helper for authenticated request headers using session-scoped token
+  // Helper for authenticated request headers using session-scoped token with storage fallback
   const getAuthHeaders = useCallback((): Record<string, string> => {
-    const token = typeof window !== 'undefined' ? sessionStorage.getItem('khedira_token') : null;
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      token = sessionStorage.getItem('khedira_token') || localStorage.getItem('khedira_token');
+    }
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -490,6 +493,9 @@ export default function App() {
       if (data.success && data.user) {
         if (data.token) {
           sessionStorage.setItem('khedira_token', data.token);
+          try {
+            localStorage.setItem('khedira_token', data.token);
+          } catch {}
         }
         setCurrentUser(data.user);
         addNotification(`Bem-vindo de volta à Khedira League, ${data.user.name}!`, 'info');
@@ -522,6 +528,9 @@ export default function App() {
       if (data.success && data.user) {
         if (data.token) {
           sessionStorage.setItem('khedira_token', data.token);
+          try {
+            localStorage.setItem('khedira_token', data.token);
+          } catch {}
         }
         setCurrentUser(data.user);
         addNotification(`🎉 Bem-vindo à Khedira League, ${data.user.name}! Clube ${data.user.teamName} cadastrado com € 400M!`, 'success');
@@ -553,6 +562,9 @@ export default function App() {
       if (data.success && data.user) {
         if (data.token) {
           sessionStorage.setItem('khedira_token', data.token);
+          try {
+            localStorage.setItem('khedira_token', data.token);
+          } catch {}
         }
         setCurrentUser(data.user);
         addNotification(data.message || `Conectado com Gmail: ${data.user.name}!`, 'success');
@@ -606,7 +618,23 @@ export default function App() {
       const data = await res.json();
       if (data.success && data.user) {
         setCurrentUser(data.user);
-        addNotification('Perfil atualizado com sucesso!', 'success');
+        setLeagueState((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            users: prev.users.map((u) => (u.id === data.user.id ? data.user : u)),
+            players: prev.players.map((p) => {
+              if (p.soldTo?.userId === data.user.id) {
+                return {
+                  ...p,
+                  soldTo: { ...p.soldTo, teamName: data.user.teamName },
+                };
+              }
+              return p;
+            }),
+          };
+        });
+        addNotification(`Nome do clube alterado para "${data.user.teamName}"!`, 'success');
         await fetchState();
         return { success: true };
       }
@@ -628,6 +656,7 @@ export default function App() {
     }
     sessionStorage.removeItem('khedira_token');
     try {
+      localStorage.removeItem('khedira_token');
       localStorage.removeItem('khedira_league_user_id');
     } catch {
       // ignore

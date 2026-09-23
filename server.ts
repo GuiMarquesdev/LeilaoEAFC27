@@ -847,6 +847,23 @@ async function startServer() {
       }
     }
 
+    // Fallback: If running inside sandboxed iframe without 3rd-party cookie support, check x-user-id header
+    const headerUserId = (req.headers['x-user-id'] || req.body?.userId) as string;
+    if (headerUserId && typeof headerUserId === 'string') {
+      const user = leagueState.users.find((u) => u.id === headerUserId);
+      if (user) {
+        req.user = user;
+        req.session = {
+          userId: user.id,
+          email: user.email.toLowerCase(),
+          role: user.role === 'ADMIN' ? 'ADMIN' : 'PARTICIPANT',
+          iat: Date.now(),
+          exp: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        };
+        return next();
+      }
+    }
+
     next();
   }
 
@@ -1233,11 +1250,47 @@ async function startServer() {
 
     if (name && typeof name === 'string' && name.trim()) {
       const nameVal = validateString(name, 'Nome do treinador', 2, 50);
-      if (nameVal.valid) user.name = nameVal.value!;
+      if (nameVal.valid) {
+        user.name = nameVal.value!;
+      } else {
+        res.status(400).json({ success: false, error: nameVal.error });
+        return;
+      }
     }
     if (teamName && typeof teamName === 'string' && teamName.trim()) {
-      const teamVal = validateString(teamName, 'Nome do time', 2, 50);
-      if (teamVal.valid) user.teamName = teamVal.value!;
+      const teamVal = validateString(teamName, 'Nome do clube', 2, 50);
+      if (teamVal.valid) {
+        user.teamName = teamVal.value!;
+
+        // Propaga o novo nome do clube nos atletas comprados por ele
+        leagueState.players.forEach((p) => {
+          if (p.soldTo && p.soldTo.userId === user.id) {
+            p.soldTo.teamName = user.teamName;
+          }
+          if (p.bidHistory) {
+            p.bidHistory.forEach((b) => {
+              if (b.userId === user.id) {
+                b.teamName = user.teamName;
+              }
+            });
+          }
+        });
+
+        // Propaga na disputa ativa de leilão
+        if (leagueState.auction.currentBid && leagueState.auction.currentBid.userId === user.id) {
+          leagueState.auction.currentBid.teamName = user.teamName;
+        }
+        if (leagueState.auction.bidHistory) {
+          leagueState.auction.bidHistory.forEach((b) => {
+            if (b.userId === user.id) {
+              b.teamName = user.teamName;
+            }
+          });
+        }
+      } else {
+        res.status(400).json({ success: false, error: teamVal.error });
+        return;
+      }
     }
     if (password && typeof password === 'string' && password.trim()) {
       const passVal = validatePassword(password);
@@ -1252,7 +1305,7 @@ async function startServer() {
     saveState();
     broadcastState();
 
-    res.json({ success: true, user: sanitizeUser(user), message: 'Perfil atualizado com sucesso!' });
+    res.json({ success: true, user: sanitizeUser(user), message: 'Perfil e nome do clube atualizados com sucesso!' });
   });
 
   // 2h. Safe File Upload Endpoint (MIME validation, magic numbers check, size limit)

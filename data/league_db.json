@@ -10,7 +10,7 @@
       "budget": 400000000,
       "spent": 0,
       "createdAt": 1789411494821,
-      "passwordHash": "$2b$10$TtZtji187THsyJJtwQ6dJu.cmwCt/t6CdeQLdYPmllojEFLlqaNvG"
+      "passwordHash": "$2b$10$d4TW0N6Nmjk0JrOeeTqqq.Mj4ee7oygiD83Jainyne7jUDcl0mdTi"
     },
     {
       "id": "user-admin-tourinho",
@@ -34,36 +34,9 @@
       "nationality": "Itália",
       "initialPrice": 40000000,
       "currentPrice": 40000000,
-      "status": "IN_AUCTION",
-      "currentBid": {
-        "id": "bid-1790076167262-ia8h",
-        "playerId": "p-1",
-        "playerName": "Gianluigi Donnarumma",
-        "userId": "user-admin-default",
-        "userName": "Guilherme Pereira",
-        "teamName": "Pereira Galácticos FC",
-        "userEmail": "guimarquesbrito@gmail.com",
-        "amount": 40000000,
-        "timestamp": 1790076167262,
-        "isAnonymous": true
-      },
-      "bidHistory": [
-        {
-          "id": "bid-1790076167262-ia8h",
-          "playerId": "p-1",
-          "playerName": "Gianluigi Donnarumma",
-          "userId": "user-admin-default",
-          "userName": "Guilherme Pereira",
-          "teamName": "Pereira Galácticos FC",
-          "userEmail": "guimarquesbrito@gmail.com",
-          "amount": 40000000,
-          "timestamp": 1790076167262,
-          "isAnonymous": true
-        }
-      ],
-      "timerRemaining": 85889,
-      "auctionExpiresAt": 1790162567262,
-      "nominatedBy": "user-admin-default"
+      "status": "AVAILABLE",
+      "currentBid": null,
+      "bidHistory": []
     },
     {
       "id": "p-2",
@@ -565,36 +538,9 @@
       "nationality": "França",
       "initialPrice": 50000000,
       "currentPrice": 50000000,
-      "status": "IN_AUCTION",
-      "currentBid": {
-        "id": "bid-1790076678688-ojzd",
-        "playerId": "p-43",
-        "playerName": "Jules Koundé",
-        "userId": "user-admin-default",
-        "userName": "Guilherme Pereira",
-        "teamName": "Pereira Galácticos FC",
-        "userEmail": "guimarquesbrito@gmail.com",
-        "amount": 50000000,
-        "timestamp": 1790076678688,
-        "isAnonymous": true
-      },
-      "bidHistory": [
-        {
-          "id": "bid-1790076678688-ojzd",
-          "playerId": "p-43",
-          "playerName": "Jules Koundé",
-          "userId": "user-admin-default",
-          "userName": "Guilherme Pereira",
-          "teamName": "Pereira Galácticos FC",
-          "userEmail": "guimarquesbrito@gmail.com",
-          "amount": 50000000,
-          "timestamp": 1790076678688,
-          "isAnonymous": true
-        }
-      ],
-      "timerRemaining": 86400,
-      "auctionExpiresAt": 1790163078688,
-      "nominatedBy": "user-admin-default"
+      "status": "AVAILABLE",
+      "currentBid": null,
+      "bidHistory": []
     },
     {
       "id": "p-44",
@@ -17302,125 +17248,31 @@
     }
   ],
   "auction": {
-    "status": "ACTIVE",
-    "currentPlayer": {
-      "id": "p-43",
-      "name": "Jules Koundé",
-      "position": "LD",
-      "club": "Barcelona",
-      "nationality": "França",
-      "initialPrice": 50000000,
-      "currentPrice": 50000000,
-      "status": "IN_AUCTION",
-      "currentBid": {
-        "id": "bid-1790076678688-ojzd",
-        "playerId": "p-43",
-        "playerName": "Jules Koundé",
-        "userId": "user-admin-default",
-        "userName": "Guilherme Pereira",
-        "teamName": "Pereira Galácticos FC",
-        "userEmail": "guimarquesbrito@gmail.com",
-        "amount": 50000000,
-        "timestamp": 1790076678688,
-        "isAnonymous": true
-      },
-      "bidHistory": [
-        {
-          "id": "bid-1790076678688-ojzd",
-          "playerId": "p-43",
-          "playerName": "Jules Koundé",
-          "userId": "user-admin-default",
-          "userName": "Guilherme Pereira",
-          "teamName": "Pereira Galácticos FC",
-          "userEmail": "guimarquesbrito@gmail.com",
-          "amount": 50000000,
-          "timestamp": 1790076678688,
-          "isAnonymous": true
-        }
-      ],
-      "timerRemaining": 86400,
-      "auctionExpiresAt": 1790163078688,
-      "nominatedBy": "user-admin-default"
-    },
-    "currentBid": {
-      "id": "bid-1790076678688-ojzd",
-      "playerId": "p-43",
-      "playerName": "Jules Koundé",
-      "userId": "user-admin-default",
-      "userName": "Guilherme Pereira",
-      "teamName": "Pereira Galácticos FC",
-      "userEmail": "guimarquesbrito@gmail.com",
-      "amount": 50000000,
-      "timestamp": 1790076678688,
-      "isAnonymous": true
-    },
-    "bidHistory": [
-      {
-        "id": "bid-1790076678688-ojzd",
-        "playerId": "p-43",
-        "playerName": "Jules Koundé",
-        "userId": "user-admin-default",
-        "userName": "Guilherme Pereira",
-        "teamName": "Pereira Galácticos FC",
-        "userEmail": "guimarquesbrito@gmail.com",
-        "amount": 50000000,
-        "timestamp": 1790076678688,
-        "isAnonymous": true
-      },
-      {
-        "id": "bid-1790076167262-ia8h",
-        "playerId": "p-1",
-        "playerName": "Gianluigi Donnarumma",
-        "userId": "user-admin-default",
-        "userName": "Guilherme Pereira",
-        "teamName": "Pereira Galácticos FC",
-        "userEmail": "guimarquesbrito@gmail.com",
-        "amount": 40000000,
-        "timestamp": 1790076167262,
-        "isAnonymous": true
-      },
-      {
-        "id": "bid-1790075541463-02ju",
-        "playerId": "p-43",
-        "playerName": "Jules Koundé",
-        "userId": "user-admin-default",
-        "userName": "Guilherme Pereira",
-        "teamName": "Pereira Galácticos FC",
-        "userEmail": "guimarquesbrito@gmail.com",
-        "amount": 50000000,
-        "timestamp": 1790075541463,
-        "isAnonymous": true
-      },
-      {
-        "id": "bid-1790075506094-0rtw",
-        "playerId": "p-1",
-        "playerName": "Gianluigi Donnarumma",
-        "userId": "user-admin-default",
-        "userName": "Guilherme Pereira",
-        "teamName": "Pereira Galácticos FC",
-        "userEmail": "guimarquesbrito@gmail.com",
-        "amount": 40000000,
-        "timestamp": 1790075506094,
-        "isAnonymous": true
-      }
-    ],
+    "status": "NOT_STARTED",
+    "currentPlayer": null,
+    "currentBid": null,
+    "bidHistory": [],
     "timerRemaining": 0,
     "nominationTurnUserId": "user-admin-default",
     "nominationTimerRemaining": 45,
     "isFreeNominationMode": true,
     "minimumBidIncrement": 1000000,
-    "auctionDay": 1,
+    "auctionDay": "ALL",
     "anonymousBidding": true,
-    "lastUpdated": 1790076678688,
+    "lastUpdated": 1790166411986,
     "nominationQueue": []
   },
   "squads": {
     "user-admin-default": {
       "userId": "user-admin-default",
-      "formationId": "5-3-2",
-      "starterSlots": {
-        "pe": null
-      },
+      "formationId": "4-3-3",
+      "starterSlots": {},
+      "benchPlayerIds": []
+    },
+    "user-admin-tourinho": {
+      "userId": "user-admin-tourinho",
+      "formationId": "4-3-3",
+      "starterSlots": {},
       "benchPlayerIds": []
     }
   },

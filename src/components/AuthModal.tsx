@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Mail, 
@@ -75,20 +75,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Sync state when currentUser changes or modal opens
+  // Track previous open state so form inputs are not overwritten while user is actively typing
+  const prevOpenRef = useRef(false);
+  const prevUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (currentUser) {
-      setMode('PROFILE');
-      setEditName(currentUser.name);
-      setEditTeamName(currentUser.teamName);
-    } else {
-      if (mode === 'PROFILE') {
+    const justOpened = isOpen && !prevOpenRef.current;
+    const userChanged = currentUser?.id !== prevUserIdRef.current;
+    prevOpenRef.current = isOpen;
+    prevUserIdRef.current = currentUser?.id || null;
+
+    if (isOpen && (justOpened || userChanged)) {
+      if (currentUser) {
+        setMode('PROFILE');
+        setEditName(currentUser.name || '');
+        setEditTeamName(currentUser.teamName || '');
+      } else {
         setMode('REGISTER');
       }
+      setError(null);
+      setSuccessMessage(null);
+      setEditPassword('');
     }
-    setError(null);
-    setSuccessMessage(null);
-  }, [currentUser, isOpen]);
+  }, [isOpen, currentUser?.id]);
 
   if (!isOpen) return null;
 
@@ -215,22 +224,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError(null);
     setSuccessMessage(null);
 
-    if (!editName.trim() || !editTeamName.trim()) {
-      setError('Nome e Nome do Clube não podem ficar vazios.');
+    const cleanName = editName.trim();
+    const cleanTeam = editTeamName.trim();
+
+    if (!cleanName || !cleanTeam) {
+      setError('Nome do treinador e Nome do Clube não podem ficar vazios.');
+      return;
+    }
+
+    if (cleanTeam.length < 2) {
+      setError('O nome do clube deve ter no mínimo 2 caracteres.');
       return;
     }
 
     if (!onUpdateProfile) return;
 
     setLoading(true);
-    const res = await onUpdateProfile(editName.trim(), editTeamName.trim(), editPassword || undefined);
+    const res = await onUpdateProfile(cleanName, cleanTeam, editPassword || undefined);
     setLoading(false);
 
     if (res.success) {
-      setSuccessMessage('Dados atualizados com sucesso!');
+      setSuccessMessage('Nome do clube e perfil atualizados com sucesso!');
       setEditPassword('');
     } else {
-      setError(res.error || 'Erro ao atualizar dados.');
+      setError(res.error || 'Erro ao atualizar dados do clube.');
     }
   };
 
@@ -395,7 +412,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </h4>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Seu Nome / Apelido
                   </label>
                   <input
@@ -403,12 +420,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 font-medium"
+                    placeholder="Seu nome ou apelido"
+                    maxLength={50}
+                    className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 text-slate-900 font-semibold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Nome do seu Clube / Time
                   </label>
                   <input
@@ -416,20 +435,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                     value={editTeamName}
                     onChange={(e) => setEditTeamName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 font-medium"
+                    placeholder="Digite o nome do seu clube (ex: Real Madrid, Galácticos FC)"
+                    maxLength={50}
+                    autoComplete="off"
+                    className="w-full px-3.5 py-2.5 text-sm bg-white border-2 border-slate-200 focus:border-emerald-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/25 text-slate-900 font-bold tracking-tight shadow-2xs transition-all"
                   />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    O nome atualizado aparecerá em todas as disputas de leilão, lances e elencos.
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Nova Senha (opcional)
                   </label>
                   <input
                     type="password"
-                    placeholder="Deixe em branco para manter a atual"
+                    placeholder="Deixe em branco para manter a senha atual"
                     value={editPassword}
                     onChange={(e) => setEditPassword(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 font-medium"
+                    className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 text-slate-900 font-medium"
                   />
                 </div>
 
