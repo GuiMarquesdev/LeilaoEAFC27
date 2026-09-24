@@ -4,13 +4,41 @@ import {
   doc,
   getDoc,
   setDoc,
-  collection,
-  getDocs,
-  writeBatch
+  arrayUnion
 } from 'firebase/firestore';
 import path from 'path';
 import fs from 'fs';
 import { LeagueState, UserProfile, UserSquad, Player, AuctionState } from '../types.js';
+
+// O banco Firestore "Starter / cota compartilhada de IA" deste projeto nega
+// consultas de listagem de coleção inteira (getDocs em uma collection), mesmo
+// quando as regras de seguranca permitiriam - so getDoc em documento
+// especifico funciona. Por isso mantemos um documento-indice por colecao
+// (em vez de listar) e buscamos cada documento individualmente por id.
+//
+// IDs de participantes que ja existiam no Firestore antes do indice ser
+// criado (confirmados no Console em 24/09) - usados como semente unica do
+// indice, para nao perder quem ja tinha se cadastrado.
+const LEGACY_KNOWN_USER_IDS = [
+  'user-1790259041454-mewkw',
+  'user-1790259670059-zxvzd',
+  'user-1790260795753-20s8c',
+  'user-1790261315866-noq3i',
+  'user-1790268292035-6driw'
+];
+
+async function addToIndex(indexId: string, id: string): Promise<void> {
+  if (!db || !id) return;
+  try {
+    await setDoc(
+      doc(db, 'league', indexId),
+      { ids: arrayUnion(id), updatedAt: Date.now() },
+      { merge: true }
+    );
+  } catch (err) {
+    console.error(`[Firebase] Failed to update index '${indexId}' with id '${id}':`, err);
+  }
+}
 
 // Read config
 let firebaseConfig: any;
@@ -56,52 +84,85 @@ export async function loadStateFromFirestore(fallbackState: LeagueState): Promis
   try {
     console.log('[Firebase] 🔄 Loading persistent state from Firestore...');
 
-    // 1. Load all registered users
+    // Le o documento-indice de uma colecao (lista de ids) - getDoc simples,
+    // nao e uma listagem de colecao, entao nao esbarra na restricao do plano.
+    async function readIndexIds(indexId: string): Promise<string[]> {
+      try {
+        const snap = await getDoc(doc(db, 'league', indexId));
+        const ids = snap.exists() && Array.isArray(snap.data().ids) ? (snap.data().ids as string[]) : [];
+        return Array.from(new Set([...ids, ...LEGACY_KNOWN_USER_IDS]));
+      } catch (e) {
+        console.error(`[Firebase] Failed to read index 'league/${indexId}':`, e);
+        return [...LEGACY_KNOWN_USER_IDS];
+      }
+    }
+
+    // 1. Load all registered users (por id individual, via indice)
     const loadedUsers: UserProfile[] = [];
     try {
-      const usersCol = collection(db, 'users');
-      const userDocs = await getDocs(usersCol);
-      userDocs.forEach((docSnap) => {
-        const data = docSnap.data() as UserProfile;
-        if (data && data.id && data.email) {
-          loadedUsers.push(data);
+      const ids = await readIndexIds('user_index');
+      for (const id of ids) {
+        try {
+          const snap = await getDoc(doc(db, 'users', id));
+          if (snap.exists()) {
+            const data = snap.data() as UserProfile;
+            if (data && data.id && data.email) loadedUsers.push(data);
+          }
+        } catch (e) {
+          console.error(`[Firebase] Failed to read users/${id}:`, e);
         }
-      });
-      console.log(`[Firebase] ✅ Step 1/4 OK: read ${userDocs.size} doc(s) from 'users'.`);
+      }
+      console.log(`[Firebase] ✅ Step 1/4 OK: read ${loadedUsers.length}/${ids.length} doc(s) from 'users'.`);
     } catch (e) {
-      console.error("[Firebase] ❌ Step 1/4 FAILED reading collection 'users':", e);
+      console.error("[Firebase] ❌ Step 1/4 FAILED reading 'users' via index:", e);
     }
 
-    // 2. Load all squads
+    // 2. Load all squads (por id individual, via indice)
     const loadedSquads: { [userId: string]: UserSquad } = {};
     try {
-      const squadsCol = collection(db, 'squads');
-      const squadDocs = await getDocs(squadsCol);
-      squadDocs.forEach((docSnap) => {
-        const data = docSnap.data() as UserSquad;
-        if (data && data.userId) {
-          loadedSquads[data.userId] = data;
+      const ids = await readIndexIds('squad_index');
+      let found = 0;
+      for (const id of ids) {
+        try {
+          const snap = await getDoc(doc(db, 'squads', id));
+          if (snap.exists()) {
+            const data = snap.data() as UserSquad;
+            if (data && data.userId) {
+              loadedSquads[data.userId] = data;
+              found++;
+            }
+          }
+        } catch (e) {
+          console.error(`[Firebase] Failed to read squads/${id}:`, e);
         }
-      });
-      console.log(`[Firebase] ✅ Step 2/4 OK: read ${squadDocs.size} doc(s) from 'squads'.`);
+      }
+      console.log(`[Firebase] ✅ Step 2/4 OK: read ${found}/${ids.length} doc(s) from 'squads'.`);
     } catch (e) {
-      console.error("[Firebase] ❌ Step 2/4 FAILED reading collection 'squads':", e);
+      console.error("[Firebase] ❌ Step 2/4 FAILED reading 'squads' via index:", e);
     }
 
-    // 3. Load watchlists
+    // 3. Load watchlists (por id individual, via indice)
     const loadedWatchlists: { [userId: string]: string[] } = {};
     try {
-      const watchlistsCol = collection(db, 'watchlists');
-      const watchlistDocs = await getDocs(watchlistsCol);
-      watchlistDocs.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (data && data.userId && Array.isArray(data.playerIds)) {
-          loadedWatchlists[data.userId] = data.playerIds;
+      const ids = await readIndexIds('watchlist_index');
+      let found = 0;
+      for (const id of ids) {
+        try {
+          const snap = await getDoc(doc(db, 'watchlists', id));
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data && data.userId && Array.isArray(data.playerIds)) {
+              loadedWatchlists[data.userId] = data.playerIds;
+              found++;
+            }
+          }
+        } catch (e) {
+          console.error(`[Firebase] Failed to read watchlists/${id}:`, e);
         }
-      });
-      console.log(`[Firebase] ✅ Step 3/4 OK: read ${watchlistDocs.size} doc(s) from 'watchlists'.`);
+      }
+      console.log(`[Firebase] ✅ Step 3/4 OK: read ${found}/${ids.length} doc(s) from 'watchlists'.`);
     } catch (e) {
-      console.error("[Firebase] ❌ Step 3/4 FAILED reading collection 'watchlists':", e);
+      console.error("[Firebase] ❌ Step 3/4 FAILED reading 'watchlists' via index:", e);
     }
 
     // 4. Load master league state (auction, players status)
@@ -162,6 +223,7 @@ export async function syncUserToFirestore(user: UserProfile): Promise<void> {
     if (user.avatarUrl) userPayload.avatarUrl = user.avatarUrl;
 
     await setDoc(docRef, userPayload, { merge: true });
+    await addToIndex('user_index', user.id);
     console.log(`[Firebase] 💾 User "${user.name}" (${user.email}) persisted to Firestore.`);
   } catch (err) {
     console.error(`[Firebase] Failed to persist user ${user.id} to Firestore:`, err);
@@ -179,6 +241,7 @@ export async function syncSquadToFirestore(squad: UserSquad): Promise<void> {
       ...squad,
       updatedAt: Date.now()
     }, { merge: true });
+    await addToIndex('squad_index', squad.userId);
     console.log(`[Firebase] 💾 Squad for user "${squad.userId}" persisted to Firestore.`);
   } catch (err) {
     console.error(`[Firebase] Failed to persist squad for ${squad.userId} to Firestore:`, err);
@@ -197,6 +260,7 @@ export async function syncWatchlistToFirestore(userId: string, playerIds: string
       playerIds,
       updatedAt: Date.now()
     }, { merge: true });
+    await addToIndex('watchlist_index', userId);
     console.log(`[Firebase] 💾 Watchlist (${playerIds.length} players) for user "${userId}" persisted to Firestore.`);
   } catch (err) {
     console.error(`[Firebase] Failed to persist watchlist for ${userId} to Firestore:`, err);
