@@ -18,6 +18,7 @@ import {
   verifySessionToken,
   sanitizeUser,
   sanitizeLeagueState,
+  sanitizeBid,
   validateEmail,
   validatePassword,
   validateString,
@@ -511,7 +512,7 @@ function sellPlayerToHighestBidder(player: Player, auctionDay?: string | number)
       broadcast({
         type: 'AUCTION_HAMMER',
         data: {
-          winner,
+          winner: sanitizeUser(winner),
           player,
           finalPrice: winningBid.amount
         }
@@ -1633,9 +1634,17 @@ async function startServer() {
     broadcast({
       type: 'AUCTION_STARTED',
       data: {
-        player,
-        bid: newBid,
-        auction: leagueState.auction
+        player: {
+          ...player,
+          currentBid: sanitizeBid(player.currentBid, isAnonymous),
+          bidHistory: (player.bidHistory || []).map((b) => sanitizeBid(b, isAnonymous))
+        },
+        bid: sanitizeBid(newBid, isAnonymous),
+        auction: {
+          ...leagueState.auction,
+          currentBid: sanitizeBid(leagueState.auction.currentBid, isAnonymous),
+          bidHistory: (leagueState.auction.bidHistory || []).map((b) => sanitizeBid(b, isAnonymous))
+        }
       }
     });
 
@@ -1890,9 +1899,17 @@ async function startServer() {
     broadcast({
       type: 'NEW_BID',
       data: {
-        bid: newBid,
-        player,
-        auction: leagueState.auction
+        bid: sanitizeBid(newBid, isAnonymous),
+        player: {
+          ...player,
+          currentBid: sanitizeBid(player.currentBid, isAnonymous),
+          bidHistory: (player.bidHistory || []).map((b) => sanitizeBid(b, isAnonymous))
+        },
+        auction: {
+          ...leagueState.auction,
+          currentBid: sanitizeBid(leagueState.auction.currentBid, isAnonymous),
+          bidHistory: (leagueState.auction.bidHistory || []).map((b) => sanitizeBid(b, isAnonymous))
+        }
       }
     });
 

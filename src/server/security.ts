@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { UserProfile, LeagueState } from '../types.js';
+import { UserProfile, LeagueState, Bid } from '../types.js';
 
 // Secret key for HMAC token signing (never exposed to client)
 const SESSION_SECRET = process.env.SESSION_SECRET || 'khedira-league-secret-auth-key-2027-eafc';
@@ -97,10 +97,36 @@ export function sanitizeUser(user: UserProfile): UserProfile {
   return sanitized;
 }
 
+// Redige a identidade do proponente de um lance quando o sigilo estiver ativo.
+// Sem isso, o objeto Bid (userName/teamName/userEmail) trafega intacto para
+// todos os clientes mesmo com anonymousBidding=true, revelando quem deu o lance.
+export function sanitizeBid<T extends Bid | null | undefined>(bid: T, isAnonymous: boolean): T {
+  if (!bid || !isAnonymous) return bid;
+  return {
+    ...bid,
+    userName: 'Anônimo',
+    teamName: 'Sigiloso',
+    userEmail: ''
+  };
+}
+
 export function sanitizeLeagueState(state: LeagueState): LeagueState {
+  const isAnonymous = state.auction?.anonymousBidding !== false;
   return {
     ...state,
-    users: (state.users || []).map(sanitizeUser)
+    users: (state.users || []).map(sanitizeUser),
+    players: (state.players || []).map((p) => ({
+      ...p,
+      currentBid: sanitizeBid(p.currentBid, isAnonymous),
+      bidHistory: (p.bidHistory || []).map((b) => sanitizeBid(b, isAnonymous))
+    })),
+    auction: state.auction
+      ? {
+          ...state.auction,
+          currentBid: sanitizeBid(state.auction.currentBid, isAnonymous),
+          bidHistory: (state.auction.bidHistory || []).map((b) => sanitizeBid(b, isAnonymous))
+        }
+      : state.auction
   };
 }
 
