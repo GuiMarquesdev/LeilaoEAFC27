@@ -55,39 +55,54 @@ export async function loadStateFromFirestore(fallbackState: LeagueState): Promis
 
   try {
     console.log('[Firebase] 🔄 Loading persistent state from Firestore...');
-    
+
     // 1. Load all registered users
-    const usersCol = collection(db, 'users');
-    const userDocs = await getDocs(usersCol);
     const loadedUsers: UserProfile[] = [];
-    userDocs.forEach((docSnap) => {
-      const data = docSnap.data() as UserProfile;
-      if (data && data.id && data.email) {
-        loadedUsers.push(data);
-      }
-    });
+    try {
+      const usersCol = collection(db, 'users');
+      const userDocs = await getDocs(usersCol);
+      userDocs.forEach((docSnap) => {
+        const data = docSnap.data() as UserProfile;
+        if (data && data.id && data.email) {
+          loadedUsers.push(data);
+        }
+      });
+      console.log(`[Firebase] ✅ Step 1/4 OK: read ${userDocs.size} doc(s) from 'users'.`);
+    } catch (e) {
+      console.error("[Firebase] ❌ Step 1/4 FAILED reading collection 'users':", e);
+    }
 
     // 2. Load all squads
-    const squadsCol = collection(db, 'squads');
-    const squadDocs = await getDocs(squadsCol);
     const loadedSquads: { [userId: string]: UserSquad } = {};
-    squadDocs.forEach((docSnap) => {
-      const data = docSnap.data() as UserSquad;
-      if (data && data.userId) {
-        loadedSquads[data.userId] = data;
-      }
-    });
+    try {
+      const squadsCol = collection(db, 'squads');
+      const squadDocs = await getDocs(squadsCol);
+      squadDocs.forEach((docSnap) => {
+        const data = docSnap.data() as UserSquad;
+        if (data && data.userId) {
+          loadedSquads[data.userId] = data;
+        }
+      });
+      console.log(`[Firebase] ✅ Step 2/4 OK: read ${squadDocs.size} doc(s) from 'squads'.`);
+    } catch (e) {
+      console.error("[Firebase] ❌ Step 2/4 FAILED reading collection 'squads':", e);
+    }
 
     // 3. Load watchlists
-    const watchlistsCol = collection(db, 'watchlists');
-    const watchlistDocs = await getDocs(watchlistsCol);
     const loadedWatchlists: { [userId: string]: string[] } = {};
-    watchlistDocs.forEach((docSnap) => {
-      const data = docSnap.data();
-      if (data && data.userId && Array.isArray(data.playerIds)) {
-        loadedWatchlists[data.userId] = data.playerIds;
-      }
-    });
+    try {
+      const watchlistsCol = collection(db, 'watchlists');
+      const watchlistDocs = await getDocs(watchlistsCol);
+      watchlistDocs.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data && data.userId && Array.isArray(data.playerIds)) {
+          loadedWatchlists[data.userId] = data.playerIds;
+        }
+      });
+      console.log(`[Firebase] ✅ Step 3/4 OK: read ${watchlistDocs.size} doc(s) from 'watchlists'.`);
+    } catch (e) {
+      console.error("[Firebase] ❌ Step 3/4 FAILED reading collection 'watchlists':", e);
+    }
 
     // 4. Load master league state (auction, players status)
     let loadedAuction: AuctionState | undefined;
@@ -104,8 +119,9 @@ export async function loadStateFromFirestore(fallbackState: LeagueState): Promis
           loadedPlayers = masterData.players as Player[];
         }
       }
+      console.log(`[Firebase] ✅ Step 4/4 OK: 'league/current_state' exists=${masterSnap.exists()}.`);
     } catch (e) {
-      console.warn('[Firebase] Could not load master doc:', e);
+      console.error("[Firebase] ❌ Step 4/4 FAILED reading 'league/current_state':", e);
     }
 
     console.log(`[Firebase] ✅ Loaded ${loadedUsers.length} users, ${Object.keys(loadedSquads).length} squads, and ${Object.keys(loadedWatchlists).length} watchlists from Cloud Firestore.`);
