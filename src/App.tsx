@@ -1103,6 +1103,28 @@ export default function App() {
     }
   };
 
+  const handleAdminUpdatePlayer = async (playerId: string, playerData: {
+    name: string;
+    position: string;
+    club: string;
+    nationality: string;
+  }): Promise<boolean> => {
+    if (!currentUser) return false;
+    try {
+      const res = await fetch(apiUrl('/api/admin/player/update'), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ playerId, ...playerData }),
+      });
+      const data = await res.json();
+      return Boolean(data.success);
+    } catch (err) {
+      console.error('Admin update player error:', err);
+      return false;
+    }
+  };
+
   const handleAdminDeletePlayer = async (playerId: string): Promise<boolean> => {
     if (!currentUser) return false;
     try {
@@ -1482,6 +1504,7 @@ export default function App() {
         onAdminAuctionAction={handleAdminAuctionAction}
         onAdminCreatePlayer={handleAdminCreatePlayer}
         onAdminUpdatePrice={handleAdminUpdatePrice}
+        onAdminUpdatePlayer={handleAdminUpdatePlayer}
         onAdminDeletePlayer={handleAdminDeletePlayer}
         onAdminReleasePlayer={handleAdminReleasePlayer}
         onAdminUpdateUserRole={handleAdminUpdateUserRole}

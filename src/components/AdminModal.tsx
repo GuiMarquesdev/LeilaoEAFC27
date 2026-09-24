@@ -26,6 +26,12 @@ interface AdminModalProps {
     initialPrice: number;
   }) => Promise<boolean>;
   onAdminUpdatePrice: (playerId: string, initialPrice: number) => Promise<boolean>;
+  onAdminUpdatePlayer: (playerId: string, playerData: {
+    name: string;
+    position: PlayerPosition;
+    club: string;
+    nationality: string;
+  }) => Promise<boolean>;
   onAdminDeletePlayer: (playerId: string) => Promise<boolean>;
   onAdminReleasePlayer?: (playerId: string) => Promise<boolean>;
   onAdminUpdateUserRole: (targetUserId: string, role: 'ADMIN' | 'PARTICIPANT') => Promise<boolean>;
@@ -44,6 +50,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   onAdminAuctionAction,
   onAdminCreatePlayer,
   onAdminUpdatePrice,
+  onAdminUpdatePlayer,
   onAdminDeletePlayer,
   onAdminReleasePlayer,
   onAdminUpdateUserRole,
@@ -72,6 +79,15 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editPriceValue, setEditPriceValue] = useState<string>('');
   const [playerSearch, setPlayerSearch] = useState('');
+
+  // Player Details Edit State (corrigir nome, posição, clube ou nacionalidade)
+  const [editingDetailsId, setEditingDetailsId] = useState<string | null>(null);
+  const [editDetailsName, setEditDetailsName] = useState('');
+  const [editDetailsPosition, setEditDetailsPosition] = useState<PlayerPosition>('ATA');
+  const [editDetailsClub, setEditDetailsClub] = useState('');
+  const [editDetailsNationality, setEditDetailsNationality] = useState('');
+  const [editDetailsError, setEditDetailsError] = useState<string | null>(null);
+  const [isSavingDetails, setIsSavingDetails] = useState(false);
 
   // User Budget Edit State
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -212,6 +228,39 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     if (!isNaN(num) && num > 0) {
       await onAdminUpdatePrice(playerId, num);
       setEditingPlayerId(null);
+    }
+  };
+
+  const handleStartEditDetails = (player: Player) => {
+    setEditingDetailsId(player.id);
+    setEditDetailsName(player.name);
+    setEditDetailsPosition(player.position);
+    setEditDetailsClub(player.club);
+    setEditDetailsNationality(player.nationality);
+    setEditDetailsError(null);
+  };
+
+  const handleSaveDetails = async (playerId: string) => {
+    if (!editDetailsName.trim() || !editDetailsClub.trim()) {
+      setEditDetailsError('Nome e clube são obrigatórios.');
+      return;
+    }
+    setIsSavingDetails(true);
+    setEditDetailsError(null);
+    try {
+      const success = await onAdminUpdatePlayer(playerId, {
+        name: editDetailsName.trim(),
+        position: editDetailsPosition,
+        club: editDetailsClub.trim(),
+        nationality: editDetailsNationality.trim() || 'Internacional',
+      });
+      if (success) {
+        setEditingDetailsId(null);
+      } else {
+        setEditDetailsError('Não foi possível salvar. Confira os dados e tente novamente.');
+      }
+    } finally {
+      setIsSavingDetails(false);
     }
   };
 
@@ -1003,11 +1052,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 </button>
               </form>
 
-              {/* Edit Base Prices Table */}
+              {/* Edit Base Prices & Player Details Table */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Editar Preço Inicial de Jogadores
+                    Editar Jogadores (Preço & Dados Cadastrais)
                   </h4>
                   <input
                     type="text"
@@ -1020,78 +1069,168 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
                 <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 text-xs">
                   {filteredPlayers.map((player) => (
-                    <div key={player.id} className="p-3 flex items-center justify-between gap-3 bg-white hover:bg-slate-50">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900">{player.name}</span>
-                          <span className="px-1.5 py-0.2 bg-slate-100 text-[10px] font-bold rounded">
-                            {player.position}
-                          </span>
-                          {player.status === 'SOLD' && (
-                            <span className="px-1.5 py-0.2 bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold rounded">
-                              Vendido ({player.soldTo?.userName || 'Time'})
+                    <div key={player.id} className="bg-white hover:bg-slate-50">
+                      <div className="p-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900">{player.name}</span>
+                            <span className="px-1.5 py-0.2 bg-slate-100 text-[10px] font-bold rounded">
+                              {player.position}
                             </span>
+                            {player.status === 'SOLD' && (
+                              <span className="px-1.5 py-0.2 bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold rounded">
+                                Vendido ({player.soldTo?.userName || 'Time'})
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-500">{player.club} · {player.nationality}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {editingPlayerId === player.id ? (
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                step="500000"
+                                value={editPriceValue}
+                                onChange={(e) => setEditPriceValue(e.target.value)}
+                                className="w-28 px-2 py-1 text-xs border rounded-lg font-bold"
+                              />
+                              <button
+                                onClick={() => handleSavePrice(player.id)}
+                                className="px-2 py-1 bg-emerald-600 text-white font-bold rounded-lg text-[10px]"
+                              >
+                                Salvar
+                              </button>
+                              <button
+                                onClick={() => setEditingPlayerId(null)}
+                                className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px]"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-800 text-xs">
+                                {formatCurrency(player.initialPrice)}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  setEditingPlayerId(player.id);
+                                  setEditPriceValue(String(player.initialPrice));
+                                }}
+                                className="px-2.5 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg cursor-pointer"
+                              >
+                                Editar Preço
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (editingDetailsId === player.id) {
+                                    setEditingDetailsId(null);
+                                  } else {
+                                    handleStartEditDetails(player);
+                                  }
+                                }}
+                                className="px-2.5 py-1 text-[11px] bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-bold rounded-lg cursor-pointer inline-flex items-center gap-1"
+                                title="Corrigir nome, posição, clube ou nacionalidade do jogador"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                                <span>Editar Dados</span>
+                              </button>
+                              {player.status === 'SOLD' && onAdminReleasePlayer && (
+                                <button
+                                  onClick={() => onAdminReleasePlayer(player.id)}
+                                  className="px-2.5 py-1 text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold rounded-lg cursor-pointer inline-flex items-center gap-1"
+                                  title="Liberar jogador e devolver ao mercado de transferências"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                  <span>Liberar p/ Mercado</span>
+                                </button>
+                              )}
+                              <button
+                                onClick={() => onAdminDeletePlayer(player.id)}
+                                className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
+                                title="Remover Jogador"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        {editingPlayerId === player.id ? (
-                          <div className="flex items-center gap-1.5">
-                            <input
-                              type="number"
-                              step="500000"
-                              value={editPriceValue}
-                              onChange={(e) => setEditPriceValue(e.target.value)}
-                              className="w-28 px-2 py-1 text-xs border rounded-lg font-bold"
-                            />
+                      {editingDetailsId === player.id && (
+                        <div className="px-3 pb-3 pt-1 bg-blue-50/50 border-t border-blue-100 space-y-2.5 animate-in fade-in duration-150">
+                          {editDetailsError && (
+                            <div className="p-2 bg-rose-50 text-rose-800 border border-rose-200 rounded-lg text-[11px] font-bold">
+                              {editDetailsError}
+                            </div>
+                          )}
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                            <div className="sm:col-span-2">
+                              <label className="font-bold text-slate-600 block mb-1 text-[10px]">Nome</label>
+                              <input
+                                type="text"
+                                value={editDetailsName}
+                                onChange={(e) => setEditDetailsName(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium"
+                              />
+                            </div>
+                            <div>
+                              <label className="font-bold text-slate-600 block mb-1 text-[10px]">Posição</label>
+                              <select
+                                value={editDetailsPosition}
+                                onChange={(e) => setEditDetailsPosition(e.target.value as PlayerPosition)}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold"
+                              >
+                                <option value="GOL">GOL (Goleiro)</option>
+                                <option value="ZAG">ZAG (Zagueiro)</option>
+                                <option value="LE">LE (Lateral Esquerdo)</option>
+                                <option value="LD">LD (Lateral Direito)</option>
+                                <option value="VOL">VOL (Volante)</option>
+                                <option value="MC">MC (Meio-Campo)</option>
+                                <option value="MEI">MEI (Meia Ofensivo)</option>
+                                <option value="PD">PD (Ponta Direita)</option>
+                                <option value="PE">PE (Ponta Esquerda)</option>
+                                <option value="ATA">ATA (Atacante)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="font-bold text-slate-600 block mb-1 text-[10px]">Nacionalidade</label>
+                              <input
+                                type="text"
+                                value={editDetailsNationality}
+                                onChange={(e) => setEditDetailsNationality(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium"
+                              />
+                            </div>
+                            <div className="sm:col-span-4">
+                              <label className="font-bold text-slate-600 block mb-1 text-[10px]">Clube</label>
+                              <input
+                                type="text"
+                                value={editDetailsClub}
+                                onChange={(e) => setEditDetailsClub(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleSavePrice(player.id)}
-                              className="px-2 py-1 bg-emerald-600 text-white font-bold rounded-lg text-[10px]"
+                              onClick={() => handleSaveDetails(player.id)}
+                              disabled={isSavingDetails}
+                              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-[11px] cursor-pointer disabled:opacity-50"
                             >
-                              Salvar
+                              {isSavingDetails ? 'Salvando...' : 'Salvar Dados'}
                             </button>
                             <button
-                              onClick={() => setEditingPlayerId(null)}
-                              className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px]"
+                              onClick={() => setEditingDetailsId(null)}
+                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-lg text-[11px] cursor-pointer"
                             >
                               Cancelar
                             </button>
                           </div>
-                        ) : (
-                          <div className="flex items-center gap-3">
-                            <span className="font-bold text-slate-800 text-xs">
-                              {formatCurrency(player.initialPrice)}
-                            </span>
-                            <button
-                              onClick={() => {
-                                setEditingPlayerId(player.id);
-                                setEditPriceValue(String(player.initialPrice));
-                              }}
-                              className="px-2.5 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg cursor-pointer"
-                            >
-                              Editar Preço
-                            </button>
-                            {player.status === 'SOLD' && onAdminReleasePlayer && (
-                              <button
-                                onClick={() => onAdminReleasePlayer(player.id)}
-                                className="px-2.5 py-1 text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold rounded-lg cursor-pointer inline-flex items-center gap-1"
-                                title="Liberar jogador e devolver ao mercado de transferências"
-                              >
-                                <RotateCcw className="w-3 h-3" />
-                                <span>Liberar p/ Mercado</span>
-                              </button>
-                            )}
-                            <button
-                              onClick={() => onAdminDeletePlayer(player.id)}
-                              className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
-                              title="Remover Jogador"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

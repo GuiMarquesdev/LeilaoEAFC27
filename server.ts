@@ -2306,6 +2306,52 @@ async function startServer() {
     res.json({ success: true, player });
   });
 
+  // Admin: corrigir dados cadastrais do jogador (nome, posição, clube, nacionalidade)
+  app.post('/api/admin/player/update', (req: Request, res: Response) => {
+    if (!checkAdmin(req, res)) return;
+    const { playerId, name, position, club, nationality } = req.body;
+
+    const player = leagueState.players.find((p) => p.id === playerId);
+    if (!player) {
+      res.status(404).json({ success: false, error: 'Jogador não encontrado' });
+      return;
+    }
+
+    const nameCheck = validateString(name, 'Nome do jogador', 2, 100);
+    if (!nameCheck.valid) {
+      res.status(400).json({ success: false, error: nameCheck.error });
+      return;
+    }
+    const positionCheck = validatePosition(position);
+    if (!positionCheck.valid) {
+      res.status(400).json({ success: false, error: positionCheck.error });
+      return;
+    }
+    const clubCheck = validateString(club, 'Clube', 1, 100);
+    if (!clubCheck.valid) {
+      res.status(400).json({ success: false, error: clubCheck.error });
+      return;
+    }
+
+    player.name = nameCheck.value!;
+    player.position = positionCheck.position as PlayerPosition;
+    player.club = clubCheck.value!;
+    if (nationality) {
+      const nationalityCheck = validateString(nationality, 'Nacionalidade', 1, 100);
+      if (nationalityCheck.valid) {
+        player.nationality = nationalityCheck.value!;
+      }
+    }
+
+    // Mantém o nome do jogador sincronizado no histórico de lances já registrados
+    if (player.currentBid) player.currentBid.playerName = player.name;
+    (player.bidHistory || []).forEach((b) => { b.playerName = player.name; });
+
+    saveState();
+    broadcastState();
+    res.json({ success: true, player });
+  });
+
   app.post('/api/admin/player/delete', (req: Request, res: Response) => {
     if (!checkAdmin(req, res)) return;
     const { playerId } = req.body;
