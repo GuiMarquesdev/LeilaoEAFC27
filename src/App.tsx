@@ -19,7 +19,7 @@ import { AdminModal } from './components/AdminModal';
 import { WatchlistModal } from './components/WatchlistModal';
 import { NotificationFeed, LeagueNotification } from './components/NotificationFeed';
 import { isSoundEnabled, toggleSound, playBidSound, playHammerSound } from './utils/sound';
-import { getWatchlist, toggleWatchlistPlayer } from './utils/watchlist';
+import { getWatchlist, toggleWatchlistPlayer, syncWatchlistWithServer } from './utils/watchlist';
 
 export default function App() {
   const [leagueState, setLeagueState] = useState<LeagueState | null>(null);
@@ -30,6 +30,7 @@ export default function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
+  const [focusedAuctionPlayerId, setFocusedAuctionPlayerId] = useState<string | null>(null);
   const [adminInitialTab, setAdminInitialTab] = useState<'auction' | 'players' | 'users' | 'danger' | 'report'>('auction');
   const [soundActive, setSoundActive] = useState(isSoundEnabled());
   const [wsConnected, setWsConnected] = useState(false);
@@ -137,6 +138,8 @@ export default function App() {
       isFreeNominationMode: false,
       minimumBidIncrement: 1000000,
       auctionDay: 'ALL',
+      auctionType: 'FREE',
+      currentPhase: 'GOLEIROS',
       anonymousBidding: true,
       scheduledStartTime: Date.now() + 5400 * 1000,
       lastUpdated: Date.now(),
@@ -443,6 +446,13 @@ export default function App() {
   useEffect(() => {
     const currentList = getWatchlist(currentUser?.id);
     setWatchedPlayerIds(currentList);
+    if (currentUser?.id) {
+      syncWatchlistWithServer(currentUser.id).then((serverList) => {
+        if (serverList && serverList.length > 0) {
+          setWatchedPlayerIds(serverList);
+        }
+      });
+    }
   }, [currentUser?.id]);
 
   useEffect(() => {
@@ -1361,6 +1371,8 @@ export default function App() {
             onOpenAdminReport={handleOpenAdminReport}
             onAdminAuctionAction={handleAdminAuctionAction}
             onNavigateToSquad={() => setActiveTab('squad')}
+            initialFocusedPlayerId={focusedAuctionPlayerId}
+            onClearInitialFocusedPlayerId={() => setFocusedAuctionPlayerId(null)}
           />
         )}
 
@@ -1369,6 +1381,7 @@ export default function App() {
             currentUser={currentUser}
             players={leagueState.players}
             userSquad={userSquad}
+            auction={leagueState.auction}
             watchedPlayerIds={watchedPlayerIds}
             onToggleWatch={handleToggleWatch}
             onOpenWatchlist={() => setIsWatchlistOpen(true)}
@@ -1433,9 +1446,12 @@ export default function App() {
         currentUser={currentUser}
         onToggleWatch={handleToggleWatch}
         onNominate={handleNominate}
-        onNavigateToAuction={() => {
+        onNavigateToAuction={(playerId?: string) => {
           setIsWatchlistOpen(false);
           setActiveTab('auction');
+          if (playerId) {
+            setFocusedAuctionPlayerId(playerId);
+          }
         }}
         onNavigateToCatalog={() => {
           setIsWatchlistOpen(false);

@@ -12,6 +12,7 @@ interface BenchPlayerPickerModalProps {
   ownedPlayerIds: string[];
   targetedPlayerIds: string[];
   onAddPlayerToBench: (playerId: string) => void;
+  isAuctionEnded?: boolean;
 }
 
 export const BenchPlayerPickerModal: React.FC<BenchPlayerPickerModalProps> = ({
@@ -23,6 +24,7 @@ export const BenchPlayerPickerModal: React.FC<BenchPlayerPickerModalProps> = ({
   ownedPlayerIds,
   targetedPlayerIds,
   onAddPlayerToBench,
+  isAuctionEnded = false,
 }) => {
   const [search, setSearch] = useState('');
   const [selectedPosition, setSelectedPosition] = useState<string>('ALL');
@@ -34,6 +36,9 @@ export const BenchPlayerPickerModal: React.FC<BenchPlayerPickerModalProps> = ({
 
   const filteredPlayers = players
     .filter((player) => {
+      // Se o leilão acabou, apenas jogadores arrematados pelo clube podem ir para o banco
+      if (isAuctionEnded && !ownedPlayerIds.includes(player.id)) return false;
+
       // Não listar jogadores já escalados ou já no banco
       if (assignedIds.has(player.id)) return false;
 

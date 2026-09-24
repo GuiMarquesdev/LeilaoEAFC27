@@ -70,6 +70,9 @@ export interface NominationQueueItem {
   nominatedAt: number;
 }
 
+export type AuctionType = 'FREE' | 'PHASED';
+export type AuctionPhase = 'GOLEIROS' | 'DEFENSORES' | 'MEIO_CAMPO' | 'ATACANTES';
+
 export interface AuctionState {
   status: 'NOT_STARTED' | 'IDLE' | 'NOMINATING' | 'ACTIVE' | 'PAUSED' | 'FINALIZING' | 'ENDED';
   currentPlayer: Player | null;
@@ -81,8 +84,11 @@ export interface AuctionState {
   isFreeNominationMode: boolean; // if true, any participant can nominate
   nominationQueue?: NominationQueueItem[]; // Fila de jogadores de interesse postados pelos participantes
   minimumBidIncrement: number; // e.g., 1000000 (€1M)
-  auctionDay: 1 | 2 | 3 | 'ALL'; // Dia 1: Defesa (GOL/ZAG/LE/LD), Dia 2: Meio (VOL/MC/MEI), Dia 3: Ataque (ATA/ME/MD/PE/PD/SA), 'ALL': Todas
+  auctionDay: 1 | 2 | 3 | 'ALL'; // Mantido para compatibilidade
+  auctionType?: AuctionType; // 'FREE' (Leilão Livre - Todas as posições) | 'PHASED' (Leilão por Fases: Goleiros -> Defensores -> Meio -> Atacantes)
+  currentPhase?: AuctionPhase; // 'GOLEIROS' | 'DEFENSORES' | 'MEIO_CAMPO' | 'ATACANTES'
   anonymousBidding: boolean; // Sigilo de Lances obrigatório conforme Ata Oficial
+  defaultDurationSeconds?: number; // Duração configurada do leilão em segundos (padrão 5400 = 1h30m)
   scheduledStartTime?: number; // Timestamp em ms para o início do leilão (contagem regressiva)
   lastUpdated: number;
 }
@@ -117,6 +123,7 @@ export interface LeagueState {
   auction: AuctionState;
   squads: { [userId: string]: UserSquad };
   defaultBudget: number;
+  watchlists?: { [userId: string]: string[] };
 }
 
 export type WSMessage = 

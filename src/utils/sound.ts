@@ -127,3 +127,30 @@ export function playTickSound(isUrgent = false) {
     // ignore
   }
 }
+
+// Play distinct attention chime when user's bid is outbid
+export function playOutbidSound() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
+    osc.frequency.setValueAtTime(349.23, ctx.currentTime + 0.08); // F4
+
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.28);
+  } catch (e) {
+    console.debug('Audio error', e);
+  }
+}
+

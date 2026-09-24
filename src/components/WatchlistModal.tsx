@@ -15,7 +15,7 @@ interface WatchlistModalProps {
   currentUser: UserProfile | null;
   onToggleWatch: (playerId: string) => void;
   onNominate?: (playerId: string) => Promise<boolean>;
-  onNavigateToAuction?: () => void;
+  onNavigateToAuction?: (playerId?: string) => void;
   onNavigateToCatalog?: () => void;
 }
 
@@ -77,7 +77,7 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-fadeIn">
       <div 
-        className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-scaleUp"
+        className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-4xl lg:max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-scaleUp"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -189,7 +189,7 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
         </div>
 
         {/* Players List */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-3">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
           {filteredList.length === 0 ? (
             <div className="text-center py-12 px-4">
               <h3 className="text-base font-bold text-slate-800">
@@ -219,7 +219,7 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-fr items-stretch">
               {filteredList.map((player) => {
                 const posBadge = getPositionBadge(player.position);
                 const sectorName = getPlayerSectorName(player.position);
@@ -232,81 +232,95 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                 return (
                   <div
                     key={player.id}
-                    className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 relative ${
+                    onClick={() => {
+                      onClose();
+                      onNavigateToAuction?.(player.id);
+                    }}
+                    className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 relative cursor-pointer select-none group active:scale-[0.99] h-full ${
                       isCurrentlyActive
-                        ? 'bg-rose-50/70 border-rose-300 ring-2 ring-rose-400 shadow-md'
+                        ? 'bg-rose-50/70 border-rose-300 ring-2 ring-rose-400/50 shadow-md hover:border-rose-500 hover:shadow-lg hover:bg-rose-100/50'
                         : isSold
-                        ? 'bg-slate-50 border-slate-200 opacity-90'
-                        : 'bg-white border-slate-200 hover:border-amber-300 hover:shadow-sm'
+                        ? 'bg-slate-50 border-slate-200 opacity-90 hover:border-slate-400 hover:shadow-sm'
+                        : 'bg-white border-slate-200 hover:border-amber-400 hover:bg-amber-50/20 hover:shadow-md'
                     }`}
+                    title={`Clique para ir direto ao card de lances de ${player.name} no leilão`}
                   >
                     {/* Top Row: Name, Position & Sector Badge */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-sm border border-slate-200 shadow-2xs">
-                            <User className="w-5 h-5 text-slate-400" />
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="relative shrink-0">
+                          <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-sm border border-slate-200 shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                            <User className="w-5 h-5 text-slate-400 group-hover:text-amber-600 transition-colors" />
                           </div>
                           <span className={`absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${posBadge.bgClass} ${posBadge.textClass} border ${posBadge.borderClass}`}>
                             {player.position}
                           </span>
                         </div>
 
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <h4 className="text-sm font-bold text-slate-900 leading-tight">
+                            <h4 className="text-sm font-bold text-slate-900 group-hover:text-amber-700 transition-colors leading-tight truncate max-w-[200px]">
                               {player.name}
                             </h4>
                             {player.isManualExtra && (
-                              <span className="px-1.5 py-0.2 text-[9px] bg-purple-100 text-purple-800 rounded font-bold">
+                              <span className="px-1.5 py-0.2 text-[9px] bg-purple-100 text-purple-800 rounded font-bold shrink-0">
                                 Extra
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                            <span>{player.club}</span>
-                            <span>•</span>
-                            <span className="font-semibold text-slate-700">{sectorName}</span>
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1 truncate">
+                            <span className="truncate">{player.club}</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="font-semibold text-slate-700 shrink-0">{sectorName}</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Remove from observation button */}
                       <button
-                        onClick={() => onToggleWatch(player.id)}
-                        className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors cursor-pointer"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleWatch(player.id);
+                        }}
+                        className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-100/80 transition-colors cursor-pointer shrink-0"
                         title="Remover do Radar de Observação"
                       >
                         <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
                       </button>
                     </div>
 
-                    {/* Mid: Status Indicator */}
-                    <div className="flex items-center justify-between text-xs">
+                    {/* Mid: Status Indicator & Navigation Hint */}
+                    <div className="flex items-center justify-between text-xs py-1 border-t border-b border-slate-100 my-0.5 min-h-[32px]">
                       {isCurrentlyActive ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white flex items-center gap-1 animate-pulse">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white flex items-center gap-1 animate-pulse shrink-0">
                           <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
                           EM LEILÃO AGORA
                         </span>
                       ) : isSold ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-200 text-slate-700 flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-200 text-slate-700 flex items-center gap-1 shrink-0">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                           VENDIDO
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
                           🟢 Disponível no Leilão
                         </span>
                       )}
+
+                      <span className="text-[10px] font-bold text-amber-600 group-hover:text-amber-800 flex items-center gap-1 transition-colors shrink-0">
+                        <span>Ir direto ao card</span>
+                        <ArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                      </span>
                     </div>
 
                     {/* Bottom: Pricing & Action */}
-                    <div className="bg-slate-50/80 p-2.5 rounded-xl flex items-center justify-between gap-2">
-                      <div>
-                        <span className="text-[10px] text-slate-500 font-medium block">
+                    <div className="bg-slate-50/90 p-3 rounded-xl flex items-center justify-between gap-3 border border-slate-100 mt-auto min-h-[62px]">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] text-slate-500 font-medium block leading-none mb-1">
                           {isCurrentlyActive ? 'Lance no momento:' : isSold ? 'Arrematado por:' : 'Preço Base:'}
                         </span>
-                        <div className="text-xs sm:text-sm font-black text-slate-900">
+                        <div className="text-xs sm:text-sm font-black text-slate-900 leading-tight">
                           {isCurrentlyActive
                             ? formatCurrency(playerEffectivePrice)
                             : isSold && player.soldTo
@@ -314,12 +328,12 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                             : formatCurrency(player.initialPrice)}
                         </div>
                         {isSold && player.soldTo && (
-                          <span className="text-[10px] text-emerald-700 font-bold block truncate max-w-[140px]">
+                          <span className="text-[10px] text-emerald-700 font-bold block truncate max-w-[150px] mt-0.5">
                             Comprador: {player.soldTo.teamName}
                           </span>
                         )}
                         {isCurrentlyActive && playerActiveBid && (
-                          <span className="text-[10px] text-rose-700 font-bold block truncate max-w-[140px]">
+                          <span className="text-[10px] text-rose-700 font-bold block truncate max-w-[150px] mt-0.5">
                             Maior lance: {auction.anonymousBidding !== false
                               ? (playerActiveBid.userId === currentUser?.id ? '***** (Você)' : '*****')
                               : (playerActiveBid.teamName || 'Clube')}
@@ -335,13 +349,16 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                           </span>
                         ) : (
                           <button
-                            onClick={() => {
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               onClose();
-                              onNavigateToAuction?.();
+                              onNavigateToAuction?.(player.id);
                             }}
-                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-black transition-all flex items-center gap-1 cursor-pointer shadow-xs"
+                            className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+                            title="Ir diretamente para a disputa e dar lance"
                           >
-                            <Gavel className="w-3 h-3" />
+                            <Gavel className="w-3.5 h-3.5" />
                             <span>Dar Lance</span>
                           </button>
                         )
@@ -350,9 +367,19 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                           const isQueued = auction.nominationQueue?.some((q) => q.player.id === player.id);
                           if (isQueued) {
                             return (
-                              <span className="px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
-                                📋 Na Fila
-                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onClose();
+                                  onNavigateToAuction?.(player.id);
+                                }}
+                                className="px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors flex items-center gap-1 cursor-pointer shrink-0"
+                                title="Ver card na fila de leilão"
+                              >
+                                <span>📋 Na Fila</span>
+                                <ArrowUpRight className="w-3 h-3" />
+                              </button>
                             );
                           }
                           if (isUserSquadFull) {
@@ -367,29 +394,48 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
                             <button
                               type="button"
                               disabled={!isAuctionInProgress}
-                              onClick={() => {
-                                if (!isAuctionInProgress) return;
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!isAuctionInProgress) {
+                                  onClose();
+                                  onNavigateToAuction?.(player.id);
+                                  return;
+                                }
                                 onNominate(player.id);
                                 onClose();
-                                onNavigateToAuction?.();
+                                onNavigateToAuction?.(player.id);
                               }}
-                              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shrink-0 ${
                                 isAuctionInProgress
                                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 shadow-2xs'
-                                  : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 cursor-pointer'
                               }`}
                               title={
                                 !isAuctionInProgress
-                                  ? "Propostas bloqueadas: O leilão oficial ainda não foi iniciado pela Diretoria."
-                                  : "Fazer Proposta para este jogador"
+                                  ? "Ver card de lances deste atleta no leilão"
+                                  : "Fazer Proposta para este jogador e ir ao card"
                               }
                             >
                               <Gavel className="w-3 h-3" />
-                              <span>Fazer Proposta</span>
+                              <span>{isAuctionInProgress ? 'Fazer Proposta' : 'Ver Card'}</span>
                             </button>
                           );
                         })()
-                      ) : null}
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onClose();
+                            onNavigateToAuction?.(player.id);
+                          }}
+                          className="px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors flex items-center gap-1 cursor-pointer shrink-0"
+                          title="Abrir card deste atleta no leilão"
+                        >
+                          <Eye className="w-3 h-3" />
+                          <span>Ver Card</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 );

@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Pillar 1 / Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'guimarquesbrito@gmail.com' ||
+        request.auth.token.email == 'guilhermebtourinho@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- Test Connection Ping (Firebase Boot Verification) ---
+    match /test/{docId} {
+      allow read: if isValidId(docId);
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      allow read: if isValidId(userId);
+      allow create, update: if isValidId(userId) && request.resource.data.id == userId;
+      allow delete: if isAdmin();
+    }
+
+    // --- Squads Collection ---
+    match /squads/{userId} {
+      allow read: if isValidId(userId);
+      allow create, update: if isValidId(userId) && request.resource.data.userId == userId;
+      allow delete: if isAdmin() || isOwner(userId);
+    }
+
+    // --- Watchlists Collection (Favoritos do Radar) ---
+    match /watchlists/{userId} {
+      allow read: if isValidId(userId);
+      allow write: if isValidId(userId) && 
+        request.resource.data.userId == userId &&
+        request.resource.data.playerIds is list &&
+        request.resource.data.playerIds.size() <= 200;
+    }
+
+    // --- League State Metadata & Auction Progress ---
+    match /league/{stateId} {
+      allow read: if isValidId(stateId);
+      allow write: if isValidId(stateId);
+    }
+  }
+}

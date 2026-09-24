@@ -9,8 +9,8 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
-import { INITIAL_PLAYERS } from './src/data/initialPlayers.js';
-import { LeagueState, Player, PlayerPosition, UserProfile, Bid, UserSquad, WSMessage } from './src/types.js';
+import { INITIAL_PLAYERS, INITIAL_FORMATIONS } from './src/data/initialPlayers.js';
+import { LeagueState, Player, PlayerPosition, UserProfile, Bid, UserSquad, WSMessage, AuctionType, AuctionPhase } from './src/types.js';
 import {
   hashPassword,
   verifyPassword,
@@ -27,6 +27,16 @@ import {
   validateUploadBuffer,
   SessionPayload
 } from './src/server/security.js';
+import {
+  isFirebaseReady,
+  loadStateFromFirestore,
+  syncUserToFirestore,
+  syncSquadToFirestore,
+  syncWatchlistToFirestore,
+  loadWatchlistFromFirestore,
+  syncLeagueMasterToFirestore,
+  syncAllStateToFirestore
+} from './src/server/firebaseService.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -102,7 +112,9 @@ function getInitialState(): LeagueState {
       isFreeNominationMode: true,
       nominationQueue: [],
       minimumBidIncrement: 1000000,
-      auctionDay: 'ALL', // Mercado Geral Unificado (Sem divisão de fases: ATAQUE, MEIO e DEFESA juntos)
+      auctionDay: 'ALL', // Compatibilidade
+      auctionType: 'FREE', // 'FREE' (Leilão Livre - Todas as Posições) | 'PHASED' (Leilão por Fases)
+      currentPhase: 'GOLEIROS', // 'GOLEIROS' | 'DEFENSORES' | 'MEIO_CAMPO' | 'ATACANTES'
       anonymousBidding: true, // Sigilo de Lances obrigatório conforme Ata Oficial
       scheduledStartTime: Date.now() + 5400 * 1000, // Contagem regressiva padrão oficial de 1h30m
       lastUpdated: Date.now()
@@ -121,6 +133,7 @@ function getInitialState(): LeagueState {
         benchPlayerIds: []
       }
     },
+    watchlists: {},
     defaultBudget: DEFAULT_BUDGET
   };
 }
@@ -132,6 +145,15 @@ try {
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     leagueState = JSON.parse(raw);
     leagueState.defaultBudget = DEFAULT_BUDGET;
+    if (!leagueState.watchlists) {
+      leagueState.watchlists = {};
+    }
+    if (!leagueState.auction.auctionType) {
+      leagueState.auction.auctionType = 'FREE';
+    }
+    if (!leagueState.auction.currentPhase) {
+      leagueState.auction.currentPhase = 'GOLEIROS';
+    }
 
     // Ensure official administrators and clubs exist
     const defaultParticipants: UserProfile[] = [
@@ -310,12 +332,12 @@ try {
       }
     }
 
-    // Se o timer estiver acima de 1h 30m (5400s), ajustar para a nova regra de 1h30m
-    if (leagueState.auction && leagueState.auction.timerRemaining > AUCTION_DURATION_SECONDS) {
+    // Se o timer estiver acima de 1h 30m (5400s), ajustar apenas se não houver duração customizada configurada
+    if (!leagueState.auction.defaultDurationSeconds && leagueState.auction && leagueState.auction.timerRemaining > AUCTION_DURATION_SECONDS) {
       leagueState.auction.timerRemaining = AUCTION_DURATION_SECONDS;
     }
     (leagueState.players || []).forEach((p) => {
-      if (p.status === 'IN_AUCTION' && typeof p.timerRemaining === 'number' && p.timerRemaining > AUCTION_DURATION_SECONDS) {
+      if (!leagueState.auction.defaultDurationSeconds && p.status === 'IN_AUCTION' && typeof p.timerRemaining === 'number' && p.timerRemaining > AUCTION_DURATION_SECONDS) {
         p.timerRemaining = AUCTION_DURATION_SECONDS;
         p.auctionExpiresAt = Date.now() + AUCTION_DURATION_SECONDS * 1000;
       }
@@ -331,6 +353,16 @@ try {
   leagueState = getInitialState();
 }
 
+let cloudSyncTimer: NodeJS.Timeout | null = null;
+function debouncedCloudSync() {
+  if (cloudSyncTimer) clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => {
+    syncLeagueMasterToFirestore(leagueState).catch((err) => {
+      console.warn('[Firebase] Master state sync error:', err);
+    });
+  }, 1200);
+}
+
 function saveState() {
   try {
     const tmp = `${DB_FILE}.tmp.${Date.now()}`;
@@ -339,6 +371,11 @@ function saveState() {
   } catch (err) {
     console.error('Failed to persist database:', err);
   }
+  debouncedCloudSync();
+}
+
+function getAuctionDuration(): number {
+  return leagueState?.auction?.defaultDurationSeconds || AUCTION_DURATION_SECONDS;
 }
 
 // WebSocket broadcast
@@ -512,6 +549,101 @@ function sellPlayerToHighestBidder(player: Player, auctionDay?: string | number)
   return { sold: false };
 }
 
+function isPositionCompatibleWithSlot(slotRole: string, playerPos: string): boolean {
+  if (slotRole === playerPos) return true;
+  if (slotRole === 'GOL') return playerPos === 'GOL';
+  if (slotRole === 'ZAG') return ['ZAG'].includes(playerPos);
+  if (slotRole === 'LE') return ['LE', 'LD', 'ZAG'].includes(playerPos);
+  if (slotRole === 'LD') return ['LD', 'LE', 'ZAG'].includes(playerPos);
+  if (slotRole === 'VOL') return ['VOL', 'MC'].includes(playerPos);
+  if (slotRole === 'MC') return ['MC', 'VOL', 'MEI'].includes(playerPos);
+  if (slotRole === 'MEI') return ['MEI', 'MC', 'ME', 'MD'].includes(playerPos);
+  if (slotRole === 'ME') return ['ME', 'PE', 'MC', 'MEI'].includes(playerPos);
+  if (slotRole === 'MD') return ['MD', 'PD', 'MC', 'MEI'].includes(playerPos);
+  if (slotRole === 'PE') return ['PE', 'ME', 'ATA'].includes(playerPos);
+  if (slotRole === 'PD') return ['PD', 'MD', 'ATA'].includes(playerPos);
+  if (slotRole === 'ATA') return ['ATA', 'SA', 'PE', 'PD'].includes(playerPos);
+  return false;
+}
+
+// Ao finalizar o leilão: reseta o elenco conceito e substitui oficialmente pelos jogadores obtidos no leilão
+function resetConceptAndApplyWonPlayersToAllUsers() {
+  leagueState.users.forEach((user) => {
+    const wonPlayers = leagueState.players.filter(
+      (p) => p.status === 'SOLD' && p.soldTo?.userId === user.id
+    );
+    const currentSquad = leagueState.squads[user.id];
+    const formationId = currentSquad?.formationId || '4-3-3';
+    const formation =
+      INITIAL_FORMATIONS.find((f) => f.id === formationId) || INITIAL_FORMATIONS[0];
+
+    const newStarterSlots: { [slotId: string]: string | null } = {};
+    formation.slots.forEach((s) => {
+      newStarterSlots[s.slotId] = null;
+    });
+
+    const unassigned = [...wonPlayers];
+
+    // Pass 0: Se o usuário já havia escalado um atleta conquistado em slot compatível, mantém
+    if (currentSquad?.starterSlots) {
+      formation.slots.forEach((slot) => {
+        const currentPid = currentSquad.starterSlots[slot.slotId];
+        if (currentPid && wonPlayers.some((p) => p.id === currentPid)) {
+          const pObj = wonPlayers.find((p) => p.id === currentPid);
+          if (pObj && isPositionCompatibleWithSlot(slot.role, pObj.position)) {
+            newStarterSlots[slot.slotId] = currentPid;
+            const idx = unassigned.findIndex((p) => p.id === currentPid);
+            if (idx !== -1) unassigned.splice(idx, 1);
+          }
+        }
+      });
+    }
+
+    // Pass 1: Correspondência exata de função (ex: GOL -> GOL, ZAG -> ZAG, ATA -> ATA)
+    formation.slots.forEach((slot) => {
+      if (newStarterSlots[slot.slotId]) return;
+      const matchIdx = unassigned.findIndex((p) => p.position === slot.role);
+      if (matchIdx !== -1) {
+        newStarterSlots[slot.slotId] = unassigned[matchIdx].id;
+        unassigned.splice(matchIdx, 1);
+      }
+    });
+
+    // Pass 2: Correspondência tática compatível
+    formation.slots.forEach((slot) => {
+      if (newStarterSlots[slot.slotId]) return;
+      const matchIdx = unassigned.findIndex((p) => isPositionCompatibleWithSlot(slot.role, p.position));
+      if (matchIdx !== -1) {
+        newStarterSlots[slot.slotId] = unassigned[matchIdx].id;
+        unassigned.splice(matchIdx, 1);
+      }
+    });
+
+    // Pass 3: Preenchimento de vagas restantes com atletas de linha (ou GOL para slot GOL)
+    formation.slots.forEach((slot) => {
+      if (newStarterSlots[slot.slotId]) return;
+      const matchIdx = unassigned.findIndex((p) => {
+        if (slot.role === 'GOL') return p.position === 'GOL';
+        return p.position !== 'GOL';
+      });
+      if (matchIdx !== -1) {
+        newStarterSlots[slot.slotId] = unassigned[matchIdx].id;
+        unassigned.splice(matchIdx, 1);
+      }
+    });
+
+    // Atletas restantes conquistados vão para o banco de reservas oficial
+    const newBench = unassigned.map((p) => p.id);
+
+    leagueState.squads[user.id] = {
+      userId: user.id,
+      formationId,
+      starterSlots: newStarterSlots,
+      benchPlayerIds: newBench
+    };
+  });
+}
+
 // Complete specific player auction: hammer drops!
 function finalizeSpecificPlayerAuction(player: Player) {
   sellPlayerToHighestBidder(player);
@@ -521,7 +653,7 @@ function finalizeSpecificPlayerAuction(player: Player) {
     if (nextInAuction) {
       leagueState.auction.currentPlayer = nextInAuction;
       leagueState.auction.currentBid = getHighestBidForPlayer(nextInAuction);
-      leagueState.auction.timerRemaining = nextInAuction.timerRemaining || AUCTION_DURATION_SECONDS;
+      leagueState.auction.timerRemaining = nextInAuction.timerRemaining || getAuctionDuration();
     } else {
       leagueState.auction.currentPlayer = null;
       leagueState.auction.currentBid = null;
@@ -538,21 +670,22 @@ function finalizeSpecificPlayerAuction(player: Player) {
     leagueState.auction.bidHistory = [];
     leagueState.auction.timerRemaining = 0;
 
-    // Se houver jogadores postados na fila de interesse, inicia automaticamente o próximo para 1h30m
+    // Se houver jogadores postados na fila de interesse, inicia automaticamente o próximo para a duração do leilão
     if (leagueState.auction.nominationQueue && leagueState.auction.nominationQueue.length > 0) {
       const nextItem = leagueState.auction.nominationQueue.shift()!;
       const nextPlayer = leagueState.players.find((p) => p.id === nextItem.player.id);
       if (nextPlayer && nextPlayer.status === 'AVAILABLE') {
+        const nextDuration = getAuctionDuration();
         nextPlayer.status = 'IN_AUCTION';
         nextPlayer.nominatedBy = nextItem.nominatedByUserId;
-        nextPlayer.timerRemaining = AUCTION_DURATION_SECONDS;
-        nextPlayer.auctionExpiresAt = Date.now() + AUCTION_DURATION_SECONDS * 1000;
+        nextPlayer.timerRemaining = nextDuration;
+        nextPlayer.auctionExpiresAt = Date.now() + nextDuration * 1000;
 
         leagueState.auction.status = 'ACTIVE';
         leagueState.auction.currentPlayer = nextPlayer;
         leagueState.auction.currentBid = null;
         leagueState.auction.bidHistory = [];
-        leagueState.auction.timerRemaining = AUCTION_DURATION_SECONDS; // 1 hora e 30 minutos
+        leagueState.auction.timerRemaining = nextDuration;
         leagueState.auction.lastUpdated = Date.now();
 
         broadcast({
@@ -1016,6 +1149,8 @@ async function startServer() {
 
     saveState();
     broadcastState();
+    syncUserToFirestore(user);
+    syncSquadToFirestore(leagueState.squads[user.id]);
 
     const token = createSessionToken(user);
     setSessionCookie(res, token);
@@ -1101,6 +1236,7 @@ async function startServer() {
 
     saveState();
     broadcastState();
+    syncUserToFirestore(user);
 
     const token = createSessionToken(user);
     setSessionCookie(res, token);
@@ -1163,6 +1299,8 @@ async function startServer() {
 
     saveState();
     broadcastState();
+    syncUserToFirestore(user);
+    syncSquadToFirestore(leagueState.squads[user.id]);
 
     const token = createSessionToken(user);
     setSessionCookie(res, token);
@@ -1227,6 +1365,7 @@ async function startServer() {
 
     saveState();
     broadcastState();
+    syncUserToFirestore(user);
 
     res.json({ success: true, message: 'Senha atualizada com sucesso! Você já pode entrar com a nova senha.' });
   });
@@ -1304,6 +1443,7 @@ async function startServer() {
 
     saveState();
     broadcastState();
+    syncUserToFirestore(user);
 
     res.json({ success: true, user: sanitizeUser(user), message: 'Perfil e nome do clube atualizados com sucesso!' });
   });
@@ -1402,9 +1542,30 @@ async function startServer() {
       return;
     }
 
-    // Regulamento Oficial Khedira League: Sem divisão de fases
-    // ATAQUE, MEIO CAMPO, DEFESA e GOLEIROS todos liberados simultaneamente para abertura de leilão
-    leagueState.auction.auctionDay = 'ALL';
+    // Validação de Modalidade: Se estiver no Leilão por Fases, confere se o jogador pertence à fase ativa
+    if (leagueState.auction.auctionType === 'PHASED') {
+      const currentPhase = (leagueState.auction.currentPhase || 'GOLEIROS') as AuctionPhase;
+      const phasePositions: Record<AuctionPhase, string[]> = {
+        GOLEIROS: ['GOL'],
+        DEFENSORES: ['ZAG', 'LE', 'LD'],
+        MEIO_CAMPO: ['VOL', 'MC', 'MEI', 'MD', 'ME'],
+        ATACANTES: ['ATA', 'PE', 'PD', 'SA']
+      };
+      const allowedPositions = phasePositions[currentPhase] || [];
+      if (!allowedPositions.includes(player.position)) {
+        const phaseLabels: Record<AuctionPhase, string> = {
+          GOLEIROS: '1ª Fase: GOLEIROS (GOL)',
+          DEFENSORES: '2ª Fase: DEFENSORES (Zagueiros e Laterais)',
+          MEIO_CAMPO: '3ª Fase: MEIO-CAMPO (Volantes e Meias)',
+          ATACANTES: '4ª Fase: ATACANTES (Centroavantes e Pontas)'
+        };
+        res.status(400).json({ 
+          success: false, 
+          error: `O leilão está na ${phaseLabels[currentPhase]}. O jogador ${player.name} (${player.position}) só poderá ser postado quando a fase correspondente for aberta pela Diretoria.` 
+        });
+        return;
+      }
+    }
 
     // Se leilão está em andamento (ACTIVE ou IDLE), abre imediatamente a rodada simultânea de 1h30m para o atleta
     const openingAmount = req.body.amount ? Number(req.body.amount) : player.initialPrice;
@@ -1449,20 +1610,22 @@ async function startServer() {
       isAnonymous
     };
 
+    const auctionDur = getAuctionDuration();
     player.status = 'IN_AUCTION';
     player.nominatedBy = user.id;
     player.currentBid = newBid;
     if (!player.bidHistory) player.bidHistory = [];
     player.bidHistory.unshift(newBid);
     player.currentPrice = openingAmount;
-    player.timerRemaining = AUCTION_DURATION_SECONDS; // 1 hora e 30 minutos por atleta
-    player.auctionExpiresAt = Date.now() + AUCTION_DURATION_SECONDS * 1000;
+    player.timerRemaining = auctionDur;
+    player.auctionExpiresAt = Date.now() + auctionDur * 1000;
 
     leagueState.auction.status = 'ACTIVE';
     leagueState.auction.currentPlayer = player;
     leagueState.auction.currentBid = newBid;
     if (!leagueState.auction.bidHistory) leagueState.auction.bidHistory = [];
     leagueState.auction.bidHistory.unshift(newBid);
+    leagueState.auction.timerRemaining = auctionDur;
     leagueState.auction.lastUpdated = Date.now();
 
     saveState();
@@ -1545,16 +1708,17 @@ async function startServer() {
       }
     }
 
+    const startDur = getAuctionDuration();
     targetPlayer.status = 'IN_AUCTION';
     targetPlayer.nominatedBy = item.nominatedByUserId;
-    targetPlayer.timerRemaining = AUCTION_DURATION_SECONDS;
-    targetPlayer.auctionExpiresAt = Date.now() + AUCTION_DURATION_SECONDS * 1000;
+    targetPlayer.timerRemaining = startDur;
+    targetPlayer.auctionExpiresAt = Date.now() + startDur * 1000;
 
     leagueState.auction.status = 'ACTIVE';
     leagueState.auction.currentPlayer = targetPlayer;
     leagueState.auction.currentBid = null;
     leagueState.auction.bidHistory = [];
-    leagueState.auction.timerRemaining = AUCTION_DURATION_SECONDS; // 1 hora e 30 minutos
+    leagueState.auction.timerRemaining = startDur;
     leagueState.auction.lastUpdated = Date.now();
 
     saveState();
@@ -1705,9 +1869,9 @@ async function startServer() {
     player.bidHistory.unshift(newBid);
     player.currentPrice = bidAmount;
 
-    // 1h30min timer or anti-snipe 5 min
+    // Duration timer or anti-snipe 5 min
     if (!player.timerRemaining || player.timerRemaining <= 0) {
-      player.timerRemaining = AUCTION_DURATION_SECONDS; // 1 hora e 30 minutos
+      player.timerRemaining = getAuctionDuration();
     } else if (player.timerRemaining < 300) {
       player.timerRemaining = 300;
     }
@@ -1824,16 +1988,80 @@ async function startServer() {
       return;
     }
 
+    // Quando o leilão for finalizado (ENDED), o elenco conceito é resetado e apenas os jogadores conquistados no leilão podem compor o elenco oficial
+    let finalStarters = starterSlots || {};
+    let finalBench = benchPlayerIds || [];
+
+    if (leagueState.auction.status === 'ENDED') {
+      const wonPlayerIds = leagueState.players
+        .filter((p) => p.status === 'SOLD' && p.soldTo?.userId === targetUserId)
+        .map((p) => p.id);
+
+      const cleanedStarters: { [slotId: string]: string | null } = {};
+      Object.entries(finalStarters).forEach(([slotId, pid]) => {
+        cleanedStarters[slotId] = pid && wonPlayerIds.includes(pid as string) ? (pid as string) : null;
+      });
+      finalStarters = cleanedStarters;
+      finalBench = (finalBench as string[]).filter((pid: string) => wonPlayerIds.includes(pid));
+    }
+
     leagueState.squads[targetUserId] = {
       userId: targetUserId,
       formationId: formationId || '4-3-3',
-      starterSlots: starterSlots || {},
-      benchPlayerIds: benchPlayerIds || []
+      starterSlots: finalStarters,
+      benchPlayerIds: finalBench
     };
 
     saveState();
     broadcastState();
+    syncSquadToFirestore(leagueState.squads[targetUserId]);
     res.json({ success: true, squad: leagueState.squads[targetUserId] });
+  });
+
+  // 5.2. Watchlist (Favoritos do Radar) - Persistência em Nuvem no Cloud Firestore
+  app.get('/api/user/watchlist', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: 'Usuário não autenticado.' });
+      return;
+    }
+    const userId = req.user.id;
+    try {
+      const cloudPlayerIds = await loadWatchlistFromFirestore(userId);
+      if (!leagueState.watchlists) leagueState.watchlists = {};
+      const localList = leagueState.watchlists[userId] || [];
+      const merged = Array.from(new Set([...(cloudPlayerIds || []), ...localList]));
+      leagueState.watchlists[userId] = merged;
+      res.json({ success: true, playerIds: merged });
+    } catch (err) {
+      console.warn('[Firebase] Fallback local para watchlist do usuário', userId, err);
+      const fallbackList = leagueState.watchlists?.[userId] || [];
+      res.json({ success: true, playerIds: fallbackList });
+    }
+  });
+
+  app.post('/api/user/watchlist', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: 'Usuário não autenticado.' });
+      return;
+    }
+    const userId = req.user.id;
+    const { playerIds } = req.body;
+    if (!Array.isArray(playerIds)) {
+      res.status(400).json({ success: false, error: 'playerIds deve ser uma lista de IDs.' });
+      return;
+    }
+    try {
+      if (!leagueState.watchlists) leagueState.watchlists = {};
+      leagueState.watchlists[userId] = playerIds;
+      saveState();
+      syncWatchlistToFirestore(userId, playerIds).catch((err) => {
+        console.warn('[Firebase] Erro ao sincronizar watchlist em segundo plano:', err);
+      });
+      res.json({ success: true, playerIds });
+    } catch (err) {
+      console.error('[Firebase] Erro ao salvar watchlist:', err);
+      res.status(500).json({ success: false, error: 'Erro ao persistir lista de favoritos.' });
+    }
   });
 
   // ADMIN ENDPOINTS
@@ -2281,6 +2509,54 @@ async function startServer() {
         res.json({ success: true, message: 'Mercado configurado para Mercado Geral Unificado (ATAQUE, MEIO e DEFESA simultâneos).' });
         return;
       }
+      case 'SET_AUCTION_TYPE': {
+        const newType: AuctionType = value === 'PHASED' ? 'PHASED' : 'FREE';
+        leagueState.auction.auctionType = newType;
+        if (newType === 'PHASED' && !leagueState.auction.currentPhase) {
+          leagueState.auction.currentPhase = 'GOLEIROS';
+        }
+        leagueState.auction.lastUpdated = Date.now();
+        const notificationText = newType === 'FREE'
+          ? `🌐 ${adminLeaderLabel} alterou o formato do leilão para LEILÃO LIVRE: todos os clubes podem postar seu interesse por jogadores de TODAS as posições simultaneamente!`
+          : `📋 ${adminLeaderLabel} alterou o formato do leilão para LEILÃO POR FASES: a disputa agora seguirá por etapas setoriais (1. Goleiros, 2. Defensores, 3. Meio Campo e 4. Atacantes). Fase atual: ${leagueState.auction.currentPhase === 'GOLEIROS' ? '1ª Fase: GOLEIROS' : leagueState.auction.currentPhase}!`;
+        broadcast({
+          type: 'CHAT_NOTIFICATION',
+          data: {
+            message: notificationText,
+            timestamp: Date.now(),
+            type: 'info'
+          }
+        });
+        saveState();
+        broadcastState();
+        res.json({ success: true, auction: leagueState.auction });
+        return;
+      }
+      case 'SET_AUCTION_PHASE': {
+        const validPhases: AuctionPhase[] = ['GOLEIROS', 'DEFENSORES', 'MEIO_CAMPO', 'ATACANTES'];
+        const newPhase: AuctionPhase = validPhases.includes(value as AuctionPhase) ? (value as AuctionPhase) : 'GOLEIROS';
+        leagueState.auction.auctionType = 'PHASED';
+        leagueState.auction.currentPhase = newPhase;
+        leagueState.auction.lastUpdated = Date.now();
+        const phaseLabels: Record<AuctionPhase, string> = {
+          GOLEIROS: '1ª Fase: GOLEIROS (GOL)',
+          DEFENSORES: '2ª Fase: DEFENSORES (Zagueiros e Laterais)',
+          MEIO_CAMPO: '3ª Fase: MEIO-CAMPO (Volantes e Meias)',
+          ATACANTES: '4ª Fase: ATACANTES (Centroavantes e Pontas)'
+        };
+        broadcast({
+          type: 'CHAT_NOTIFICATION',
+          data: {
+            message: `📢 ${adminLeaderLabel} definiu a etapa ativa do leilão para: ${phaseLabels[newPhase]}! Apenas jogadores desta fase podem ser postados agora.`,
+            timestamp: Date.now(),
+            type: 'info'
+          }
+        });
+        saveState();
+        broadcastState();
+        res.json({ success: true, auction: leagueState.auction });
+        return;
+      }
       case 'TOGGLE_ANONYMOUS_BIDDING':
         leagueState.auction.anonymousBidding = !leagueState.auction.anonymousBidding;
         leagueState.auction.lastUpdated = Date.now();
@@ -2307,6 +2583,8 @@ async function startServer() {
         leagueState.auction.bidHistory = [];
         leagueState.auction.timerRemaining = 0;
         leagueState.auction.lastUpdated = Date.now();
+        // Reseta o elenco conceito dos usuários e substitui oficialmente pelos jogadores obtidos no leilão
+        resetConceptAndApplyWonPlayersToAllUsers();
         broadcast({
           type: 'CHAT_NOTIFICATION',
           data: {
@@ -2332,7 +2610,7 @@ async function startServer() {
         leagueState.auction.currentBid = null;
         leagueState.auction.bidHistory = [];
         leagueState.auction.nominationQueue = [];
-        leagueState.auction.timerRemaining = 0;
+        leagueState.auction.timerRemaining = getAuctionDuration();
         leagueState.auction.nominationTimerRemaining = 45;
         leagueState.auction.lastUpdated = Date.now();
         broadcast({
@@ -2384,8 +2662,97 @@ async function startServer() {
         break;
       }
       case 'RESET_TIMER':
-        leagueState.auction.timerRemaining = Number(value) || AUCTION_DURATION_SECONDS;
+      case 'SET_TIMER': {
+        const targetSeconds = Math.max(10, Math.floor(Number(value) || getAuctionDuration()));
+        leagueState.auction.timerRemaining = targetSeconds;
+        // Salvar também como defaultDurationSeconds para refletir no lobby e nas próximas disputas
+        leagueState.auction.defaultDurationSeconds = targetSeconds;
+        if (leagueState.auction.currentPlayer) {
+          const cp = leagueState.players.find((pl) => pl.id === leagueState.auction.currentPlayer?.id);
+          if (cp && cp.status === 'IN_AUCTION') {
+            cp.timerRemaining = targetSeconds;
+            cp.auctionExpiresAt = Date.now() + targetSeconds * 1000;
+          }
+        }
+        leagueState.players.forEach((p) => {
+          if (p.status === 'IN_AUCTION') {
+            p.timerRemaining = targetSeconds;
+            p.auctionExpiresAt = Date.now() + targetSeconds * 1000;
+          }
+        });
+        leagueState.auction.lastUpdated = Date.now();
+        const mins = Math.floor(targetSeconds / 60);
+        const secs = targetSeconds % 60;
+        const timeFormatted = mins > 0 ? `${mins}m${secs > 0 ? ` ${secs}s` : ''}` : `${secs}s`;
+        broadcast({
+          type: 'CHAT_NOTIFICATION',
+          data: {
+            message: `⏱️ ${adminLeaderLabel} ajustou o cronômetro oficial do leilão para ${timeFormatted}!`,
+            timestamp: Date.now(),
+            type: 'info'
+          }
+        });
         break;
+      }
+      case 'SET_DEFAULT_DURATION': {
+        const targetSeconds = Math.max(10, Math.floor(Number(value) || AUCTION_DURATION_SECONDS));
+        leagueState.auction.defaultDurationSeconds = targetSeconds;
+        // Se o leilão estiver no lobby ou sem disputa ativa, atualizar também o timerRemaining
+        if (leagueState.auction.status === 'NOT_STARTED' || leagueState.auction.status === 'IDLE' || !leagueState.auction.timerRemaining) {
+          leagueState.auction.timerRemaining = targetSeconds;
+        }
+        leagueState.auction.lastUpdated = Date.now();
+        const mins = Math.floor(targetSeconds / 60);
+        const secs = targetSeconds % 60;
+        const timeFormatted = mins > 0 ? `${mins}m${secs > 0 ? ` ${secs}s` : ''}` : `${secs}s`;
+        broadcast({
+          type: 'CHAT_NOTIFICATION',
+          data: {
+            message: `⚙️ ${adminLeaderLabel} alterou o tempo padrão oficial de disputa do leilão para ${timeFormatted}!`,
+            timestamp: Date.now(),
+            type: 'info'
+          }
+        });
+        break;
+      }
+      case 'ADJUST_TIMER': {
+        const delta = Math.floor(Number(value) || 0);
+        const current = leagueState.auction.timerRemaining > 0 
+          ? leagueState.auction.timerRemaining 
+          : (leagueState.auction.defaultDurationSeconds || getAuctionDuration());
+        const targetSeconds = Math.max(10, current + delta);
+        leagueState.auction.timerRemaining = targetSeconds;
+        if (leagueState.auction.status === 'NOT_STARTED' || leagueState.auction.status === 'IDLE' || !leagueState.auction.currentPlayer) {
+          leagueState.auction.defaultDurationSeconds = targetSeconds;
+        }
+        if (leagueState.auction.currentPlayer) {
+          const cp = leagueState.players.find((pl) => pl.id === leagueState.auction.currentPlayer?.id);
+          if (cp && cp.status === 'IN_AUCTION') {
+            cp.timerRemaining = targetSeconds;
+            cp.auctionExpiresAt = Date.now() + targetSeconds * 1000;
+          }
+        }
+        leagueState.players.forEach((p) => {
+          if (p.status === 'IN_AUCTION') {
+            p.timerRemaining = targetSeconds;
+            p.auctionExpiresAt = Date.now() + targetSeconds * 1000;
+          }
+        });
+        leagueState.auction.lastUpdated = Date.now();
+        const mins = Math.floor(targetSeconds / 60);
+        const secs = targetSeconds % 60;
+        const timeFormatted = mins > 0 ? `${mins}m${secs > 0 ? ` ${secs}s` : ''}` : `${secs}s`;
+        const deltaMins = Math.round(delta / 60);
+        broadcast({
+          type: 'CHAT_NOTIFICATION',
+          data: {
+            message: `⏱️ ${adminLeaderLabel} ajustou o cronômetro do leilão para ${timeFormatted} (${deltaMins >= 0 ? `+${deltaMins}` : deltaMins} min)!`,
+            timestamp: Date.now(),
+            type: 'info'
+          }
+        });
+        break;
+      }
       case 'CANCEL_AUCTION':
         if (leagueState.auction.currentPlayer) {
           const p = leagueState.players.find((pl) => pl.id === leagueState.auction.currentPlayer?.id);
@@ -2517,6 +2884,50 @@ async function startServer() {
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
+  }
+
+  // Hydrate persistent state from Cloud Firestore (prevents loss on Cloud Run container resets)
+  try {
+    const cloudData = await loadStateFromFirestore(leagueState);
+    if (cloudData) {
+      // 1. Merge users
+      if (cloudData.users && cloudData.users.length > 0) {
+        cloudData.users.forEach((cu) => {
+          const idx = leagueState.users.findIndex(
+            (u) => u.id === cu.id || u.email.toLowerCase() === cu.email.toLowerCase()
+          );
+          if (idx >= 0) {
+            leagueState.users[idx] = { ...leagueState.users[idx], ...cu };
+          } else {
+            leagueState.users.push(cu);
+          }
+        });
+        console.log(`[Firebase] Restored ${cloudData.users.length} users from Firestore.`);
+      }
+
+      // 2. Merge squads
+      if (cloudData.squads && Object.keys(cloudData.squads).length > 0) {
+        Object.entries(cloudData.squads).forEach(([uid, squad]) => {
+          leagueState.squads[uid] = squad;
+        });
+        console.log(`[Firebase] Restored squads for ${Object.keys(cloudData.squads).length} clubs.`);
+      }
+
+      // 3. Merge auction state
+      if (cloudData.auction) {
+        leagueState.auction = {
+          ...leagueState.auction,
+          ...cloudData.auction,
+        };
+      }
+
+      saveState();
+    } else {
+      console.log('[Firebase] Initial run or empty cloud DB: seeding master state to Cloud Firestore...');
+      await syncAllStateToFirestore(leagueState);
+    }
+  } catch (cloudErr) {
+    console.error('[Firebase] Failed to hydrate state from Firestore on boot:', cloudErr);
   }
 
   server.listen(PORT, '0.0.0.0', () => {

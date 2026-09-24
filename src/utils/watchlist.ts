@@ -22,9 +22,53 @@ export function saveWatchlist(userId: string | null | undefined, playerIds: stri
     localStorage.setItem(key, JSON.stringify(playerIds));
     // Dispara evento para sincronizar componentes na mesma aba
     window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { userId, playerIds } }));
+
+    // Sincroniza em nuvem no Firestore se o usuário estiver autenticado
+    if (userId && userId !== 'guest') {
+      const token = typeof window !== 'undefined' ? (sessionStorage.getItem('khedira_token') || localStorage.getItem('khedira_token')) : null;
+      fetch('/api/user/watchlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        credentials: 'include',
+        body: JSON.stringify({ playerIds })
+      }).catch((err) => {
+        console.warn('Erro ao sincronizar watchlist com o servidor:', err);
+      });
+    }
   } catch (err) {
     console.warn('Erro ao salvar lista de observação:', err);
   }
+}
+
+/**
+ * Baixa e mescla a lista de favoritos permanente do Firestore com o cache local
+ */
+export async function syncWatchlistWithServer(userId: string | null | undefined): Promise<string[]> {
+  if (!userId || userId === 'guest') return getWatchlist(userId);
+  try {
+    const token = typeof window !== 'undefined' ? (sessionStorage.getItem('khedira_token') || localStorage.getItem('khedira_token')) : null;
+    const res = await fetch('/api/user/watchlist', {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      credentials: 'include'
+    });
+    const data = await res.json();
+    if (data.success && Array.isArray(data.playerIds)) {
+      const local = getWatchlist(userId);
+      const merged = Array.from(new Set([...data.playerIds, ...local]));
+      const key = `${WATCHLIST_PREFIX}${userId}`;
+      localStorage.setItem(key, JSON.stringify(merged));
+      window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { userId, playerIds: merged } }));
+      return merged;
+    }
+  } catch (err) {
+    console.warn('Erro ao baixar watchlist do servidor:', err);
+  }
+  return getWatchlist(userId);
 }
 
 export function toggleWatchlistPlayer(userId: string | null | undefined, playerId: string): {

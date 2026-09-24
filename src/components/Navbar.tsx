@@ -130,11 +130,22 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="btn-open-admin-report"
                 onClick={onOpenAdminReport}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
-                title="Relatório Oficial de Contratações por Fase do Leilão"
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs ${
+                  auction.status === 'ENDED'
+                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black border border-amber-600 ring-2 ring-amber-400/50'
+                    : 'bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40'
+                }`}
+                title="Histórico Completo de Contratações e Destino dos Atletas na Liga"
               >
-                <FileText className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden md:inline">Relatório de Fases</span>
+                <FileText className={`w-3.5 h-3.5 ${auction.status === 'ENDED' ? 'text-slate-950' : 'text-amber-400'}`} />
+                <span className="hidden md:inline">
+                  {auction.status === 'ENDED' ? 'Dossiê de Contratações' : 'Relatório de Contratações'}
+                </span>
+                {auction.status === 'ENDED' && (
+                  <span className="px-1.5 py-0.2 text-[9px] font-black bg-slate-950 text-amber-300 rounded uppercase">
+                    Fechado
+                  </span>
+                )}
               </button>
             )}
 

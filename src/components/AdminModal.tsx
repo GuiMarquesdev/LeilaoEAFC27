@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Shield, DollarSign, Plus, Pause, Play, 
   RotateCcw, Trash2, UserCog, AlertTriangle, Check, Gavel, Crown, Square,
-  Calendar, Lock, Unlock, FileText, Wallet, CheckCircle2, RefreshCw
+  Calendar, Lock, Unlock, FileText, Wallet, CheckCircle2, RefreshCw,
+  ListOrdered, ChevronRight, Clock, Timer, Sliders, Edit3
 } from 'lucide-react';
-import { Player, UserProfile, AuctionState, PlayerPosition } from '../types';
-import { formatCurrency, getPositionBadge, getDayLabel, getUserRoleBadge, formatAuctionTimer } from '../utils/formatters';
+import { Player, UserProfile, AuctionState, PlayerPosition, AuctionType, AuctionPhase } from '../types';
+import { formatCurrency, getPositionBadge, getDayLabel, getUserRoleBadge, formatAuctionTimer, AUCTION_PHASES } from '../utils/formatters';
 import { AdminSigningsReportSection } from './AdminSigningsReportSection';
 
 interface AdminModalProps {
@@ -80,6 +81,85 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [showConfirmResetModal, setShowConfirmResetModal] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetFeedback, setResetFeedback] = useState<string | null>(null);
+
+  // Auction Timer Edit State
+  const [customHours, setCustomHours] = useState('1');
+  const [customMinutes, setCustomMinutes] = useState('30');
+  const [customSeconds, setCustomSeconds] = useState('0');
+  const [timerFeedback, setTimerFeedback] = useState<string | null>(null);
+  const [isApplyingTimer, setIsApplyingTimer] = useState(false);
+  const [isTimerEditorOpen, setIsTimerEditorOpen] = useState(true);
+
+  // Sync inputs with current timer when available
+  const handleCopyCurrentTimer = () => {
+    const rem = auction.timerRemaining > 0 ? auction.timerRemaining : (auction.defaultDurationSeconds || 5400);
+    const h = Math.floor(rem / 3600);
+    const m = Math.floor((rem % 3600) / 60);
+    const s = rem % 60;
+    setCustomHours(String(h));
+    setCustomMinutes(String(m));
+    setCustomSeconds(String(s));
+    setTimerFeedback('Tempo atual copiado para os campos de edição!');
+    setTimeout(() => setTimerFeedback(null), 2500);
+  };
+
+  const handleApplyCustomTimer = async () => {
+    const h = parseInt(customHours, 10) || 0;
+    const m = parseInt(customMinutes, 10) || 0;
+    const s = parseInt(customSeconds, 10) || 0;
+    const totalSeconds = (h * 3600) + (m * 60) + s;
+
+    if (totalSeconds < 10) {
+      setTimerFeedback('O tempo mínimo do cronômetro é de 10 segundos.');
+      setTimeout(() => setTimerFeedback(null), 3000);
+      return;
+    }
+
+    setIsApplyingTimer(true);
+    try {
+      await onAdminAuctionAction('SET_TIMER', totalSeconds);
+      const formatted = h > 0 ? `${h}h ${m}m ${s > 0 ? `${s}s` : ''}` : `${m}m ${s > 0 ? `${s}s` : ''}`;
+      setTimerFeedback(`Cronômetro da disputa atualizado para ${formatted.trim()} com sucesso!`);
+      setTimeout(() => setTimerFeedback(null), 3500);
+    } finally {
+      setIsApplyingTimer(false);
+    }
+  };
+
+  const handleSetAsDefaultDuration = async () => {
+    const h = parseInt(customHours, 10) || 0;
+    const m = parseInt(customMinutes, 10) || 0;
+    const s = parseInt(customSeconds, 10) || 0;
+    const totalSeconds = (h * 3600) + (m * 60) + s;
+
+    if (totalSeconds < 30) {
+      setTimerFeedback('O tempo padrão mínimo da liga é de 30 segundos.');
+      setTimeout(() => setTimerFeedback(null), 3000);
+      return;
+    }
+
+    setIsApplyingTimer(true);
+    try {
+      await onAdminAuctionAction('SET_DEFAULT_DURATION', totalSeconds);
+      const formatted = h > 0 ? `${h}h ${m}m` : `${m}m`;
+      setTimerFeedback(`Tempo padrão de cada disputa da liga definido para ${formatted}!`);
+      setTimeout(() => setTimerFeedback(null), 3500);
+    } finally {
+      setIsApplyingTimer(false);
+    }
+  };
+
+  const handleQuickAdjustTimer = async (deltaSeconds: number) => {
+    setIsApplyingTimer(true);
+    try {
+      await onAdminAuctionAction('ADJUST_TIMER', deltaSeconds);
+      const deltaMins = Math.round(deltaSeconds / 60);
+      setTimerFeedback(`Ajuste de ${deltaMins > 0 ? `+${deltaMins}` : deltaMins} min aplicado com sucesso!`);
+      setTimeout(() => setTimerFeedback(null), 3000);
+    } finally {
+      setIsApplyingTimer(false);
+    }
+  };
 
   if (!isOpen || !currentUser || currentUser.role !== 'ADMIN') return null;
 
@@ -224,7 +304,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             }`}
           >
             <FileText className="w-3.5 h-3.5 text-amber-600" />
-            <span>5. Relatório por Fases (ADM)</span>
+            <span>5. Contratações & Elencos Fechados (ADM)</span>
           </button>
         </div>
 
@@ -349,9 +429,24 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     )}
                   </div>
 
-                  <span className="text-xs font-bold text-slate-600">
-                    Cronômetro: <strong>{formatAuctionTimer(auction.timerRemaining)}</strong>
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-600">
+                      Cronômetro: <strong className="text-amber-800 font-mono">{formatAuctionTimer(auction.timerRemaining)}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleCopyCurrentTimer();
+                        const el = document.getElementById('admin-timer-editor');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="px-2 py-0.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-md text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all"
+                      title="Editar tempo do leilão"
+                    >
+                      <Edit3 className="w-2.5 h-2.5" />
+                      <span>Editar Tempo</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -384,57 +479,28 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   <span>Bater Martelo (Finalizar)</span>
                 </button>
 
-                <div className="flex flex-col gap-1">
-                  <button
-                    onClick={() => onAdminAuctionAction('RESET_TIMER', 5400)}
-                    disabled={auction.status === 'IDLE'}
-                    className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-40 cursor-pointer w-full"
-                    title="Ajusta o cronômetro para 1 hora e 30 minutos (padrão oficial)"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    <span>Resetar Timer (1h30m)</span>
-                  </button>
-                  {auction.status !== 'IDLE' && (
-                    <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-slate-500 flex-wrap">
-                      <span>Presets:</span>
-                      <button 
-                        onClick={() => onAdminAuctionAction('RESET_TIMER', 5400)} 
-                        className="px-1.5 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded cursor-pointer"
-                        title="1 hora e 30 minutos"
-                      >
-                        1h30m
-                      </button>
-                      <button 
-                        onClick={() => onAdminAuctionAction('RESET_TIMER', 3600)} 
-                        className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
-                        title="1 hora"
-                      >
-                        1h
-                      </button>
-                      <button 
-                        onClick={() => onAdminAuctionAction('RESET_TIMER', 1800)} 
-                        className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
-                        title="30 minutos"
-                      >
-                        30m
-                      </button>
-                      <button 
-                        onClick={() => onAdminAuctionAction('RESET_TIMER', 600)} 
-                        className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
-                        title="10 minutos"
-                      >
-                        10m
-                      </button>
-                      <button 
-                        onClick={() => onAdminAuctionAction('RESET_TIMER', 60)} 
-                        className="px-1.5 py-0.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-700 cursor-pointer"
-                        title="1 minuto"
-                      >
-                        1m
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={() => {
+                    handleCopyCurrentTimer();
+                    const el = document.getElementById('admin-timer-editor');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="p-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                  title="Abrir editor de tempo do leilão para definir horas, minutos ou segundos"
+                >
+                  <Clock className="w-4 h-4 text-amber-700" />
+                  <span>Editar Tempo do Leilão</span>
+                </button>
+
+                <button
+                  onClick={() => onAdminAuctionAction('RESET_TIMER', 5400)}
+                  disabled={auction.status === 'IDLE'}
+                  className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-40 cursor-pointer"
+                  title="Ajusta o cronômetro para 1 hora e 30 minutos (padrão oficial)"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span>Resetar Timer (1h30m)</span>
+                </button>
 
                 <button
                   onClick={() => onAdminAuctionAction('CANCEL_AUCTION')}
@@ -465,35 +531,368 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 </div>
               </div>
 
-              {/* MERCADO UNIFICADO SEM FASES (ATAQUE, MEIO CAMPO E DEFESA JUNTOS) */}
-              <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Mercado Unificado (Sem Fases de Dias)</span>
-                  </span>
-                  <span className="text-xs font-semibold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-300">
-                    Ataque, Meio e Defesa Juntos
-                  </span>
-                </div>
-                <p className="text-xs text-slate-700 leading-relaxed">
-                  A regra de divisão por 3 dias e fases de posições foi removida conforme a nova diretriz da Liga. Todos os atletas do setor ofensivo, meio-campo e defensivo estão liberados simultaneamente para propostas e lances.
-                </p>
+              {/* SEÇÃO DEDICADA: EDITAR TEMPO DO LEILÃO */}
+              <div id="admin-timer-editor" className="p-5 bg-gradient-to-br from-amber-500/10 via-slate-50 to-slate-100/90 rounded-2xl border border-amber-200/90 shadow-xs space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 block">
+                        Controle Oficial de Cronômetro
+                      </span>
+                      <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                        <span>Editar Tempo do Leilão</span>
+                      </h3>
+                    </div>
+                  </div>
 
-                <div className="p-3 bg-white rounded-xl border border-emerald-200/80 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 bg-emerald-600 text-white rounded">
-                      MERCADO ABERTO
-                    </span>
-                    <span className="text-xs font-bold text-slate-900">
-                      GOL, ZAG, LE, LD, VOL, MC, MEI, ATA, PE, PD, ME, MD, SA
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="px-3 py-1.5 bg-white border border-amber-200 rounded-xl shadow-xs text-xs font-bold text-slate-700 flex items-center gap-2">
+                      <Timer className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Cronômetro Atual: <strong className="text-amber-800 font-mono text-sm">{formatAuctionTimer(auction.timerRemaining)}</strong></span>
+                    </div>
+                    <span className="text-[11px] font-semibold text-slate-600 px-2.5 py-1 bg-white border border-slate-200 rounded-lg">
+                      Padrão da Liga: {Math.floor((auction.defaultDurationSeconds || 5400) / 60)} min
                     </span>
                   </div>
-                  <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5" />
-                    Todas as posições permitidas
+                </div>
+
+                {/* Formulário de Tempo Personalizado */}
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3.5">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <p className="text-xs text-slate-600 font-medium">
+                      Insira o tempo desejado para a disputa de lances (horas, minutos e segundos):
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleCopyCurrentTimer}
+                      className="text-[11px] text-amber-800 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                      title="Preencher campos com o tempo que resta atualmente"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Copiar Tempo Restante Atual</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center flex-wrap gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-bold text-slate-700">Horas:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="24"
+                        value={customHours}
+                        onChange={(e) => setCustomHours(e.target.value)}
+                        placeholder="0"
+                        className="w-16 px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-center focus:ring-2 focus:ring-amber-500 outline-hidden"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-bold text-slate-700">Minutos:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        value={customMinutes}
+                        onChange={(e) => setCustomMinutes(e.target.value)}
+                        placeholder="30"
+                        className="w-16 px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-center focus:ring-2 focus:ring-amber-500 outline-hidden"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-bold text-slate-700">Segundos:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        value={customSeconds}
+                        onChange={(e) => setCustomSeconds(e.target.value)}
+                        placeholder="0"
+                        className="w-16 px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-center focus:ring-2 focus:ring-amber-500 outline-hidden"
+                      />
+                    </div>
+
+                    {/* Botões de Ação */}
+                    <div className="flex items-center gap-2 ml-auto flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleApplyCustomTimer}
+                        disabled={isApplyingTimer}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                        title="Aplica o tempo configurado diretamente ao cronômetro da disputa ativa"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Aplicar ao Leilão Agora</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSetAsDefaultDuration}
+                        disabled={isApplyingTimer}
+                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                        title="Salva este tempo como padrão para todas as próximas disputas de jogadores"
+                      >
+                        <Sliders className="w-3.5 h-3.5 text-slate-600" />
+                        <span>Salvar como Padrão da Liga</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Ajustes Rápidos (+ / -) */}
+                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[11px] font-bold text-slate-500 mr-1">Ajuste rápido:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAdjustTimer(900)}
+                        disabled={isApplyingTimer}
+                        className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg font-bold text-[11px] transition-all cursor-pointer"
+                        title="Adicionar 15 minutos ao cronômetro"
+                      >
+                        +15 min
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAdjustTimer(300)}
+                        disabled={isApplyingTimer}
+                        className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg font-bold text-[11px] transition-all cursor-pointer"
+                        title="Adicionar 5 minutos ao cronômetro"
+                      >
+                        +5 min
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAdjustTimer(60)}
+                        disabled={isApplyingTimer}
+                        className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg font-bold text-[11px] transition-all cursor-pointer"
+                        title="Adicionar 1 minuto ao cronômetro"
+                      >
+                        +1 min
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAdjustTimer(-60)}
+                        disabled={isApplyingTimer}
+                        className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-bold text-[11px] transition-all cursor-pointer"
+                        title="Subtrair 1 minuto do cronômetro"
+                      >
+                        -1 min
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAdjustTimer(-300)}
+                        disabled={isApplyingTimer}
+                        className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-bold text-[11px] transition-all cursor-pointer"
+                        title="Subtrair 5 minutos do cronômetro"
+                      >
+                        -5 min
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomHours('1');
+                        setCustomMinutes('30');
+                        setCustomSeconds('0');
+                        onAdminAuctionAction('RESET_TIMER', 5400);
+                        setTimerFeedback('Cronômetro redefinido para 1h 30m (padrão oficial da Khedira League)!');
+                        setTimeout(() => setTimerFeedback(null), 3500);
+                      }}
+                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer"
+                      title="Restaurar o tempo padrão de 1 hora e 30 minutos"
+                    >
+                      <RotateCcw className="w-3 h-3 text-slate-600" />
+                      <span>Resetar p/ Padrão Oficial (1h30m)</span>
+                    </button>
+                  </div>
+
+                  {timerFeedback && (
+                    <div className="p-2.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-2 animate-in fade-in duration-200">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{timerFeedback}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* CONFIGURAÇÃO DO FORMATO E TIPO DE LEILÃO (LIVRE OU POR FASES) */}
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 block">
+                      Regulamento de Disputa & Mercado
+                    </span>
+                    <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                      <ListOrdered className="w-4 h-4 text-amber-600" />
+                      <span>Tipo de Leilão (Modalidade da Liga)</span>
+                    </h3>
+                  </div>
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                    auction.auctionType === 'PHASED'
+                      ? 'bg-blue-100 text-blue-900 border-blue-300'
+                      : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                  }`}>
+                    {auction.auctionType === 'PHASED' ? '📋 Leilão por Fases Ativo' : '🌐 Leilão Livre Ativo'}
                   </span>
                 </div>
+
+                {/* Opções de Tipo de Leilão */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Opção 1: Leilão Livre */}
+                  <button
+                    type="button"
+                    onClick={() => onAdminAuctionAction('SET_AUCTION_TYPE', 'FREE')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer relative overflow-hidden group ${
+                      auction.auctionType !== 'PHASED'
+                        ? 'bg-emerald-50/80 border-emerald-500 shadow-sm ring-2 ring-emerald-500/20'
+                        : 'bg-white border-slate-200 hover:border-emerald-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+                          auction.auctionType !== 'PHASED' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          🌐
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-slate-900">Leilão Livre</h4>
+                          <span className="text-[10px] text-slate-500 font-semibold block">Todas as Posições Abertas</span>
+                        </div>
+                      </div>
+                      {auction.auctionType !== 'PHASED' && (
+                        <span className="px-2 py-0.5 text-[9px] font-black uppercase rounded bg-emerald-600 text-white">
+                          Ativo
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-600 mt-2.5 leading-relaxed">
+                      Todos os participantes podem postar seu interesse por jogadores de <strong>todas as posições</strong> (Goleiros, Defensores, Meio-Campo e Atacantes) simultaneamente.
+                    </p>
+                  </button>
+
+                  {/* Opção 2: Leilão por Fases */}
+                  <button
+                    type="button"
+                    onClick={() => onAdminAuctionAction('SET_AUCTION_TYPE', 'PHASED')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer relative overflow-hidden group ${
+                      auction.auctionType === 'PHASED'
+                        ? 'bg-blue-50/80 border-blue-500 shadow-sm ring-2 ring-blue-500/20'
+                        : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+                          auction.auctionType === 'PHASED' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          📋
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-slate-900">Leilão por Fases</h4>
+                          <span className="text-[10px] text-slate-500 font-semibold block">Goleiros, Defensores, Meio & Ataque</span>
+                        </div>
+                      </div>
+                      {auction.auctionType === 'PHASED' && (
+                        <span className="px-2 py-0.5 text-[9px] font-black uppercase rounded bg-blue-600 text-white">
+                          Ativo
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-600 mt-2.5 leading-relaxed">
+                      O leilão segue etapas sequenciais: <strong>Goleiros → Defensores → Meio-Campo → Atacantes</strong>. Apenas atletas da fase ativa podem ser postados pelos clubes.
+                    </p>
+                  </button>
+                </div>
+
+                {/* Sub-painel: Controle das 4 Fases quando Leilão por Fases estiver ativo */}
+                {auction.auctionType === 'PHASED' && (
+                  <div className="p-4 bg-white rounded-xl border border-blue-200 space-y-3 mt-3 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <span className="text-[10px] font-black text-blue-700 uppercase tracking-wider block">
+                          Etapas Setoriais do Leilão
+                        </span>
+                        <p className="text-xs text-slate-700 font-medium">
+                          Fase atual do leilão: <strong className="text-blue-900 font-black">{AUCTION_PHASES.find(p => p.id === (auction.currentPhase || 'GOLEIROS'))?.label}</strong>
+                        </p>
+                      </div>
+
+                      {/* Botão de Avançar para a Próxima Fase */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const phases: AuctionPhase[] = ['GOLEIROS', 'DEFENSORES', 'MEIO_CAMPO', 'ATACANTES'];
+                          const currentIdx = phases.indexOf(auction.currentPhase || 'GOLEIROS');
+                          const nextPhase = phases[(currentIdx + 1) % phases.length];
+                          onAdminAuctionAction('SET_AUCTION_PHASE', nextPhase);
+                        }}
+                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        title="Avança automaticamente para o próximo setor da disputa"
+                      >
+                        <span>Avançar Fase</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Cards das 4 Fases */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {AUCTION_PHASES.map((phase, idx) => {
+                        const isCurrent = (auction.currentPhase || 'GOLEIROS') === phase.id;
+                        const phaseAvailableCount = players.filter(
+                          p => p.status === 'AVAILABLE' && (phase.positions as string[]).includes(p.position)
+                        ).length;
+
+                        return (
+                          <button
+                            key={phase.id}
+                            type="button"
+                            onClick={() => onAdminAuctionAction('SET_AUCTION_PHASE', phase.id)}
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                              isCurrent
+                                ? `${phase.activeClass} border-transparent shadow-xs scale-[1.02]`
+                                : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <span className="text-base">{phase.icon}</span>
+                                {isCurrent ? (
+                                  <span className="text-[9px] font-black uppercase px-1.5 py-0.2 bg-white/25 rounded">
+                                    Fase Ativa
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-semibold text-slate-500">
+                                    {idx + 1}ª Etapa
+                                  </span>
+                                )}
+                              </div>
+                              <h5 className={`text-xs font-black leading-tight ${isCurrent ? 'text-white' : 'text-slate-900'}`}>
+                                {phase.shortLabel}
+                              </h5>
+                              <p className={`text-[10px] font-medium mt-0.5 line-clamp-1 ${isCurrent ? 'text-white/80' : 'text-slate-500'}`}>
+                                {phase.positions.join(', ')}
+                              </p>
+                            </div>
+                            <div className="mt-2 pt-1 border-t border-black/10 flex items-center justify-between text-[10px] font-bold">
+                              <span className={isCurrent ? 'text-white/90' : 'text-slate-600'}>
+                                {phaseAvailableCount} disp.
+                              </span>
+                              <span className={`text-[9px] font-black uppercase ${isCurrent ? 'underline' : 'opacity-60'}`}>
+                                {isCurrent ? 'No Ar' : 'Ativar'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Set Nominator Turn */}
@@ -944,6 +1343,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               currentUser={currentUser}
               players={players}
               users={users}
+              auction={auction}
               onAdminReleasePlayer={onAdminReleasePlayer}
             />
           )}

@@ -14,6 +14,7 @@ interface WatchlistRadarWidgetProps {
   onToggleWatch: (playerId: string) => void;
   onOpenFullWatchlist: () => void;
   onNominate?: (playerId: string) => Promise<boolean>;
+  onNavigateToAuction?: (playerId?: string) => void;
 }
 
 export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
@@ -24,6 +25,7 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
   onToggleWatch,
   onOpenFullWatchlist,
   onNominate,
+  onNavigateToAuction,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -131,13 +133,15 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
               return (
                 <div
                   key={player.id}
-                  className={`p-3 rounded-xl border text-xs transition-all flex flex-col justify-between gap-2 ${
+                  onClick={() => onNavigateToAuction?.(player.id)}
+                  className={`p-3 rounded-xl border text-xs transition-all flex flex-col justify-between gap-2 cursor-pointer select-none group active:scale-[0.99] ${
                     isCurrentlyActive
-                      ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-400/50 shadow-xs'
+                      ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-400/50 shadow-xs hover:border-rose-500 hover:shadow-md'
                       : isSold
-                      ? 'bg-slate-50 border-slate-200 opacity-80'
-                      : 'bg-white border-slate-200 hover:border-amber-300'
+                      ? 'bg-slate-50 border-slate-200 opacity-80 hover:border-slate-400'
+                      : 'bg-white border-slate-200 hover:border-amber-400 hover:bg-amber-50/20 hover:shadow-xs'
                   }`}
+                  title={`Clique para ir direto ao card de ${player.name} no leilão`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -145,7 +149,7 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
                         {player.position}
                       </span>
                       <div>
-                        <h5 className="font-bold text-slate-900 text-xs leading-tight">
+                        <h5 className="font-bold text-slate-900 group-hover:text-amber-800 transition-colors text-xs leading-tight">
                           {player.name}
                         </h5>
                         <span className="text-[10px] text-slate-500 block font-medium">
@@ -156,7 +160,10 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => onToggleWatch(player.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleWatch(player.id);
+                      }}
                       className="text-amber-500 hover:text-amber-700 p-1 cursor-pointer"
                       title="Remover do Radar"
                     >
@@ -185,8 +192,9 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
 
                     <div>
                       {isCurrentlyActive ? (
-                        <span className="px-2 py-0.5 rounded text-[9px] font-black bg-rose-500 text-white animate-pulse">
-                          AO VIVO
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black bg-rose-500 text-white animate-pulse flex items-center gap-1">
+                          <span>AO VIVO</span>
+                          <ArrowUpRight className="w-2.5 h-2.5" />
                         </span>
                       ) : isSold ? (
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-700">
@@ -199,24 +207,30 @@ export const WatchlistRadarWidget: React.FC<WatchlistRadarWidgetProps> = ({
                             <button
                               type="button"
                               disabled={!isAuctionInProgress}
-                              onClick={() => {
-                                if (!isAuctionInProgress) return;
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!isAuctionInProgress) {
+                                  onNavigateToAuction?.(player.id);
+                                  return;
+                                }
                                 onNominate(player.id);
+                                onNavigateToAuction?.(player.id);
                               }}
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all flex items-center gap-0.5 ${
                                 isAuctionInProgress
                                   ? 'bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer active:scale-95'
                                   : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
                               }`}
                               title={!isAuctionInProgress ? 'Leilão não iniciado' : 'Fazer Proposta'}
                             >
-                              Fazer Proposta
+                              <span>Fazer Proposta</span>
                             </button>
                           );
                         })()
                       ) : (
-                        <span className="text-[9px] text-slate-400 font-medium">
-                          Aguardando
+                        <span className="text-[9px] text-amber-700 font-bold group-hover:underline flex items-center gap-0.5">
+                          <span>Ver Card</span>
+                          <ArrowUpRight className="w-2.5 h-2.5" />
                         </span>
                       )}
                     </div>

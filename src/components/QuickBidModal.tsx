@@ -54,6 +54,17 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
     setErrorMessage(null);
   }, [player.id, minRequired]);
 
+  // Handle ESC key to easily dismiss modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const handleQuickAdd = (incrementMillions: number) => {
     const newAmount = Math.max(minRequired, bidAmount + incrementMillions * 1000000);
     setBidAmount(newAmount);
@@ -132,9 +143,13 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
   const isInsufficientBudget = currentUser ? bidAmount > effectiveAvailableBudget : false;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200 cursor-pointer"
+    >
       <div 
-        className="bg-white border-2 border-slate-200 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white border-2 border-slate-200 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 cursor-default"
         role="dialog"
         aria-modal="true"
       >
@@ -163,15 +178,8 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
 
         {/* Player Snapshot Banner */}
         <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/70 flex items-center gap-3.5">
-          <div className="relative">
-            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-center overflow-hidden shrink-0">
-              <img
-                src={`https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=120&auto=format&fit=crop&q=80`}
-                alt={player.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <span className={`absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded text-[9px] font-black shadow-xs ${badge.bgClass} ${badge.textClass}`}>
+          <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-center shrink-0">
+            <span className={`px-2.5 py-1 rounded-xl text-xs font-black shadow-xs ${badge.bgClass} ${badge.textClass}`}>
               {player.position}
             </span>
           </div>

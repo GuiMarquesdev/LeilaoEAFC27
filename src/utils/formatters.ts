@@ -1,4 +1,4 @@
-import { PlayerPosition, Player, AuctionState, Bid } from '../types';
+import { PlayerPosition, Player, AuctionState, Bid, AuctionType, AuctionPhase } from '../types';
 
 export function getPlayerActiveBid(player: Player | null | undefined, auction?: AuctionState | null): Bid | null {
   if (!player) return null;
@@ -80,9 +80,103 @@ export function formatCurrency(amount: number, compact = false): string {
   return `€ ${amount.toLocaleString('pt-BR')}`;
 }
 
-export function isPositionAllowedForDay(_position: string, _day?: 1 | 2 | 3 | 'ALL'): boolean {
-  // Regulamento Oficial Khedira League: Sem divisão de fases!
-  // ATAQUE, MEIO CAMPO, DEFESA e GOLEIROS todos liberados juntos.
+export interface AuctionPhaseDefinition {
+  id: AuctionPhase;
+  name: string;
+  label: string;
+  shortLabel: string;
+  positions: PlayerPosition[];
+  icon: string;
+  description: string;
+  badgeClass: string;
+  activeClass: string;
+  borderClass: string;
+  accentColor: string;
+}
+
+export const AUCTION_PHASES: AuctionPhaseDefinition[] = [
+  {
+    id: 'GOLEIROS',
+    name: 'Goleiros',
+    label: '1ª Fase: Goleiros',
+    shortLabel: 'Goleiros',
+    positions: ['GOL'],
+    icon: '🧤',
+    description: 'Apenas goleiros (GOL) liberados para postagem e propostas.',
+    badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
+    activeClass: 'bg-amber-500 text-white shadow-amber-200',
+    borderClass: 'border-amber-400',
+    accentColor: 'amber'
+  },
+  {
+    id: 'DEFENSORES',
+    name: 'Defensores',
+    label: '2ª Fase: Defensores',
+    shortLabel: 'Defensores',
+    positions: ['ZAG', 'LE', 'LD'],
+    icon: '🛡️',
+    description: 'Zagueiros e Laterais (ZAG, LE, LD) liberados para postagem e lances.',
+    badgeClass: 'bg-blue-100 text-blue-900 border-blue-300',
+    activeClass: 'bg-blue-600 text-white shadow-blue-200',
+    borderClass: 'border-blue-400',
+    accentColor: 'blue'
+  },
+  {
+    id: 'MEIO_CAMPO',
+    name: 'Meio-Campo',
+    label: '3ª Fase: Meio-Campo',
+    shortLabel: 'Meio-Campo',
+    positions: ['VOL', 'MC', 'MEI', 'MD', 'ME'],
+    icon: '⚡',
+    description: 'Volantes, Meias Centrais e Meias Ofensivos liberados.',
+    badgeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+    activeClass: 'bg-emerald-600 text-white shadow-emerald-200',
+    borderClass: 'border-emerald-400',
+    accentColor: 'emerald'
+  },
+  {
+    id: 'ATACANTES',
+    name: 'Atacantes',
+    label: '4ª Fase: Atacantes',
+    shortLabel: 'Atacantes',
+    positions: ['ATA', 'PD', 'PE', 'SA'],
+    icon: '⚽',
+    description: 'Centroavantes, Pontas e Segundos Atacantes liberados.',
+    badgeClass: 'bg-rose-100 text-rose-900 border-rose-300',
+    activeClass: 'bg-rose-600 text-white shadow-rose-200',
+    borderClass: 'border-rose-400',
+    accentColor: 'rose'
+  }
+];
+
+export function getPhaseInfo(phase?: AuctionPhase): AuctionPhaseDefinition {
+  return AUCTION_PHASES.find((p) => p.id === phase) || AUCTION_PHASES[0];
+}
+
+export function getPlayerPhaseKey(position: string): AuctionPhase {
+  if (position === 'GOL') return 'GOLEIROS';
+  if (['ZAG', 'LE', 'LD'].includes(position)) return 'DEFENSORES';
+  if (['VOL', 'MC', 'MEI', 'MD', 'ME'].includes(position)) return 'MEIO_CAMPO';
+  return 'ATACANTES';
+}
+
+export function isPlayerInActivePhase(
+  position: string,
+  auction?: { auctionType?: AuctionType; currentPhase?: AuctionPhase }
+): boolean {
+  if (!auction || auction.auctionType !== 'PHASED') return true;
+  const currentPhase = auction.currentPhase || 'GOLEIROS';
+  const phaseDef = getPhaseInfo(currentPhase);
+  return (phaseDef.positions as string[]).includes(position);
+}
+
+export function isPositionAllowedForDay(
+  position: string, 
+  auctionOrDay?: 1 | 2 | 3 | 'ALL' | { auctionType?: AuctionType; currentPhase?: AuctionPhase }
+): boolean {
+  if (typeof auctionOrDay === 'object' && auctionOrDay !== null) {
+    return isPlayerInActivePhase(position, auctionOrDay);
+  }
   return true;
 }
 
@@ -99,10 +193,21 @@ export function getPlayerAuctionDay(position: string): 1 | 2 | 3 {
   return 3;
 }
 
-export function getDayLabel(_day?: 1 | 2 | 3 | 'ALL'): { title: string; subtitle: string; positions: string[] } {
+export function getDayLabel(
+  auctionOrDay?: 1 | 2 | 3 | 'ALL' | { auctionType?: AuctionType; currentPhase?: AuctionPhase }
+): { title: string; subtitle: string; positions: string[] } {
+  if (typeof auctionOrDay === 'object' && auctionOrDay !== null && auctionOrDay.auctionType === 'PHASED') {
+    const phase = getPhaseInfo(auctionOrDay.currentPhase || 'GOLEIROS');
+    return {
+      title: `Leilão por Fases • ${phase.label}`,
+      subtitle: phase.description,
+      positions: phase.positions
+    };
+  }
+
   return {
-    title: 'Mercado Aberto (Sem Fases)',
-    subtitle: 'Ataque, Meio-Campo e Defesa liberados juntos simultaneamente',
+    title: 'Leilão Livre (Todas as Posições)',
+    subtitle: 'Goleiros, Defensores, Meio-Campo e Atacantes liberados simultaneamente',
     positions: ['GOL', 'ZAG', 'LE', 'LD', 'VOL', 'MC', 'MEI', 'MD', 'ME', 'PE', 'PD', 'SA', 'ATA']
   };
 }

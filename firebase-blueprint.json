@@ -1,0 +1,146 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with club identity, budget, credentials and role in Khedira League",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the user",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Official email address of the user",
+          "maxLength": 256
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name or manager name",
+          "maxLength": 120
+        },
+        "teamName": {
+          "type": "string",
+          "description": "Name of the participant football club",
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "description": "Role in the league",
+          "enum": ["ADMIN", "PARTICIPANT"]
+        },
+        "adminTitle": {
+          "type": "string",
+          "description": "Specific admin title (e.g. Diretor, Presidente)",
+          "maxLength": 60
+        },
+        "budget": {
+          "type": "number",
+          "description": "Current available budget in Euros"
+        },
+        "spent": {
+          "type": "number",
+          "description": "Total amount spent on player bids in Euros"
+        },
+        "passwordHash": {
+          "type": "string",
+          "description": "Bcrypt hashed password",
+          "maxLength": 256
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Unix timestamp in milliseconds when account was registered"
+        }
+      },
+      "required": ["id", "email", "name", "teamName", "role", "budget", "spent"]
+    },
+    "UserSquad": {
+      "title": "UserSquad",
+      "description": "Tactical squad setup, formation, starters and bench players",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user ID",
+          "maxLength": 128
+        },
+        "formationId": {
+          "type": "string",
+          "description": "Tactical formation code (e.g. 4-3-3, 4-4-2)",
+          "maxLength": 32
+        },
+        "starterSlots": {
+          "type": "object",
+          "description": "Map of slot identifiers to player IDs"
+        },
+        "benchPlayerIds": {
+          "type": "array",
+          "description": "List of player IDs on the bench"
+        }
+      },
+      "required": ["userId", "formationId"]
+    },
+    "Watchlist": {
+      "title": "Watchlist",
+      "description": "Radar of favorited players monitored by a club manager",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user ID",
+          "maxLength": 128
+        },
+        "playerIds": {
+          "type": "array",
+          "description": "List of favorited player IDs"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Unix timestamp of last modification"
+        }
+      },
+      "required": ["userId", "playerIds"]
+    },
+    "MasterLeagueState": {
+      "title": "MasterLeagueState",
+      "description": "Unified persistent state of the Khedira League including active auction, participants, and roster status",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Snapshot identifier or state key",
+          "maxLength": 64
+        },
+        "defaultBudget": {
+          "type": "number",
+          "description": "Standard club budget (400M Euros)"
+        },
+        "lastUpdated": {
+          "type": "number",
+          "description": "Unix timestamp of last sync"
+        }
+      },
+      "required": ["id", "defaultBudget"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles and manager accounts for Khedira League participants"
+    },
+    "/squads/{userId}": {
+      "schema": "UserSquad",
+      "description": "Tactical setups and squad players for each manager"
+    },
+    "/watchlists/{userId}": {
+      "schema": "Watchlist",
+      "description": "User favorited players for the live auction radar"
+    },
+    "/league/{stateId}": {
+      "schema": "MasterLeagueState",
+      "description": "Master league state metadata and configuration"
+    }
+  }
+}

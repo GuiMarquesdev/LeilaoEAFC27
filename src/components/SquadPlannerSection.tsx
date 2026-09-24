@@ -5,7 +5,7 @@ import {
   GripVertical, CheckCircle2, ArrowDownCircle, Target, Star,
   ListPlus, ExternalLink, Plus, UserPlus
 } from 'lucide-react';
-import { Player, UserProfile, UserSquad, FormationSlot, TacticalFormation } from '../types';
+import { Player, UserProfile, UserSquad, FormationSlot, TacticalFormation, AuctionState } from '../types';
 import { INITIAL_FORMATIONS } from '../data/initialPlayers';
 import { formatCurrency, getPositionBadge, isCompatiblePosition } from '../utils/formatters';
 import { playBidSound } from '../utils/sound';
@@ -18,6 +18,7 @@ interface SquadPlannerSectionProps {
   currentUser: UserProfile | null;
   players: Player[];
   userSquad: UserSquad | null;
+  auction?: AuctionState;
   onSaveSquad: (formationId: string, starterSlots: { [slotId: string]: string | null }, benchPlayerIds: string[]) => Promise<void>;
   onOpenAuth: () => void;
   watchedPlayerIds?: string[];
@@ -36,6 +37,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
   currentUser,
   players,
   userSquad,
+  auction,
   onSaveSquad,
   onOpenAuth,
   watchedPlayerIds,
@@ -100,6 +102,11 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
     : [];
   const ownedPlayerIds = ownedPlayers.map((p) => p.id);
 
+  // Estados Oficiais do Leilão
+  const isAuctionActive = auction?.status === 'ACTIVE';
+  const isAuctionEnded = auction?.status === 'ENDED';
+  const isAuctionNotActive = !isAuctionActive && !isAuctionEnded;
+
   // Sync state whenever userSquad changes
   useEffect(() => {
     if (userSquad) {
@@ -111,18 +118,18 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
     }
   }, [userSquad]);
 
-  // Regra central: Todos os jogadores comprados no leilão devem ir para os reservas comprados,
-  // permitindo que o usuário os escale da forma que quiser.
-  // Garante que nenhum jogador arrematado fique de fora do banco de reservas se não estiver escalado nos titulares.
+  // REGRA 1 & 2: Quando o leilão NÃO ESTIVER ATIVO ou ESTIVER ATIVO (lances rolando),
+  // o elenco montado como conceito pelos usuários é mantido e salvo conforme o planejamento.
+  // Novos atletas comprados no leilão entram no banco de reservas sem apagar os alvos planejados.
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || isAuctionEnded) return;
     const currentStarterPlayerIds = Object.values(starterSlots).filter(Boolean) as string[];
 
     setBenchPlayerIds((prevBench) => {
       let changed = false;
       const newBench = [...prevBench];
 
-      // 1. Todo jogador comprado pelo usuário que NÃO estiver nos titulares DEVE estar no banco de reservas
+      // 1. Todo jogador comprado pelo usuário que NÃO estiver nos titulares entra no banco de reservas
       ownedPlayerIds.forEach((pid) => {
         if (!currentStarterPlayerIds.includes(pid) && !newBench.includes(pid)) {
           newBench.push(pid);
@@ -137,13 +144,91 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
       }
 
       if (changed) {
-        // Salva atualização de elenco no servidor automaticamente
         onSaveSquad(selectedFormationId, starterSlots, filteredBench);
         return filteredBench;
       }
       return prevBench;
     });
-  }, [ownedPlayerIds, starterSlots, currentUser, selectedFormationId]);
+  }, [ownedPlayerIds.length, starterSlots, currentUser, selectedFormationId, isAuctionEnded]);
+
+  // REGRA 3: Quando o leilão for FINALIZADO (ENDED):
+  // O elenco de conceito montado pelos usuários é resetado e os jogadores que ele obteve
+  // no leilão substituem oficialmente o elenco conceito anterior nos titulares e no banco!
+  useEffect(() => {
+    if (!currentUser || !isAuctionEnded) return;
+
+    const currentStarterIds = Object.values(starterSlots).filter(Boolean) as string[];
+    const hasUnownedStarters = currentStarterIds.some((id) => !ownedPlayerIds.includes(id));
+    const hasUnownedBench = benchPlayerIds.some((id) => !ownedPlayerIds.includes(id));
+    const unplacedWon = ownedPlayerIds.filter(
+      (id) => !currentStarterIds.includes(id) && !benchPlayerIds.includes(id)
+    );
+
+    // Se houver atletas de conceito não comprados ou atletas comprados ainda fora da prancheta
+    if (hasUnownedStarters || hasUnownedBench || unplacedWon.length > 0) {
+      const formation =
+        INITIAL_FORMATIONS.find((f) => f.id === selectedFormationId) || INITIAL_FORMATIONS[0];
+
+      const newSlots: { [slotId: string]: string | null } = {};
+      formation.slots.forEach((s) => (newSlots[s.slotId] = null));
+
+      const unassignedWon = [...ownedPlayers];
+
+      // Pass 0: Manter titulares conquistados que já estavam em slots compatíveis
+      formation.slots.forEach((slot) => {
+        const currentPid = starterSlots[slot.slotId];
+        if (currentPid && ownedPlayerIds.includes(currentPid)) {
+          const pObj = ownedPlayers.find((p) => p.id === currentPid);
+          if (pObj && isCompatiblePosition(slot.role, pObj.position)) {
+            newSlots[slot.slotId] = currentPid;
+            const idx = unassignedWon.findIndex((p) => p.id === currentPid);
+            if (idx !== -1) unassignedWon.splice(idx, 1);
+          }
+        }
+      });
+
+      // Pass 1: Preencher slots com atletas de função exata conquistados no leilão
+      formation.slots.forEach((slot) => {
+        if (newSlots[slot.slotId]) return;
+        const matchIdx = unassignedWon.findIndex((p) => p.position === slot.role);
+        if (matchIdx !== -1) {
+          newSlots[slot.slotId] = unassignedWon[matchIdx].id;
+          unassignedWon.splice(matchIdx, 1);
+        }
+      });
+
+      // Pass 2: Preencher com atletas de posição tática compatível
+      formation.slots.forEach((slot) => {
+        if (newSlots[slot.slotId]) return;
+        const matchIdx = unassignedWon.findIndex((p) => isCompatiblePosition(slot.role, p.position));
+        if (matchIdx !== -1) {
+          newSlots[slot.slotId] = unassignedWon[matchIdx].id;
+          unassignedWon.splice(matchIdx, 1);
+        }
+      });
+
+      // Pass 3: Preencher vagas de linha restantes
+      formation.slots.forEach((slot) => {
+        if (newSlots[slot.slotId]) return;
+        const matchIdx = unassignedWon.findIndex((p) => {
+          if (slot.role === 'GOL') return p.position === 'GOL';
+          return p.position !== 'GOL';
+        });
+        if (matchIdx !== -1) {
+          newSlots[slot.slotId] = unassignedWon[matchIdx].id;
+          unassignedWon.splice(matchIdx, 1);
+        }
+      });
+
+      // Atletas excedentes conquistados vão para o banco de reservas oficial
+      const newBench = unassignedWon.map((p) => p.id);
+
+      setStarterSlots(newSlots);
+      setBenchPlayerIds(newBench);
+      onSaveSquad(selectedFormationId, newSlots, newBench);
+      showFeedback('Leilão Finalizado: Elenco conceito resetado e substituído pelo seu time oficial!', 'success');
+    }
+  }, [isAuctionEnded, currentUser, ownedPlayerIds.length, selectedFormationId]);
 
   const currentFormation: TacticalFormation =
     INITIAL_FORMATIONS.find((f) => f.id === selectedFormationId) || INITIAL_FORMATIONS[0];
@@ -520,8 +605,11 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
         newSlots[slotId] = null;
       }
     });
+    const newBench = benchPlayerIds.filter((pId) => ownedPlayerIds.includes(pId));
     setStarterSlots(newSlots);
-    if (currentUser) onSaveSquad(selectedFormationId, newSlots, benchPlayerIds);
+    setBenchPlayerIds(newBench);
+    if (currentUser) onSaveSquad(selectedFormationId, newSlots, newBench);
+    showFeedback('Prévia limpa: mantidos apenas os jogadores contratados pelo seu clube.', 'swap');
   };
 
   const handleCopyTeamSheet = () => {
@@ -595,27 +683,35 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
             <button
               onClick={handleClearPreviewOnly}
               className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors"
-              title="Manter apenas jogadores comprados no leilão"
+              title={isAuctionEnded ? "Manter apenas jogadores oficiais do clube" : "Manter apenas jogadores comprados no leilão"}
             >
-              Limpar Prévia
+              {isAuctionEnded ? 'Limpar Reservas Não Oficiais' : 'Limpar Prévia'}
             </button>
 
-            {/* Pass Concept Squad to Auction Targets */}
+            {/* Pass Concept Squad to Auction Targets (desativado quando o leilão já finalizou) */}
             <button
               onClick={handleOpenTransferModal}
-              disabled={conceptTargetPlayerIds.length === 0}
+              disabled={isAuctionEnded || conceptTargetPlayerIds.length === 0}
               className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer ${
-                conceptTargetPlayerIds.length === 0
+                isAuctionEnded || conceptTargetPlayerIds.length === 0
                   ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
                   : allTargeted
                   ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
                   : 'bg-amber-400 text-slate-950 border-amber-300 hover:bg-amber-300 font-extrabold shadow-2xs active:scale-95'
               }`}
-              title="Passar todos os jogadores do elenco de conceito para os seus Alvos no Leilão"
+              title={
+                isAuctionEnded
+                  ? 'O leilão já foi finalizado. O elenco oficial do clube está definido.'
+                  : 'Passar todos os jogadores do elenco de conceito para os seus Alvos no Leilão'
+              }
             >
               <Target className="w-3.5 h-3.5" />
               <span>
-                {allTargeted ? 'Alvos Sincronizados ✓' : `Passar para Alvos (${conceptTargetPlayerIds.length})`}
+                {isAuctionEnded
+                  ? 'Leilão Finalizado'
+                  : allTargeted
+                  ? 'Alvos Sincronizados ✓'
+                  : `Passar para Alvos (${conceptTargetPlayerIds.length})`}
               </span>
             </button>
 
@@ -714,6 +810,98 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
         )}
       </div>
 
+      {/* Dynamic Auction State & Squad Mode Banner (Checagem dos 3 Estados do Leilão) */}
+      {isAuctionEnded ? (
+        <div className="bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-teal-500/15 border border-amber-300/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white flex items-center justify-center shadow-xs shrink-0 mt-0.5 sm:mt-0">
+              <Trophy className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-950 border border-amber-300 rounded-md">
+                  Leilão Finalizado
+                </span>
+                <span className="text-sm font-extrabold text-slate-900">
+                  Elenco Oficial de Temporada Definido
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                O leilão foi encerrado! O elenco de conceito anterior foi resetado e substituído oficialmente pelos <strong>{ownedPlayers.length} atletas</strong> conquistados pelo seu clube no leilão da Khedira League.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <span className="px-3.5 py-1.5 text-xs font-black bg-white text-emerald-800 border border-emerald-200 rounded-xl shadow-2xs flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>{ownedPlayers.length} / 23 Jogadores Oficiais</span>
+            </span>
+          </div>
+        </div>
+      ) : isAuctionActive ? (
+        <div className="bg-gradient-to-r from-emerald-500/15 via-cyan-500/10 to-blue-500/15 border border-emerald-300/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0 relative mt-0.5 sm:mt-0">
+              <Sparkles className="w-6 h-6" />
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500 border border-white"></span>
+              </span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-950 border border-emerald-300 rounded-md flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+                  Leilão Ativo — Lances Rolando
+                </span>
+                <span className="text-sm font-extrabold text-slate-900">
+                  Elenco Conceito Mantido no Leilão
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                O leilão está ao vivo! Seu elenco de conceito está sendo mantido para você monitorar e disputar seus {conceptTargetPlayerIds.length} alvos planejados em tempo real na prancheta.
+              </p>
+            </div>
+          </div>
+          {onNavigateToAuction && (
+            <button
+              type="button"
+              onClick={onNavigateToAuction}
+              className="px-4 py-2 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0 self-end sm:self-center active:scale-95"
+            >
+              <span>Ir para Lances ao Vivo</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center shadow-xs shrink-0 mt-0.5 sm:mt-0">
+              <Target className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-800 border border-slate-300 rounded-md">
+                  {auction?.status === 'PAUSED' ? 'Leilão Pausado' : 'Leilão Não Ativo (Pré-Temporada)'}
+                </span>
+                <span className="text-sm font-extrabold text-slate-900">
+                  Elenco Conceito Mantido para Planejamento
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                O leilão não está ativo no momento. Seu elenco montado como conceito é mantido para você planejar a equipe, salvar a formação e definir seus alvos antes da abertura dos lances.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <span className="px-3.5 py-1.5 text-xs font-bold bg-white text-slate-700 border border-slate-200 rounded-xl shadow-2xs">
+              {conceptPlayerIds.length} Planejados ({ownedPlayers.length} Comprados)
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Main Field & Squad Column */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: The Interactive Football Pitch */}
@@ -729,74 +917,78 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                 </span>
               </div>
               <div className="flex items-center gap-3 text-xs">
-                <span className="flex items-center gap-1 text-[11px] text-emerald-700 font-medium">
+                <span className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-                  Adquirido
+                  {isAuctionEnded ? 'Titular Oficial' : 'Adquirido'}
                 </span>
-                <span className="flex items-center gap-1 text-[11px] text-blue-700 font-medium">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
-                  Em Prévia
-                </span>
-              </div>
-            </div>
-
-            {/* Concept Squad to Auction Targets Strategy Banner */}
-            <div className="mb-4 p-3 sm:p-4 rounded-xl border border-amber-200/90 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-emerald-500/10 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-start sm:items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 shadow-sm font-black">
-                  <Target className="w-5 h-5 text-slate-950" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
-                      Estratégia: Passar Elenco de Conceito para Alvos do Leilão
-                    </h4>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
-                      allTargeted
-                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                        : 'bg-amber-100 text-amber-900 border-amber-300'
-                    }`}>
-                      {alreadyTargetedCount} de {conceptTargetPlayerIds.length} no Radar
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-600 mt-0.5">
-                    {conceptTargetPlayerIds.length === 0
-                      ? 'Escale atletas titulares no campinho ou adicione reservas no banco para transferir seu planejamento para a lista de alvos do leilão.'
-                      : allTargeted
-                      ? `Todos os ${conceptTargetPlayerIds.length} jogadores do seu elenco de conceito (${conceptBreakdownText}) já estão sincronizados como Alvos no Radar do Leilão!`
-                      : `Transfira seu elenco de conceito (${conceptTargetPlayerIds.length} atletas: ${conceptBreakdownText}) para o Radar de Alvos do Leilão e monitore os lances em tempo real.`}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-                {onOpenWatchlist && (
-                  <button
-                    onClick={onOpenWatchlist}
-                    className="px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-white/80 rounded-xl border border-slate-200/80 transition-colors flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
-                    title="Abrir Radar de Alvos completo"
-                  >
-                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-                    <span>Ver Alvos</span>
-                  </button>
+                {!isAuctionEnded && (
+                  <span className="flex items-center gap-1 text-[11px] text-blue-700 font-medium">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
+                    Em Prévia
+                  </span>
                 )}
-
-                <button
-                  onClick={handleOpenTransferModal}
-                  disabled={conceptTargetPlayerIds.length === 0}
-                  className={`px-3.5 py-1.5 text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto ${
-                    conceptTargetPlayerIds.length === 0
-                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                      : allTargeted
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      : 'bg-amber-500 hover:bg-amber-400 text-slate-950 active:scale-95'
-                  }`}
-                >
-                  <Target className="w-3.5 h-3.5" />
-                  <span>{allTargeted ? 'Alvos Sincronizados ✓' : 'Passar para Alvos'}</span>
-                </button>
               </div>
             </div>
+
+            {/* Concept Squad to Auction Targets Strategy Banner (Apenas enquanto o leilão não foi finalizado) */}
+            {!isAuctionEnded && (
+              <div className="mb-4 p-3 sm:p-4 rounded-xl border border-amber-200/90 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-emerald-500/10 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-start sm:items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 shadow-sm font-black">
+                    <Target className="w-5 h-5 text-slate-950" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                        Estratégia: Passar Elenco de Conceito para Alvos do Leilão
+                      </h4>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                        allTargeted
+                          ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                          : 'bg-amber-100 text-amber-900 border-amber-300'
+                      }`}>
+                        {alreadyTargetedCount} de {conceptTargetPlayerIds.length} no Radar
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 mt-0.5">
+                      {conceptTargetPlayerIds.length === 0
+                        ? 'Escale atletas titulares no campinho ou adicione reservas no banco para transferir seu planejamento para a lista de alvos do leilão.'
+                        : allTargeted
+                        ? `Todos os ${conceptTargetPlayerIds.length} jogadores do seu elenco de conceito (${conceptBreakdownText}) já estão sincronizados como Alvos no Radar do Leilão!`
+                        : `Transfira seu elenco de conceito (${conceptTargetPlayerIds.length} atletas: ${conceptBreakdownText}) para o Radar de Alvos do Leilão e monitore os lances em tempo real.`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                  {onOpenWatchlist && (
+                    <button
+                      onClick={onOpenWatchlist}
+                      className="px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-white/80 rounded-xl border border-slate-200/80 transition-colors flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
+                      title="Abrir Radar de Alvos completo"
+                    >
+                      <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                      <span>Ver Alvos</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleOpenTransferModal}
+                    disabled={conceptTargetPlayerIds.length === 0}
+                    className={`px-3.5 py-1.5 text-xs font-black rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto ${
+                      conceptTargetPlayerIds.length === 0
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        : allTargeted
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        : 'bg-amber-500 hover:bg-amber-400 text-slate-950 active:scale-95'
+                    }`}
+                  >
+                    <Target className="w-3.5 h-3.5" />
+                    <span>{allTargeted ? 'Alvos Sincronizados ✓' : 'Passar para Alvos'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Visual Pitch Container */}
             <div 
@@ -1302,6 +1494,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
         ownedPlayerIds={ownedPlayerIds}
         currentAssignedPlayerId={activeSlot ? starterSlots[activeSlot.slotId] || null : null}
         onSelectPlayer={handleSelectPlayerForSlot}
+        isAuctionEnded={isAuctionEnded}
       />
 
       {/* Concept Squad to Auction Targets Modal */}
@@ -1317,7 +1510,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
         onNavigateToAuction={onNavigateToAuction}
       />
 
-      {/* Bench Player Picker Modal (Adicionar ao Banco de Reservas do Conceito) */}
+      {/* Bench Player Picker Modal */}
       <BenchPlayerPickerModal
         isOpen={isBenchPickerOpen}
         onClose={() => setIsBenchPickerOpen(false)}
@@ -1327,6 +1520,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
         ownedPlayerIds={ownedPlayerIds}
         targetedPlayerIds={localWatchedIds}
         onAddPlayerToBench={handleAddPlayerToBench}
+        isAuctionEnded={isAuctionEnded}
       />
     </div>
   );

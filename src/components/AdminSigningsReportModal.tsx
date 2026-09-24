@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Shield, FileText } from 'lucide-react';
-import { Player, UserProfile } from '../types';
+import { Player, UserProfile, AuctionState } from '../types';
 import { AdminSigningsReportSection } from './AdminSigningsReportSection';
 
 interface AdminSigningsReportModalProps {
@@ -9,6 +9,7 @@ interface AdminSigningsReportModalProps {
   currentUser: UserProfile | null;
   players: Player[];
   users: UserProfile[];
+  auction?: AuctionState;
   onAdminReleasePlayer?: (playerId: string) => Promise<boolean>;
 }
 
@@ -18,6 +19,7 @@ export const AdminSigningsReportModal: React.FC<AdminSigningsReportModalProps> =
   currentUser,
   players,
   users,
+  auction,
   onAdminReleasePlayer,
 }) => {
   if (!isOpen) return null;
@@ -37,14 +39,14 @@ export const AdminSigningsReportModal: React.FC<AdminSigningsReportModalProps> =
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-extrabold text-white">
-                  Relatório Oficial de Contratações por Fase
+                  Dossiê Oficial de Contratações & Elencos Fechados
                 </h2>
                 <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   Exclusivo ADM
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Auditoria de atletas arrematados, valores por fase e balanço financeiro dos clubes
+                Auditoria de atletas arrematados, valores por clube e destino final na Khedira League
               </p>
             </div>
           </div>
@@ -64,6 +66,7 @@ export const AdminSigningsReportModal: React.FC<AdminSigningsReportModalProps> =
             currentUser={currentUser}
             players={players}
             users={users}
+            auction={auction}
             onAdminReleasePlayer={onAdminReleasePlayer}
           />
         </div>
@@ -71,3 +74,4 @@ export const AdminSigningsReportModal: React.FC<AdminSigningsReportModalProps> =
     </div>
   );
 };
+

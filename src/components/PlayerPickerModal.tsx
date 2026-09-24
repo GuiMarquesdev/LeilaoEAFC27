@@ -11,6 +11,7 @@ interface PlayerPickerModalProps {
   ownedPlayerIds: string[];
   currentAssignedPlayerId: string | null;
   onSelectPlayer: (playerId: string | null) => void;
+  isAuctionEnded?: boolean;
 }
 
 export const PlayerPickerModal: React.FC<PlayerPickerModalProps> = ({
@@ -21,6 +22,7 @@ export const PlayerPickerModal: React.FC<PlayerPickerModalProps> = ({
   ownedPlayerIds,
   currentAssignedPlayerId,
   onSelectPlayer,
+  isAuctionEnded = false,
 }) => {
   const [search, setSearch] = useState('');
   const [filterMode, setFilterMode] = useState<'POSITION' | 'EXACT' | 'OWNED' | 'ALL'>('POSITION');
@@ -28,10 +30,14 @@ export const PlayerPickerModal: React.FC<PlayerPickerModalProps> = ({
   // Automatically reset filter to the slot's position whenever the modal opens or the slot changes
   useEffect(() => {
     if (isOpen && slot) {
-      setFilterMode('POSITION');
+      if (isAuctionEnded) {
+        setFilterMode('OWNED');
+      } else {
+        setFilterMode('POSITION');
+      }
       setSearch('');
     }
-  }, [isOpen, slot?.slotId]);
+  }, [isOpen, slot?.slotId, isAuctionEnded]);
 
   // Pre-calculate count for the position filter
   const positionMatchCount = useMemo(() => {
@@ -53,6 +59,7 @@ export const PlayerPickerModal: React.FC<PlayerPickerModalProps> = ({
   // Filter and sort players
   const filteredPlayers = players
     .filter((player) => {
+      if (isAuctionEnded && !ownedPlayerIds.includes(player.id)) return false;
       if (search.trim() && !matchesPlayerSearch(player, search)) return false;
 
       if (filterMode === 'EXACT') {
