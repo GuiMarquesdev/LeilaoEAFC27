@@ -20,6 +20,11 @@ import { LeagueState, UserProfile, UserSquad, Player, AuctionState } from '../ty
 // criado (confirmados no Console em 24/09) - usados como semente unica do
 // indice, para nao perder quem ja tinha se cadastrado.
 const LEGACY_KNOWN_USER_IDS = [
+  // Administradores: sempre recriados localmente (independem do Firestore
+  // pra existir como usuario), entao nunca entravam no indice sozinhos -
+  // sem isso aqui, o squad/watchlist deles nunca era sequer verificado.
+  'user-admin-default',
+  'user-admin-tourinho',
   'user-1790259041454-mewkw',
   'user-1790259670059-zxvzd',
   'user-1790260795753-20s8c',
