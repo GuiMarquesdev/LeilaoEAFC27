@@ -99,9 +99,9 @@ export async function loadStateFromFirestore(fallbackState: LeagueState): Promis
 
     // 1. Load all registered users (por id individual, via indice)
     const loadedUsers: UserProfile[] = [];
+    const userIds = await readIndexIds('user_index');
     try {
-      const ids = await readIndexIds('user_index');
-      for (const id of ids) {
+      for (const id of userIds) {
         try {
           const snap = await getDoc(doc(db, 'users', id));
           if (snap.exists()) {
@@ -112,15 +112,21 @@ export async function loadStateFromFirestore(fallbackState: LeagueState): Promis
           console.error(`[Firebase] Failed to read users/${id}:`, e);
         }
       }
-      console.log(`[Firebase] ✅ Step 1/4 OK: read ${loadedUsers.length}/${ids.length} doc(s) from 'users'.`);
+      console.log(`[Firebase] ✅ Step 1/4 OK: read ${loadedUsers.length}/${userIds.length} doc(s) from 'users'.`);
     } catch (e) {
       console.error("[Firebase] ❌ Step 1/4 FAILED reading 'users' via index:", e);
     }
 
-    // 2. Load all squads (por id individual, via indice)
+    // A lista de usuarios de verdade (quem realmente se cadastrou) e a fonte
+    // mais confiavel de ids possiveis para elenco/favoritos - qualquer um que
+    // tenha salvo algo antes do indice proprio de squads/watchlists existir
+    // ainda e encontrado por aqui, em vez de depender so da lista fixa legada.
+    const allKnownUserIds = Array.from(new Set([...userIds, ...loadedUsers.map((u) => u.id)]));
+
+    // 2. Load all squads (por id individual, via indice + todos os usuarios conhecidos)
     const loadedSquads: { [userId: string]: UserSquad } = {};
     try {
-      const ids = await readIndexIds('squad_index');
+      const ids = Array.from(new Set([...(await readIndexIds('squad_index')), ...allKnownUserIds]));
       let found = 0;
       for (const id of ids) {
         try {
@@ -141,10 +147,10 @@ export async function loadStateFromFirestore(fallbackState: LeagueState): Promis
       console.error("[Firebase] ❌ Step 2/4 FAILED reading 'squads' via index:", e);
     }
 
-    // 3. Load watchlists (por id individual, via indice)
+    // 3. Load watchlists (por id individual, via indice + todos os usuarios conhecidos)
     const loadedWatchlists: { [userId: string]: string[] } = {};
     try {
-      const ids = await readIndexIds('watchlist_index');
+      const ids = Array.from(new Set([...(await readIndexIds('watchlist_index')), ...allKnownUserIds]));
       let found = 0;
       for (const id of ids) {
         try {
