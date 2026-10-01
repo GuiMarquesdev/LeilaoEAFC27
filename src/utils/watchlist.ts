@@ -1,5 +1,6 @@
 // Gerenciador de Lista de Observação (Watchlist) para os participantes do leilão
-// Cada participante tem sua lista persistida no localStorage por ID de usuário
+// Cada participante tem sua lista persistida no localStorage por ID de usuário e na nuvem (Firestore)
+import { apiUrl, getAuthToken } from './api';
 
 const WATCHLIST_PREFIX = 'khedira_watchlist_';
 
@@ -25,8 +26,8 @@ export function saveWatchlist(userId: string | null | undefined, playerIds: stri
 
     // Sincroniza em nuvem no Firestore se o usuário estiver autenticado
     if (userId && userId !== 'guest') {
-      const token = typeof window !== 'undefined' ? (sessionStorage.getItem('khedira_token') || localStorage.getItem('khedira_token')) : null;
-      fetch('/api/user/watchlist', {
+      const token = getAuthToken();
+      fetch(apiUrl('/api/user/watchlist'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,8 +50,8 @@ export function saveWatchlist(userId: string | null | undefined, playerIds: stri
 export async function syncWatchlistWithServer(userId: string | null | undefined): Promise<string[]> {
   if (!userId || userId === 'guest') return getWatchlist(userId);
   try {
-    const token = typeof window !== 'undefined' ? (sessionStorage.getItem('khedira_token') || localStorage.getItem('khedira_token')) : null;
-    const res = await fetch('/api/user/watchlist', {
+    const token = getAuthToken();
+    const res = await fetch(apiUrl('/api/user/watchlist'), {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {})
       },

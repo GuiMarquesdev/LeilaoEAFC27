@@ -41,7 +41,7 @@ export const ConceptToTargetsModal: React.FC<ConceptToTargetsModalProps> = ({
   // Group by sector
   const defCount = conceptPlayers.filter((p) => ['GOL', 'ZAG', 'LE', 'LD'].includes(p.position)).length;
   const meiCount = conceptPlayers.filter((p) => ['VOL', 'MC', 'MEI'].includes(p.position)).length;
-  const ataCount = conceptPlayers.filter((p) => ['ATA', 'PE', 'PD', 'ME', 'MD', 'SA'].includes(p.position)).length;
+  const ataCount = conceptPlayers.filter((p) => ['ATA', 'PE', 'PD', 'SA'].includes(p.position)).length;
 
   const starterCount = conceptPlayers.filter((p) => starterPlayerIds.includes(p.id)).length;
   const benchCount = conceptPlayers.filter((p) => benchPlayerIds.includes(p.id)).length;
@@ -49,7 +49,7 @@ export const ConceptToTargetsModal: React.FC<ConceptToTargetsModalProps> = ({
   const filteredPlayers = conceptPlayers.filter((p) => {
     if (filterSector === 'DEF') return ['GOL', 'ZAG', 'LE', 'LD'].includes(p.position);
     if (filterSector === 'MEI') return ['VOL', 'MC', 'MEI'].includes(p.position);
-    if (filterSector === 'ATA') return ['ATA', 'PE', 'PD', 'ME', 'MD', 'SA'].includes(p.position);
+    if (filterSector === 'ATA') return ['ATA', 'PE', 'PD', 'SA'].includes(p.position);
     return true;
   });
 

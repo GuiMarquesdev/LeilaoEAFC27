@@ -5,7 +5,7 @@ import {
   RefreshCw, CheckCircle2, AlertCircle, Info, ExternalLink 
 } from 'lucide-react';
 
-import { LeagueState, UserProfile, WSMessage, Player, UserSquad, Bid } from './types';
+import { LeagueState, UserProfile, WSMessage, Player, UserSquad, Bid, ResetPhaseTarget } from './types';
 import { INITIAL_FORMATIONS, INITIAL_PLAYERS } from './data/initialPlayers';
 import { isCompatiblePosition, formatCurrency } from './utils/formatters';
 import { apiUrl, getWebSocketUrl } from './utils/api';
@@ -23,7 +23,20 @@ import { getWatchlist, toggleWatchlistPlayer, syncWatchlistWithServer } from './
 
 export default function App() {
   const [leagueState, setLeagueState] = useState<LeagueState | null>(null);
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const token = sessionStorage.getItem('khedira_token') || localStorage.getItem('khedira_token');
+        if (token) {
+          const cached = localStorage.getItem('khedira_cached_user');
+          if (cached) return JSON.parse(cached);
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
   const [guestMode, setGuestMode] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'auction' | 'squad' | 'catalog'>('auction');
   const [notifications, setNotifications] = useState<LeagueNotification[]>([]);
@@ -40,11 +53,6 @@ export default function App() {
   const [watchedPlayerIds, setWatchedPlayerIds] = useState<string[]>(() => getWatchlist(null));
   const watchedPlayerIdsRef = useRef<string[]>(watchedPlayerIds);
   watchedPlayerIdsRef.current = watchedPlayerIds;
-
-  // Sync watchlist when user changes
-  useEffect(() => {
-    setWatchedPlayerIds(getWatchlist(currentUser?.id));
-  }, [currentUser?.id]);
 
   const currentUserRef = useRef<UserProfile | null>(currentUser);
   currentUserRef.current = currentUser;
@@ -73,6 +81,16 @@ export default function App() {
 
   // Verify server session on application start via HttpOnly cookie & token
   const checkSession = useCallback(async () => {
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      token = sessionStorage.getItem('khedira_token') || localStorage.getItem('khedira_token');
+    }
+    // If no token exists at all, user is not logged in
+    if (!token) {
+      setCurrentUser(null);
+      return;
+    }
+
     try {
       const res = await fetch(apiUrl('/api/auth/me'), {
         credentials: 'include',
@@ -82,12 +100,27 @@ export default function App() {
         const json = await res.json();
         if (json.success && json.user) {
           setCurrentUser(json.user);
+          try {
+            localStorage.setItem('khedira_cached_user', JSON.stringify(json.user));
+          } catch {
+            // ignore
+          }
           return;
         }
+      } else if (res.status === 401) {
+        // Only log out if the server explicitly confirmed the session token is expired/invalid
+        setCurrentUser(null);
+        try {
+          localStorage.removeItem('khedira_cached_user');
+          sessionStorage.removeItem('khedira_token');
+          localStorage.removeItem('khedira_token');
+        } catch {
+          // ignore
+        }
       }
-      setCurrentUser(null);
+      // If server returned 429, 502, 503, 504 or network error, PRESERVE currentUser! Never force-logoff on lag!
     } catch {
-      setCurrentUser(null);
+      // Temporary network or server delay: preserve session, DO NOT log off!
     }
   }, [getAuthHeaders]);
 
@@ -135,7 +168,7 @@ export default function App() {
       timerRemaining: 5400,
       nominationTurnUserId: 'user-admin-default',
       nominationTimerRemaining: 30,
-      isFreeNominationMode: false,
+      isFreeNominationMode: true,
       minimumBidIncrement: 1000000,
       auctionDay: 'ALL',
       auctionType: 'FREE',
@@ -448,7 +481,7 @@ export default function App() {
     setWatchedPlayerIds(currentList);
     if (currentUser?.id) {
       syncWatchlistWithServer(currentUser.id).then((serverList) => {
-        if (serverList && serverList.length > 0) {
+        if (serverList) {
           setWatchedPlayerIds(serverList);
         }
       });
@@ -667,6 +700,7 @@ export default function App() {
     sessionStorage.removeItem('khedira_token');
     try {
       localStorage.removeItem('khedira_token');
+      localStorage.removeItem('khedira_cached_user');
       localStorage.removeItem('khedira_league_user_id');
     } catch {
       // ignore
@@ -1154,7 +1188,10 @@ export default function App() {
       const data = await res.json();
       if (data.success) {
         addNotification('Jogador liberado com sucesso e retornado ao mercado!', 'info');
-        await fetchState();
+        // Only fetch via HTTP if WebSocket is disconnected; otherwise WebSocket automatically syncs immediately
+        if (!wsConnected) {
+          fetchState();
+        }
       }
       return Boolean(data.success);
     } catch (err) {
@@ -1263,6 +1300,58 @@ export default function App() {
     } catch (err) {
       console.error('Reset league error:', err);
       return false;
+    }
+  };
+
+  const handleAdminResetPhase = async (phase: ResetPhaseTarget): Promise<{ success: boolean; message?: string; releasedCount?: number; refundedTotal?: number }> => {
+    if (!currentUser) return { success: false, message: 'Usuário não autenticado' };
+    try {
+      const res = await fetch(apiUrl('/api/admin/auction/reset-phase'), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ phase }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addNotification(data.message || `Fase refeita com sucesso!`, 'warning');
+        await fetchState();
+        return {
+          success: true,
+          message: data.message,
+          releasedCount: data.releasedCount,
+          refundedTotal: data.refundedTotal
+        };
+      }
+      return { success: false, message: data.error || 'Erro ao refazer fase' };
+    } catch (err: any) {
+      console.error('Admin reset phase error:', err);
+      return { success: false, message: err?.message || 'Falha de conexão com o servidor' };
+    }
+  };
+
+  const handleAdminSyncProduction = async (): Promise<{ success: boolean; message: string }> => {
+    if (!currentUser || currentUser.role !== 'ADMIN') {
+      return { success: false, message: 'Apenas administradores podem disparar sincronização com produção.' };
+    }
+    try {
+      const res = await fetch(apiUrl('/api/admin/sync-production'), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data.success) {
+        addNotification(data.message || 'Sincronizado com produção (Render) com sucesso!', 'info');
+        await fetchState();
+        return { success: true, message: data.message || 'Sincronização concluída com sucesso!' };
+      } else {
+        addNotification(data.message || 'Falha ao sincronizar com produção.', 'alert');
+        return { success: false, message: data.message || 'Erro durante a sincronização.' };
+      }
+    } catch (err: any) {
+      console.error('Sync production error:', err);
+      return { success: false, message: err?.message || 'Erro de rede ao conectar com o endpoint de sincronização.' };
     }
   };
 
@@ -1390,8 +1479,10 @@ export default function App() {
               }
             }}
             onOpenAdmin={() => handleOpenAdmin('auction')}
+            onOpenAdminWithTab={(tab) => handleOpenAdmin(tab)}
             onOpenAdminReport={handleOpenAdminReport}
             onAdminAuctionAction={handleAdminAuctionAction}
+            onAdminResetPhase={handleAdminResetPhase}
             onNavigateToSquad={() => setActiveTab('squad')}
             initialFocusedPlayerId={focusedAuctionPlayerId}
             onClearInitialFocusedPlayerId={() => setFocusedAuctionPlayerId(null)}
@@ -1511,6 +1602,9 @@ export default function App() {
         onAdminUpdateUserBudget={handleAdminUpdateUserBudget}
         onAdminResetUser={handleAdminResetUser}
         onAdminResetLeague={handleAdminResetLeague}
+        onAdminResetPhase={handleAdminResetPhase}
+        onAdminSyncProduction={handleAdminSyncProduction}
+        watchlists={leagueState?.watchlists}
       />
 
       <NotificationFeed

@@ -5,9 +5,11 @@ import {
   ShieldAlert, ShieldCheck, Calendar, Flame, Sparkles, 
   RotateCcw, ChevronRight, Download, BarChart3,
   Building2, ChevronDown, ChevronUp, Layers, Table,
-  CheckCircle2, Wallet, ExternalLink
+  CheckCircle2, Wallet, ExternalLink, Loader2, AlertTriangle, RefreshCw
 } from 'lucide-react';
-import { Player, UserProfile, AuctionState } from '../types';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Player, UserProfile, AuctionState, ResetPhaseTarget } from '../types';
 import { formatCurrency, getPositionBadge, getPlayerAuctionPhase, getDayLabel, getUserRoleBadge } from '../utils/formatters';
 
 export interface AdminSigningsReportSectionProps {
@@ -16,6 +18,7 @@ export interface AdminSigningsReportSectionProps {
   users: UserProfile[];
   auction?: AuctionState;
   onAdminReleasePlayer?: (playerId: string) => Promise<boolean>;
+  onAdminResetPhase?: (phase: ResetPhaseTarget) => Promise<{ success: boolean; message?: string; releasedCount?: number; refundedTotal?: number } | boolean>;
 }
 
 export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProps> = ({
@@ -24,6 +27,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
   users,
   auction,
   onAdminReleasePlayer,
+  onAdminResetPhase,
 }) => {
   // Mode: 'clubs' (Visão por Clubes & Elencos Fechados) or 'table' (Histórico Geral de Contratações)
   const [reportViewMode, setReportViewMode] = useState<'clubs' | 'table'>('clubs');
@@ -38,9 +42,73 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
   const [expandedClubIds, setExpandedClubIds] = useState<{ [clubId: string]: boolean }>({});
   const [releasingPlayerId, setReleasingPlayerId] = useState<string | null>(null);
 
+  // Phase Reset confirmation modal & execution state
+  const [resetPhaseModalTarget, setResetPhaseModalTarget] = useState<ResetPhaseTarget | null>(null);
+  const [isResettingPhase, setIsResettingPhase] = useState(false);
+  const [phaseResetFeedback, setPhaseResetFeedback] = useState<string | null>(null);
+
   // Security Verification: Only ADMs can view this report
   const isAdmin = currentUser?.role === 'ADMIN';
   const isAuctionEnded = auction?.status === 'ENDED';
+
+  // Helper for phase reset statistics
+  const getPhaseStats = (target: ResetPhaseTarget | null) => {
+    if (!target) return { name: '', positions: [] as string[], sold: [] as Player[], refund: 0, clubsCount: 0, icon: '🔄', badgeColor: 'blue' };
+    const t = String(target).toUpperCase();
+    if (t === 'ATACANTES' || t === 'ATAQUE' || t === '3') {
+      const positions = ['ATA', 'PD', 'PE', 'SA'];
+      const sold = players.filter((p) => p.status === 'SOLD' && p.soldTo && positions.includes(p.position));
+      const refund = sold.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+      const clubsCount = new Set(sold.map((p) => p.soldTo?.userId)).size;
+      return { name: '4ª Fase: Atacantes (Centroavantes e Pontas)', positions, sold, refund, clubsCount, icon: '⚽', badgeColor: 'rose' };
+    }
+    if (t === 'MEIO_CAMPO' || t === 'MEIO' || t === '2') {
+      const positions = ['VOL', 'MC', 'MEI'];
+      const sold = players.filter((p) => p.status === 'SOLD' && p.soldTo && positions.includes(p.position));
+      const refund = sold.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+      const clubsCount = new Set(sold.map((p) => p.soldTo?.userId)).size;
+      return { name: '3ª Fase: Meio-Campo (Volantes e Meias)', positions, sold, refund, clubsCount, icon: '⚡', badgeColor: 'emerald' };
+    }
+    if (t === 'DEFENSORES' || t === 'DEFESA') {
+      const positions = ['ZAG', 'LE', 'LD'];
+      const sold = players.filter((p) => p.status === 'SOLD' && p.soldTo && positions.includes(p.position));
+      const refund = sold.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+      const clubsCount = new Set(sold.map((p) => p.soldTo?.userId)).size;
+      return { name: '2ª Fase: Defensores (Zagueiros e Laterais)', positions, sold, refund, clubsCount, icon: '🛡️', badgeColor: 'blue' };
+    }
+    if (t === 'GOLEIROS' || t === 'GOL') {
+      const positions = ['GOL'];
+      const sold = players.filter((p) => p.status === 'SOLD' && p.soldTo && positions.includes(p.position));
+      const refund = sold.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+      const clubsCount = new Set(sold.map((p) => p.soldTo?.userId)).size;
+      return { name: '1ª Fase: Goleiros (GOL)', positions, sold, refund, clubsCount, icon: '🧤', badgeColor: 'amber' };
+    }
+    // DEFESA_COMPLETA or 1
+    const positions = ['GOL', 'ZAG', 'LE', 'LD'];
+    const sold = players.filter((p) => p.status === 'SOLD' && p.soldTo && positions.includes(p.position));
+    const refund = sold.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+    const clubsCount = new Set(sold.map((p) => p.soldTo?.userId)).size;
+    return { name: 'Fase 1: Defensores & Goleiros', positions, sold, refund, clubsCount, icon: '🛡️🧤', badgeColor: 'blue' };
+  };
+
+  const handleExecuteResetPhase = async () => {
+    if (!resetPhaseModalTarget || !onAdminResetPhase) return;
+    setIsResettingPhase(true);
+    try {
+      const res = await onAdminResetPhase(resetPhaseModalTarget);
+      if (typeof res === 'object' && res.success) {
+        setPhaseResetFeedback(res.message || 'Etapa refeita com sucesso!');
+      } else if (res) {
+        setPhaseResetFeedback('Etapa refeita com sucesso! Os atletas voltaram ao mercado e os valores foram estornados integralmente.');
+      }
+      setTimeout(() => setPhaseResetFeedback(null), 6000);
+      setResetPhaseModalTarget(null);
+    } catch (err: any) {
+      alert(`Erro ao refazer etapa: ${err?.message || 'Falha de comunicação com o servidor'}`);
+    } finally {
+      setIsResettingPhase(false);
+    }
+  };
 
   // All sold players
   const allSoldPlayers = useMemo(() => {
@@ -68,79 +136,115 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
     return allSoldPlayers;
   }, [selectedPhase, phase1Sold, phase2Sold, phase3Sold, allSoldPlayers]);
 
+  // Tactical position order helper for clean squad organization (GOL -> DEF -> MID -> ATK)
+  const POSITION_ORDER: Record<string, number> = {
+    GOL: 1,
+    ZAG: 2,
+    LD: 3,
+    LE: 4,
+    VOL: 5,
+    MC: 6,
+    MEI: 7,
+    ATA: 8,
+    PE: 9,
+    PD: 10,
+    SA: 11,
+    MD: 12,
+    ME: 13
+  };
+
   // Spending and squad list mapped by Club (User)
   const clubDossiers = useMemo(() => {
     return users.map((u) => {
       const clubSoldPlayers = allSoldPlayers.filter((p) => p.soldTo?.userId === u.id);
       const totalSpent = clubSoldPlayers.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
-      const initialBudget = u.budget || 400000000;
-      const remainingCash = Math.max(0, initialBudget - totalSpent);
+      const initialBudget = (u.budget + totalSpent) || 400000000;
+      const remainingCash = u.budget;
       const percentSpent = initialBudget > 0 ? Math.min(100, Math.round((totalSpent / initialBudget) * 100)) : 0;
 
       // Group by positions
       const countGk = clubSoldPlayers.filter((p) => p.position === 'GOL').length;
       const countDef = clubSoldPlayers.filter((p) => ['ZAG', 'LE', 'LD'].includes(p.position)).length;
-      const countMid = clubSoldPlayers.filter((p) => ['VOL', 'MC', 'MEI', 'MD', 'ME'].includes(p.position)).length;
+      const countMid = clubSoldPlayers.filter((p) => ['VOL', 'MC', 'MEI'].includes(p.position)).length;
       const countAtk = clubSoldPlayers.filter((p) => ['ATA', 'PD', 'PE', 'SA'].includes(p.position)).length;
+
+      // Sort club players in tactical order (GOL -> DEF -> MID -> ATK) and by price descending within sector
+      const sortedPlayers = [...clubSoldPlayers].sort((a, b) => {
+        const orderA = POSITION_ORDER[a.position] || 99;
+        const orderB = POSITION_ORDER[b.position] || 99;
+        if (orderA !== orderB) return orderA - orderB;
+        return (b.soldTo?.amount || 0) - (a.soldTo?.amount || 0);
+      });
 
       return {
         user: u,
         clubName: u.teamName || 'Clube Sem Nome',
         managerName: u.name,
-        players: clubSoldPlayers,
-        count: clubSoldPlayers.length,
+        players: sortedPlayers,
+        count: sortedPlayers.length,
         totalSpent,
         initialBudget,
         remainingCash,
         percentSpent,
         breakdown: { countGk, countDef, countMid, countAtk }
       };
-    }).sort((a, b) => b.totalSpent - a.totalSpent);
+    }).sort((a, b) => {
+      // Clubs that hired players come first, sorted by total spent descending
+      if (b.count > 0 && a.count === 0) return -1;
+      if (a.count > 0 && b.count === 0) return 1;
+      return b.totalSpent - a.totalSpent;
+    });
   }, [users, allSoldPlayers]);
 
-  // Filter & sort for table view
-  const filteredAndSortedList = useMemo(() => {
-    return currentPhaseSold
-      .filter((player) => {
-        // Club Filter
-        if (selectedClubFilter !== 'ALL' && player.soldTo?.userId !== selectedClubFilter) {
-          return false;
-        }
+  // Grouped by club for table view (every club has its own distinct block with hired players)
+  const groupedListByClub = useMemo(() => {
+    return clubDossiers
+      .filter((c) => selectedClubFilter === 'ALL' || c.user.id === selectedClubFilter)
+      .map((club) => {
+        const filteredPlayers = club.players.filter((player) => {
+          // Phase Filter
+          if (selectedPhase !== 'ALL') {
+            const phase = getPlayerAuctionPhase(player);
+            if (phase !== selectedPhase) return false;
+          }
 
-        // Position Filter
-        if (selectedPositionFilter !== 'ALL') {
-          if (selectedPositionFilter === 'GOL' && player.position !== 'GOL') return false;
-          if (selectedPositionFilter === 'DEF' && !['ZAG', 'LE', 'LD'].includes(player.position)) return false;
-          if (selectedPositionFilter === 'MID' && !['VOL', 'MC', 'MEI', 'MD', 'ME'].includes(player.position)) return false;
-          if (selectedPositionFilter === 'ATK' && !['ATA', 'PD', 'PE', 'SA'].includes(player.position)) return false;
-        }
+          // Position Filter
+          if (selectedPositionFilter !== 'ALL') {
+            if (player.position !== selectedPositionFilter) return false;
+          }
 
-        // Search Query
-        if (!searchQuery.trim()) return true;
-        const q = searchQuery.toLowerCase();
-        const matchesPlayer = player.name.toLowerCase().includes(q);
-        const matchesClub = player.club.toLowerCase().includes(q);
-        const matchesTeam = player.soldTo?.teamName?.toLowerCase().includes(q) || false;
-        const matchesBuyer = player.soldTo?.userName?.toLowerCase().includes(q) || false;
-        const matchesPos = player.position.toLowerCase().includes(q);
-        return matchesPlayer || matchesClub || matchesTeam || matchesBuyer || matchesPos;
+          // Search Query
+          if (!searchQuery.trim()) return true;
+          const q = searchQuery.toLowerCase();
+          const matchesPlayer = player.name.toLowerCase().includes(q);
+          const matchesClub = player.club.toLowerCase().includes(q);
+          const matchesPos = player.position.toLowerCase().includes(q);
+          return matchesPlayer || matchesClub || matchesPos;
+        }).sort((a, b) => {
+          let comp = 0;
+          if (sortField === 'amount') {
+            comp = (a.soldTo?.amount || 0) - (b.soldTo?.amount || 0);
+          } else if (sortField === 'name') {
+            comp = a.name.localeCompare(b.name);
+          } else if (sortField === 'agio') {
+            const agioA = (a.soldTo?.amount || 0) - a.initialPrice;
+            const agioB = (b.soldTo?.amount || 0) - b.initialPrice;
+            comp = agioA - agioB;
+          } else {
+            const orderA = POSITION_ORDER[a.position] || 99;
+            const orderB = POSITION_ORDER[b.position] || 99;
+            comp = orderA - orderB;
+          }
+          return sortOrder === 'desc' ? -comp : comp;
+        });
+
+        return {
+          ...club,
+          filteredPlayers
+        };
       })
-      .sort((a, b) => {
-        let comp = 0;
-        if (sortField === 'amount') {
-          comp = (a.soldTo?.amount || 0) - (b.soldTo?.amount || 0);
-        } else if (sortField === 'name') {
-          comp = a.name.localeCompare(b.name);
-        } else if (sortField === 'teamName') {
-          comp = (a.soldTo?.teamName || '').localeCompare(b.soldTo?.teamName || '');
-        } else if (sortField === 'agio') {
-          const agioA = (a.soldTo?.amount || 0) - a.initialPrice;
-          const agioB = (b.soldTo?.amount || 0) - b.initialPrice;
-          comp = agioA - agioB;
-        }
-        return sortOrder === 'desc' ? -comp : comp;
-      });
-  }, [currentPhaseSold, selectedClubFilter, selectedPositionFilter, searchQuery, sortField, sortOrder]);
+      .filter((c) => c.filteredPlayers.length > 0 || (!searchQuery.trim() && selectedPhase === 'ALL' && selectedPositionFilter === 'ALL' && c.count > 0));
+  }, [clubDossiers, selectedClubFilter, selectedPhase, selectedPositionFilter, searchQuery, sortField, sortOrder]);
 
   // Summary Metrics
   const metrics = useMemo(() => {
@@ -193,17 +297,16 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
     setExpandedClubIds({});
   };
 
-  // Download complete CSV file
+  // Download complete CSV file organized by club
   const handleDownloadCSV = () => {
     const headers = [
-      'ID',
+      'Clube Destino (Khedira League)',
+      'Presidente / Técnico',
       'Atleta',
       'Posição',
       'Fase',
       'Clube de Origem',
       'Nacionalidade',
-      'Clube de Destino (Khedira League)',
-      'Presidente / Técnico',
       'Valor Base Inicial (€)',
       'Valor Final Arrematado (€)',
       'Disputa / Ágio (€)',
@@ -211,25 +314,27 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
       'Status da Contratação'
     ];
 
-    const rows = allSoldPlayers.map((p) => {
-      const finalAmount = p.soldTo?.amount || 0;
-      const agio = finalAmount - p.initialPrice;
-      const agioPct = p.initialPrice > 0 ? ((agio / p.initialPrice) * 100).toFixed(1) : '0';
-      return [
-        p.id,
-        `"${p.name.replace(/"/g, '""')}"`,
-        p.position,
-        getPlayerAuctionPhase(p),
-        `"${p.club.replace(/"/g, '""')}"`,
-        `"${p.nationality.replace(/"/g, '""')}"`,
-        `"${(p.soldTo?.teamName || '').replace(/"/g, '""')}"`,
-        `"${(p.soldTo?.userName || '').replace(/"/g, '""')}"`,
-        p.initialPrice,
-        finalAmount,
-        agio,
-        `${agioPct}%`,
-        'Contratado Oficial'
-      ].join(';');
+    const rows: string[] = [];
+    clubDossiers.forEach((club) => {
+      club.players.forEach((p) => {
+        const finalAmount = p.soldTo?.amount || 0;
+        const agio = finalAmount - p.initialPrice;
+        const agioPct = p.initialPrice > 0 ? ((agio / p.initialPrice) * 100).toFixed(1) : '0';
+        rows.push([
+          `"${club.clubName.replace(/"/g, '""')}"`,
+          `"${club.managerName.replace(/"/g, '""')}"`,
+          `"${p.name.replace(/"/g, '""')}"`,
+          p.position,
+          `Fase ${getPlayerAuctionPhase(p)}`,
+          `"${p.club.replace(/"/g, '""')}"`,
+          `"${p.nationality.replace(/"/g, '""')}"`,
+          p.initialPrice,
+          finalAmount,
+          agio,
+          `${agioPct}%`,
+          'Contratado Oficial'
+        ].join(';'));
+      });
     });
 
     const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\n');
@@ -237,7 +342,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `khedira-league-contratacoes-finais-${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `khedira-league-contratacoes-por-clube-${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -311,8 +416,234 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
     setTimeout(() => setCopiedNotification(false), 3000);
   };
 
-  const handlePrintReport = () => {
-    window.print();
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfSuccess, setPdfSuccess] = useState(false);
+
+  // Export official PDF report using jsPDF + autoTable
+  const handleExportPDF = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const todayStr = new Date().toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // 1. Primary Header Banner (Slate & Amber)
+      doc.setFillColor(15, 23, 42); // slate-900
+      doc.rect(0, 0, 210, 28, 'F');
+
+      doc.setFillColor(217, 119, 6); // amber-600 top stripe
+      doc.rect(0, 0, 210, 3, 'F');
+
+      // Title
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('KHEDIRA LEAGUE 2026/27', 14, 13);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(203, 213, 225); // slate-300
+      doc.text('DOSSIE OFICIAL: HISTORICO DE CONTRATACOES & ELENCOS FECHADOS', 14, 19);
+
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184); // slate-400
+      doc.text(`Emissao: ${todayStr} • Status: ${isAuctionEnded ? 'Leilao Finalizado' : 'Leilao em Andamento'}`, 14, 24);
+
+      // 2. Executive KPI summary block
+      doc.setFillColor(248, 250, 252); // slate-50
+      doc.setDrawColor(226, 232, 240); // slate-200
+      doc.roundedRect(14, 33, 182, 22, 2, 2, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text('TOTAL CONTRATACOES', 20, 39);
+      doc.text('VOLUME INVESTIDO', 65, 39);
+      doc.text('PRECO MEDIO', 115, 39);
+      doc.text('AGIO TOTAL DE DISPUTA', 152, 39);
+
+      doc.setFontSize(10.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`${metrics.count} atletas`, 20, 47);
+
+      doc.setTextColor(16, 185, 129); // emerald
+      doc.text(formatCurrency(metrics.totalSpent, true), 65, 47);
+
+      doc.setTextColor(37, 99, 235); // blue
+      doc.text(formatCurrency(metrics.avgPrice, true), 115, 47);
+
+      doc.setTextColor(217, 119, 6); // amber
+      doc.text(`+${formatCurrency(metrics.totalAgio, true)} (${metrics.agioPercent.toFixed(1)}%)`, 152, 47);
+
+      const currentY = 60;
+
+      // 3. Section 1: Balanço dos Clubes da Liga
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text('1. BALANCO FINANCEIRO E ELENCOS POR CLUBE', 14, currentY);
+
+      const clubTableBody = clubDossiers.map((c, idx) => [
+        `#${idx + 1}`,
+        c.clubName,
+        c.managerName,
+        `${c.count} atletas`,
+        formatCurrency(c.totalSpent),
+        formatCurrency(c.remainingCash, true)
+      ]);
+
+      autoTable(doc, {
+        startY: currentY + 3,
+        head: [['Pos', 'Clube', 'Presidente / Gestor', 'Contratacoes', 'Total Investido', 'Caixa Restante']],
+        body: clubTableBody,
+        theme: 'striped',
+        headStyles: {
+          fillColor: [15, 23, 42],
+          textColor: [255, 255, 255],
+          fontSize: 8,
+          fontStyle: 'bold',
+          halign: 'left'
+        },
+        bodyStyles: {
+          fontSize: 8,
+          textColor: [30, 41, 59]
+        },
+        columnStyles: {
+          0: { cellWidth: 12, halign: 'center', fontStyle: 'bold' },
+          1: { fontStyle: 'bold' },
+          3: { halign: 'center' },
+          4: { halign: 'right', fontStyle: 'bold', textColor: [5, 150, 105] },
+          5: { halign: 'right' }
+        },
+        margin: { left: 14, right: 14 },
+        didDrawPage: (data) => {
+          const pageCount = (doc as any).internal.getNumberOfPages();
+          doc.setFontSize(8);
+          doc.setTextColor(148, 163, 184);
+          doc.text(
+            `Khedira League 2026/27 • Relatorio Oficial Gerencial • Pagina ${data.pageNumber} de ${pageCount}`,
+            14,
+            290
+          );
+        }
+      });
+
+      // 4. Section 2: Elencos Detalhados e Contratações Agrupadas por Clube
+      let currentSectionY = ((doc as any).lastAutoTable?.finalY || 120) + 12;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(15, 23, 42);
+      doc.text('2. ELENCOS E CONTRATACOES DETALHADAS POR CLUBE', 14, currentSectionY);
+      currentSectionY += 6;
+
+      const clubsWithSignings = clubDossiers.filter((c) => c.players.length > 0);
+
+      for (let i = 0; i < clubsWithSignings.length; i++) {
+        const club = clubsWithSignings[i];
+
+        // Check page overflow
+        if (currentSectionY > 245) {
+          doc.addPage();
+          currentSectionY = 20;
+        }
+
+        // Club Header Title Strip
+        doc.setFillColor(241, 245, 249); // slate-100
+        doc.setDrawColor(203, 213, 225); // slate-300
+        doc.roundedRect(14, currentSectionY, 182, 10, 1.5, 1.5, 'FD');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(15, 23, 42);
+        doc.text(`${i + 1}. ${club.clubName.toUpperCase()}`, 18, currentSectionY + 6.5);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(71, 85, 105);
+        doc.text(
+          `Presidente: ${club.managerName}  •  ${club.players.length} atletas  •  Investido: ${formatCurrency(club.totalSpent)}  •  Caixa: ${formatCurrency(club.remainingCash, true)}`,
+          82,
+          currentSectionY + 6.5
+        );
+
+        const clubPlayersBody = club.players.map((p) => {
+          const finalPrice = p.soldTo?.amount || 0;
+          const agio = finalPrice - p.initialPrice;
+          const agioPct = p.initialPrice > 0 ? `${((agio / p.initialPrice) * 100).toFixed(0)}%` : '0%';
+          return [
+            p.name,
+            p.position,
+            `Fase ${getPlayerAuctionPhase(p)}`,
+            p.club,
+            formatCurrency(p.initialPrice, true),
+            formatCurrency(finalPrice, true),
+            agio > 0 ? `+${formatCurrency(agio, true)} (+${agioPct})` : 'Preco Base'
+          ];
+        });
+
+        autoTable(doc, {
+          startY: currentSectionY + 11,
+          head: [['Atleta', 'Pos', 'Fase', 'Clube de Origem', 'Preco Base', 'Valor Arrematado', 'Agio']],
+          body: clubPlayersBody,
+          theme: 'striped',
+          headStyles: {
+            fillColor: [30, 41, 59],
+            textColor: [255, 255, 255],
+            fontSize: 7.5,
+            fontStyle: 'bold',
+            halign: 'left'
+          },
+          bodyStyles: {
+            fontSize: 7.5,
+            textColor: [30, 41, 59]
+          },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 44 },
+            1: { halign: 'center', fontStyle: 'bold', cellWidth: 14 },
+            2: { halign: 'center', cellWidth: 16 },
+            4: { halign: 'right', cellWidth: 24 },
+            5: { halign: 'right', fontStyle: 'bold', textColor: [5, 150, 105], cellWidth: 26 },
+            6: { halign: 'right', textColor: [217, 119, 6], cellWidth: 26 }
+          },
+          margin: { left: 14, right: 14 },
+          didDrawPage: (data) => {
+            const pageCount = (doc as any).internal.getNumberOfPages();
+            doc.setFontSize(8);
+            doc.setTextColor(148, 163, 184);
+            doc.text(
+              `Khedira League 2026/27 • Relatorio Oficial Gerencial • Pagina ${data.pageNumber} de ${pageCount}`,
+              14,
+              290
+            );
+          }
+        });
+
+        currentSectionY = (doc as any).lastAutoTable.finalY + 8;
+      }
+
+      // 5. Download the clean PDF document
+      const filename = `khedira-league-dossie-contratacoes-${new Date().toISOString().slice(0, 10)}.pdf`;
+      doc.save(filename);
+
+      setPdfSuccess(true);
+      setTimeout(() => setPdfSuccess(false), 3500);
+    } catch (err) {
+      console.error('[PDF Generation Error]', err);
+      window.print();
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const handleRelease = async (playerId: string) => {
@@ -348,9 +679,9 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
   return (
     <div className="space-y-6">
       {/* 1. Header Banner & Quick Actions */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950 p-5 sm:p-6 rounded-2xl text-white shadow-md border border-slate-800">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          <div className="space-y-1.5">
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950 p-4 sm:p-6 rounded-2xl text-white shadow-md border border-slate-800">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+          <div className="space-y-1.5 min-w-0 max-w-3xl">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-slate-950 flex items-center gap-1 shadow-xs">
                 <ShieldCheck className="w-3 h-3" />
@@ -369,42 +700,42 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
               )}
             </div>
 
-            <h2 className="text-lg sm:text-2xl font-black text-white flex items-center gap-2.5">
-              <FileText className="w-6 h-6 text-amber-400 shrink-0" />
+            <h2 className="text-base sm:text-xl lg:text-2xl font-black text-white flex items-center gap-2 leading-snug">
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 shrink-0" />
               <span>Histórico Completo de Contratações & Destino dos Atletas</span>
             </h2>
 
-            <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
+            <p className="text-xs text-slate-300 leading-relaxed">
               Consulte em mãos o histórico integral de todos os atletas contratados no leilão, os valores finais arrematados, o ágio de disputa e o clube de destino de cada jogador na Khedira League 2026/27.
             </p>
           </div>
 
           {/* Export & Action Buttons */}
-          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap w-full xl:w-auto shrink-0 pt-2 xl:pt-0">
             <button
               type="button"
               onClick={handleDownloadCSV}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
               title="Baixar planilha completa em formato CSV para Excel/Google Sheets"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4 shrink-0" />
               <span>Exportar Planilha (CSV)</span>
             </button>
 
             <button
               type="button"
               onClick={handleCopyReport}
-              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
               title="Copiar relatório formatado para WhatsApp, Discord ou Ata Oficial"
             >
               {copiedNotification ? (
                 <>
-                  <Check className="w-4 h-4 text-emerald-950" />
+                  <Check className="w-4 h-4 text-emerald-950 shrink-0" />
                   <span>Dossiê Copiado!</span>
                 </>
               ) : (
                 <>
-                  <Copy className="w-4 h-4" />
+                  <Copy className="w-4 h-4 shrink-0" />
                   <span>Copiar Dossiê Completo</span>
                 </>
               )}
@@ -412,16 +743,53 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
 
             <button
               type="button"
-              onClick={handlePrintReport}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-              title="Imprimir ou Salvar em PDF"
+              onClick={handleExportPDF}
+              disabled={isGeneratingPdf}
+              className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap shadow-xs active:scale-95 ${
+                pdfSuccess 
+                  ? 'bg-emerald-600 hover:bg-emerald-500 border border-emerald-500' 
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700'
+              }`}
+              title="Gerar e baixar o dossiê oficial completo em PDF"
             >
-              <Printer className="w-4 h-4" />
-              <span className="hidden sm:inline">Imprimir / PDF</span>
+              {isGeneratingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-amber-400 shrink-0" />
+                  <span>Gerando PDF...</span>
+                </>
+              ) : pdfSuccess ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-300 shrink-0" />
+                  <span>Dossiê PDF Baixado!</span>
+                </>
+              ) : (
+                <>
+                  <Printer className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Baixar Dossiê (PDF)</span>
+                </>
+              )}
             </button>
+            {isAdmin && onAdminResetPhase && (
+              <button
+                type="button"
+                onClick={() => setResetPhaseModalTarget(selectedPhase === 'ALL' ? 'ATACANTES' : (selectedPhase as any))}
+                className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap shadow-xs active:scale-95"
+                title="Refazer leilão de uma etapa específica (ex: Atacantes) - devolve jogadores e estorna os valores aos clubes"
+              >
+                <RotateCcw className="w-4 h-4 shrink-0" />
+                <span>Refazer Etapa de Leilão</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {phaseResetFeedback && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-xs text-emerald-900 font-semibold animate-fade-in shadow-xs">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          <span>{phaseResetFeedback}</span>
+        </div>
+      )}
 
       {/* 2. Executive KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -515,7 +883,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
             }`}
           >
             <Table className="w-4 h-4 text-emerald-600" />
-            <span>Histórico Geral & Tabela de Destinos ({allSoldPlayers.length})</span>
+            <span>Tabela Agrupada por Clube ({allSoldPlayers.length})</span>
           </button>
         </div>
 
@@ -556,7 +924,7 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
 
           <div className="space-y-4">
             {clubDossiers.map((club, idx) => {
-              const isExpanded = expandedClubIds[club.user.id] ?? (idx === 0);
+              const isExpanded = expandedClubIds[club.user.id] ?? true;
               const isCopied = copiedClubId === club.user.id;
 
               return (
@@ -791,10 +1159,10 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
               <div>
                 <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                   <Table className="w-4 h-4 text-emerald-600" />
-                  <span>Histórico Geral de Contratações ({filteredAndSortedList.length})</span>
+                  <span>Histórico Geral Agrupado por Clube ({groupedListByClub.reduce((acc, c) => acc + c.filteredPlayers.length, 0)} atletas)</span>
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Visão cronológica e detalhada com filtros de busca, clube comprador e setor tático
+                  Visão completa e organizada dos jogadores contratados por cada clube, com busca e filtros setoriais
                 </p>
               </div>
 
@@ -866,10 +1234,16 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
                 className="px-2.5 py-1 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
               >
                 <option value="ALL">⚽ Todas as Posições</option>
-                <option value="GOL">Goleiros (GOL)</option>
-                <option value="DEF">Defensores (ZAG, LE, LD)</option>
-                <option value="MID">Meio-Campistas (VOL, MC, MEI)</option>
-                <option value="ATK">Atacantes (ATA, PE, PD, SA)</option>
+                <option value="GOL">GOL - Goleiro</option>
+                <option value="ZAG">ZAG - Zagueiro</option>
+                <option value="LD">LD - Lateral Direito</option>
+                <option value="LE">LE - Lateral Esquerdo</option>
+                <option value="VOL">VOL - Volante</option>
+                <option value="MC">MC - Meio-Campo</option>
+                <option value="MEI">MEI - Meia Ofensivo</option>
+                <option value="ATA">ATA - Atacante</option>
+                <option value="PE">PE - Ponta Esquerda</option>
+                <option value="PD">PD - Ponta Direita</option>
               </select>
 
               {/* Filter by Phase */}
@@ -919,10 +1293,22 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
                   Fase 3 (Ataque)
                 </button>
               </div>
+
+              {isAdmin && onAdminResetPhase && (
+                <button
+                  type="button"
+                  onClick={() => setResetPhaseModalTarget(selectedPhase === 'ALL' ? 'ATACANTES' : (selectedPhase as any))}
+                  className="sm:ml-auto px-2.5 py-1 rounded-lg text-[11px] font-black bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 border border-amber-300 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                  title="Refazer a etapa selecionada do leilão e devolver atletas ao mercado"
+                >
+                  <RotateCcw className="w-3 h-3 text-amber-700" />
+                  <span>Refazer {selectedPhase === 'ALL' ? 'Etapa' : selectedPhase === 1 ? 'Defesa' : selectedPhase === 2 ? 'Meio' : 'Ataque'}</span>
+                </button>
+              )}
             </div>
           </div>
 
-          {filteredAndSortedList.length === 0 ? (
+          {groupedListByClub.length === 0 ? (
             <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-2">
               <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
                 <Search className="w-5 h-5" />
@@ -935,105 +1321,133 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-500 uppercase tracking-wider font-extrabold text-[10px]">
+                  <tr className="border-b border-slate-200 bg-slate-100 text-slate-600 uppercase tracking-wider font-extrabold text-[10px]">
                     <th className="py-2.5 px-3">Atleta</th>
                     <th className="py-2.5 px-3">Posição & Fase</th>
                     <th className="py-2.5 px-3">Clube de Origem</th>
-                    <th className="py-2.5 px-3">Clube de Destino (Khedira League)</th>
                     <th className="py-2.5 px-3 text-right">Lance Inicial</th>
-                    <th className="py-2.5 px-3 text-right">Valor Final Pago</th>
+                    <th className="py-2.5 px-3 text-right">Valor Final Arrematado</th>
                     <th className="py-2.5 px-3 text-right">Disputa / Ágio</th>
                     {onAdminReleasePlayer && <th className="py-2.5 px-3 text-center">Ações ADM</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredAndSortedList.map((player) => {
-                    const posBadge = getPositionBadge(player.position);
-                    const phase = getPlayerAuctionPhase(player);
-                    const finalAmount = player.soldTo?.amount || 0;
-                    const diff = finalAmount - player.initialPrice;
-                    const diffPercent = player.initialPrice > 0 ? (diff / player.initialPrice) * 100 : 0;
-
+                  {groupedListByClub.map((club, cIdx) => {
+                    const colSpan = onAdminReleasePlayer ? 7 : 6;
                     return (
-                      <tr key={player.id} className="hover:bg-slate-50/80 transition-colors group">
-                        <td className="py-3 px-3">
-                          <div className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
-                            <span>{player.name}</span>
-                            {player.isManualExtra && (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800">
-                                Extra
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-slate-400">{player.nationality}</span>
-                        </td>
-
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`px-2 py-0.5 rounded text-[11px] font-black ${posBadge.bgClass} ${posBadge.textClass}`}>
-                              {player.position}
-                            </span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                              phase === 1 ? 'bg-blue-50 text-blue-800 border border-blue-200' :
-                              phase === 2 ? 'bg-amber-50 text-amber-800 border border-amber-200' :
-                              'bg-rose-50 text-rose-800 border border-rose-200'
-                            }`}>
-                              Fase {phase}
-                            </span>
-                          </div>
-                        </td>
-
-                        <td className="py-3 px-3 text-slate-600 font-medium">
-                          {player.club}
-                        </td>
-
-                        <td className="py-3 px-3">
-                          <div className="font-black text-slate-900 text-xs flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                            <span>{player.soldTo?.teamName}</span>
-                          </div>
-                          <div className="text-[10px] text-slate-500 flex items-center gap-1 pl-5">
-                            <span>Presidente: {player.soldTo?.userName}</span>
-                          </div>
-                        </td>
-
-                        <td className="py-3 px-3 text-right text-slate-500 font-semibold">
-                          {formatCurrency(player.initialPrice, true)}
-                        </td>
-
-                        <td className="py-3 px-3 text-right font-black text-emerald-700 text-xs sm:text-sm">
-                          {formatCurrency(finalAmount)}
-                        </td>
-
-                        <td className="py-3 px-3 text-right">
-                          {diff > 0 ? (
-                            <span className="font-extrabold text-emerald-600 text-xs">
-                              +{formatCurrency(diff, true)} <span className="text-[10px] font-bold text-emerald-500">(+{diffPercent.toFixed(0)}%)</span>
-                            </span>
-                          ) : (
-                            <span className="text-[11px] text-slate-400 font-medium">
-                              Preço Base
-                            </span>
-                          )}
-                        </td>
-
-                        {onAdminReleasePlayer && (
-                          <td className="py-3 px-3 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handleRelease(player.id)}
-                              disabled={releasingPlayerId === player.id}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                              title="Anular contratação e devolver atleta ao mercado"
-                            >
-                              <RotateCcw className={`w-3.5 h-3.5 ${releasingPlayerId === player.id ? 'animate-spin text-rose-600' : ''}`} />
-                            </button>
+                      <React.Fragment key={club.user.id}>
+                        {/* Club Section Header Banner */}
+                        <tr className="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white font-extrabold text-xs border-t-2 border-amber-500/60">
+                          <td colSpan={colSpan} className="py-2.5 px-4 bg-slate-900 text-white">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="flex items-center gap-2.5">
+                                <span className="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center shrink-0">
+                                  #{cIdx + 1}
+                                </span>
+                                <Building2 className="w-4 h-4 text-amber-400 shrink-0" />
+                                <span className="text-sm font-black tracking-tight text-white">{club.clubName}</span>
+                                <span className="text-slate-400 text-xs font-medium">({club.managerName})</span>
+                                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30 font-bold">
+                                  {club.filteredPlayers.length} {club.filteredPlayers.length === 1 ? 'atleta' : 'atletas'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs">
+                                <span className="text-slate-300">Investido: <strong className="text-emerald-400">{formatCurrency(club.totalSpent)}</strong></span>
+                                <span className="text-slate-400">•</span>
+                                <span className="text-slate-300">Caixa Restante: <strong className="text-white">{formatCurrency(club.remainingCash, true)}</strong></span>
+                              </div>
+                            </div>
                           </td>
+                        </tr>
+
+                        {club.filteredPlayers.length === 0 ? (
+                          <tr>
+                            <td colSpan={colSpan} className="py-3 px-4 text-center text-xs text-slate-400 italic bg-slate-50/50">
+                              Nenhuma contratação encontrada para este clube com os filtros aplicados.
+                            </td>
+                          </tr>
+                        ) : (
+                          club.filteredPlayers.map((player) => {
+                            const posBadge = getPositionBadge(player.position);
+                            const phase = getPlayerAuctionPhase(player);
+                            const finalAmount = player.soldTo?.amount || 0;
+                            const diff = finalAmount - player.initialPrice;
+                            const diffPercent = player.initialPrice > 0 ? (diff / player.initialPrice) * 100 : 0;
+
+                            return (
+                              <tr key={player.id} className="hover:bg-amber-50/40 transition-colors group">
+                                <td className="py-2.5 px-3">
+                                  <div className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                                    <span>{player.name}</span>
+                                    {player.isManualExtra && (
+                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800">
+                                        Extra
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] text-slate-400">{player.nationality}</span>
+                                </td>
+
+                                <td className="py-2.5 px-3">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className={`px-2 py-0.5 rounded text-[11px] font-black ${posBadge.bgClass} ${posBadge.textClass}`}>
+                                      {player.position}
+                                    </span>
+                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                      phase === 1 ? 'bg-blue-50 text-blue-800 border border-blue-200' :
+                                      phase === 2 ? 'bg-amber-50 text-amber-800 border border-amber-200' :
+                                      'bg-rose-50 text-rose-800 border border-rose-200'
+                                    }`}>
+                                      Fase {phase}
+                                    </span>
+                                  </div>
+                                </td>
+
+                                <td className="py-2.5 px-3 text-slate-600 font-medium">
+                                  {player.club}
+                                </td>
+
+                                <td className="py-2.5 px-3 text-right text-slate-500 font-semibold">
+                                  {formatCurrency(player.initialPrice, true)}
+                                </td>
+
+                                <td className="py-2.5 px-3 text-right font-black text-emerald-700 text-xs sm:text-sm">
+                                  {formatCurrency(finalAmount)}
+                                </td>
+
+                                <td className="py-2.5 px-3 text-right">
+                                  {diff > 0 ? (
+                                    <span className="font-extrabold text-emerald-600 text-xs">
+                                      +{formatCurrency(diff, true)} <span className="text-[10px] font-bold text-emerald-500">(+{diffPercent.toFixed(0)}%)</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-[11px] text-slate-400 font-medium">
+                                      Preço Base
+                                    </span>
+                                  )}
+                                </td>
+
+                                {onAdminReleasePlayer && (
+                                  <td className="py-2.5 px-3 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRelease(player.id)}
+                                      disabled={releasingPlayerId === player.id}
+                                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                      title="Anular contratação e devolver atleta ao mercado"
+                                    >
+                                      <RotateCcw className={`w-3.5 h-3.5 ${releasingPlayerId === player.id ? 'animate-spin text-rose-600' : ''}`} />
+                                    </button>
+                                  </td>
+                                )}
+                              </tr>
+                            );
+                          })
                         )}
-                      </tr>
+                      </React.Fragment>
                     );
                   })}
                 </tbody>
@@ -1042,6 +1456,178 @@ export const AdminSigningsReportSection: React.FC<AdminSigningsReportSectionProp
           )}
         </div>
       )}
+      {/* MODAL DE CONFIRMAÇÃO DE REFAZER ETAPA DO LEILÃO */}
+      {resetPhaseModalTarget !== null && (() => {
+        const stats = getPhaseStats(resetPhaseModalTarget);
+        return (
+          <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0 text-xl">
+                  {stats.icon}
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 block">
+                    Ação Administrativa • Khedira League
+                  </span>
+                  <h3 className="font-black text-lg text-slate-900 leading-tight">
+                    Refazer {stats.name}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Seletor Rápido de Etapa dentro do Modal */}
+              <div className="p-2 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Escolha a Etapa a Refazer:</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setResetPhaseModalTarget('GOLEIROS')}
+                    className={`py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                      String(resetPhaseModalTarget).toUpperCase().includes('GOL')
+                        ? 'bg-amber-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    🧤 Goleiros
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResetPhaseModalTarget('DEFENSORES')}
+                    className={`py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                      String(resetPhaseModalTarget).toUpperCase() === 'DEFENSORES' || String(resetPhaseModalTarget).toUpperCase() === 'DEFESA'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    🛡️ Defensores
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResetPhaseModalTarget('MEIO_CAMPO')}
+                    className={`py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                      String(resetPhaseModalTarget).toUpperCase().includes('MEIO') || resetPhaseModalTarget === 2
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    ⚡ Meio-Campo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResetPhaseModalTarget('ATACANTES')}
+                    className={`py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                      String(resetPhaseModalTarget).toUpperCase().includes('ATAC') || resetPhaseModalTarget === 3
+                        ? 'bg-rose-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    ⚽ Atacantes
+                  </button>
+                </div>
+              </div>
+
+              {/* Métricas de Impacto */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Atletas</span>
+                  <span className="text-base font-black text-rose-600 mt-0.5 block">{stats.sold.length}</span>
+                  <span className="text-[10px] text-slate-400">retornam ao mercado</span>
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Estorno Total</span>
+                  <span className="text-base font-black text-emerald-600 mt-0.5 block">{formatCurrency(stats.refund, true)}</span>
+                  <span className="text-[10px] text-slate-400">devolvido aos clubes</span>
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Clubes</span>
+                  <span className="text-base font-black text-blue-600 mt-0.5 block">{stats.clubsCount}</span>
+                  <span className="text-[10px] text-slate-400">reembolsados</span>
+                </div>
+              </div>
+
+              {/* Informações dos efeitos */}
+              <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl text-xs space-y-1.5 text-amber-950">
+                <p className="font-bold flex items-center gap-1.5 text-amber-900">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  Efeitos da Ação:
+                </p>
+                <ul className="list-disc pl-4 space-y-1 text-slate-700 text-[11px]">
+                  <li>
+                    Todos os <strong>{stats.sold.length} atletas</strong> de <strong>{stats.name}</strong> arrematados voltam ao status <strong>"Disponível"</strong> para novos lances.
+                  </li>
+                  <li>
+                    O montante de <strong>{formatCurrency(stats.refund)}</strong> será creditado de volta imediatamente nos orçamentos dos clubes compradores.
+                  </li>
+                  <li className="font-semibold text-emerald-800">
+                    As contratações das outras fases permanecem 100% preservadas e intactas nos elencos dos clubes!
+                  </li>
+                  <li>
+                    A etapa ativa do leilão será reajustada para esta fase para que os participantes possam postar e disputar novamente.
+                  </li>
+                </ul>
+              </div>
+
+              {/* Lista Prévia dos Atletas que Voltarão ao Mercado */}
+              {stats.sold.length > 0 && (
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Atletas que retornarão ao mercado ({stats.sold.length}):
+                  </span>
+                  <div className="max-h-36 overflow-y-auto space-y-1 rounded-xl border border-slate-200 p-2 bg-slate-50/50">
+                    {stats.sold.map((p) => {
+                      const buyer = users.find((u) => u.id === p.soldTo?.userId);
+                      return (
+                        <div key={p.id} className="flex items-center justify-between text-xs py-1 px-2 bg-white rounded-lg border border-slate-100">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
+                              {p.position}
+                            </span>
+                            <span className="font-bold text-slate-900 truncate">{p.name}</span>
+                            <span className="text-[10px] text-slate-500 truncate">({buyer?.teamName || buyer?.name})</span>
+                          </div>
+                          <span className="font-black text-emerald-600 shrink-0">
+                            {formatCurrency(p.soldTo?.amount || 0)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setResetPhaseModalTarget(null)}
+                  disabled={isResettingPhase}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExecuteResetPhase}
+                  disabled={isResettingPhase}
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 active:bg-amber-700 text-white font-black text-xs transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                >
+                  {isResettingPhase ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Refazendo Etapa...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Confirmar e Refazer {stats.name.split(':')[1]?.split('(')[0]?.trim() || 'Etapa'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

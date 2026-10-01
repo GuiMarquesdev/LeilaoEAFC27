@@ -45,16 +45,6 @@ export const BenchPlayerPickerModal: React.FC<BenchPlayerPickerModalProps> = ({
       if (search.trim() && !matchesPlayerSearch(player, search)) return false;
 
       if (selectedPosition === 'ALL') return true;
-      if (selectedPosition === 'DEF') {
-        return ['GOL', 'ZAG', 'LE', 'LD', 'CB', 'LB', 'RB', 'GK'].includes(player.position);
-      }
-      if (selectedPosition === 'MID') {
-        return ['VOL', 'MC', 'MEI', 'CDM', 'CM', 'CAM'].includes(player.position);
-      }
-      if (selectedPosition === 'ATT') {
-        return ['ATA', 'ME', 'MD', 'PE', 'PD', 'SA', 'ST', 'CF', 'LW', 'RW', 'LM', 'RM'].includes(player.position);
-      }
-
       return player.position === selectedPosition;
     })
     .sort((a, b) => {
@@ -115,46 +105,34 @@ export const BenchPlayerPickerModal: React.FC<BenchPlayerPickerModalProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 flex-wrap text-xs">
-            <button
-              onClick={() => setSelectedPosition('ALL')}
-              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                selectedPosition === 'ALL'
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              Todos
-            </button>
-            <button
-              onClick={() => setSelectedPosition('DEF')}
-              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                selectedPosition === 'DEF'
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-              }`}
-            >
-              Defesa
-            </button>
-            <button
-              onClick={() => setSelectedPosition('MID')}
-              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                selectedPosition === 'MID'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
-              }`}
-            >
-              Meio-campo
-            </button>
-            <button
-              onClick={() => setSelectedPosition('ATT')}
-              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                selectedPosition === 'ATT'
-                  ? 'bg-rose-600 text-white'
-                  : 'bg-rose-50 text-rose-800 hover:bg-rose-100'
-              }`}
-            >
-              Ataque
-            </button>
+            {[
+              { id: 'ALL', label: 'Todos' },
+              { id: 'GOL', label: 'GOL' },
+              { id: 'ZAG', label: 'ZAG' },
+              { id: 'LD', label: 'LD' },
+              { id: 'LE', label: 'LE' },
+              { id: 'VOL', label: 'VOL' },
+              { id: 'MC', label: 'MC' },
+              { id: 'MEI', label: 'MEI' },
+              { id: 'ATA', label: 'ATA' },
+              { id: 'PE', label: 'PE' },
+              { id: 'PD', label: 'PD' },
+            ].map((pos) => {
+              const isSelected = selectedPosition === pos.id;
+              return (
+                <button
+                  key={pos.id}
+                  onClick={() => setSelectedPosition(pos.id)}
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {pos.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 

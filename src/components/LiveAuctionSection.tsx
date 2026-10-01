@@ -5,12 +5,12 @@ import {
   Flame, CheckCircle2, ChevronRight, Search, 
   AlertCircle, Shield, Plus, Crown, Volume2, SkipForward,
   Play, Square, Sparkles, Trophy, Users as UsersIcon, RotateCcw,
-  Lock, Unlock, FileText, ShieldAlert, ShieldCheck, Calendar, Star,
+  Lock, Unlock, FileText, ShieldAlert, Calendar, Star,
   ListOrdered, Trash2, Loader2, Wallet, Coins, LayoutGrid, X, Filter,
   ChevronDown, ChevronUp, Eye, Zap, Table, AlertTriangle, Activity,
-  Maximize2, Minimize2, Edit3
+  Maximize2, Minimize2, Edit3, TrendingUp
 } from 'lucide-react';
-import { AuctionState, Player, UserProfile, Bid, AuctionType, AuctionPhase } from '../types';
+import { AuctionState, Player, UserProfile, Bid, AuctionType, AuctionPhase, ResetPhaseTarget } from '../types';
 import { 
   formatCurrency, getPositionBadge, getDayLabel, isPositionAllowedForDay, 
   getUserRoleBadge, formatAuctionTimer, getPlayerActiveBid, getPlayerEffectivePrice,
@@ -40,6 +40,8 @@ interface LiveAuctionSectionProps {
   onOpenRules?: () => void;
   onOpenAdminReport?: () => void;
   onAdminAuctionAction?: (action: string, value?: unknown) => Promise<void>;
+  onAdminResetPhase?: (phase: ResetPhaseTarget) => Promise<{ success: boolean; message?: string; releasedCount?: number; refundedTotal?: number } | boolean>;
+  onOpenAdminWithTab?: (tab: 'auction' | 'players' | 'users' | 'danger' | 'report') => void;
   onNavigateToSquad?: () => void;
   initialFocusedPlayerId?: string | null;
   onClearInitialFocusedPlayerId?: () => void;
@@ -63,6 +65,8 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
   onOpenRules,
   onOpenAdminReport,
   onAdminAuctionAction,
+  onAdminResetPhase,
+  onOpenAdminWithTab,
   onNavigateToSquad,
   initialFocusedPlayerId,
   onClearInitialFocusedPlayerId,
@@ -73,6 +77,63 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
   const [submittingBid, setSubmittingBid] = useState<boolean>(false);
   const [nominateLoading, setNominateLoading] = useState<boolean>(false);
   const [bidError, setBidError] = useState<string | null>(null);
+
+  // Live Phase Reset Modal state
+  const [livePhaseResetTarget, setLivePhaseResetTarget] = useState<ResetPhaseTarget | null>(null);
+  const [isResettingLivePhase, setIsResettingLivePhase] = useState<boolean>(false);
+  const [liveResetFeedback, setLiveResetFeedback] = useState<string | null>(null);
+
+  const getLivePhaseStats = (target: ResetPhaseTarget | null) => {
+    if (!target) return { name: '', positions: [] as string[], sold: [] as Player[], refund: 0, icon: '🔄' };
+    const t = String(target).toUpperCase();
+    if (t === 'ATACANTES' || t === 'ATAQUE' || t === '3') {
+      const positions = ['ATA', 'PD', 'PE', 'SA'];
+      const sold = players.filter((p) => p.status === 'SOLD' && p.soldTo && positions.includes(p.position));
+      const refund = sold.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+      return { name: 'Etapa 4: Atacantes (Centroavantes e Pontas)', shortName: 'Atacantes', positions, sold, refund, icon: '⚽' };
+    }
+    if (t === 'MEIO_CAMPO' || t === 'MEIO' || t === '2') {
+      const positions = ['VOL', 'MC', 'MEI'];
+      const sold = players.filter((p) => p.status === 'SOLD' && p.soldTo && positions.includes(p.position));
+      const refund = sold.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+      return { name: 'Etapa 3: Meio-Campo (Volantes e Meias)', shortName: 'Meio-Campo', positions, sold, refund, icon: '⚡' };
+    }
+    if (t === 'DEFENSORES' || t === 'DEFESA') {
+      const positions = ['ZAG', 'LE', 'LD'];
+      const sold = players.filter((p) => p.status === 'SOLD' && p.soldTo && positions.includes(p.position));
+      const refund = sold.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+      return { name: 'Etapa 2: Defensores (Zagueiros e Laterais)', shortName: 'Defensores', positions, sold, refund, icon: '🛡️' };
+    }
+    if (t === 'GOLEIROS' || t === 'GOL') {
+      const positions = ['GOL'];
+      const sold = players.filter((p) => p.status === 'SOLD' && p.soldTo && positions.includes(p.position));
+      const refund = sold.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+      return { name: 'Etapa 1: Goleiros (GOL)', shortName: 'Goleiros', positions, sold, refund, icon: '🧤' };
+    }
+    const positions = ['GOL', 'ZAG', 'LE', 'LD'];
+    const sold = players.filter((p) => p.status === 'SOLD' && p.soldTo && positions.includes(p.position));
+    const refund = sold.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+    return { name: 'Etapa de Defensores & Goleiros', shortName: 'Defesa & Goleiros', positions, sold, refund, icon: '🛡️🧤' };
+  };
+
+  const handleExecuteLiveResetPhase = async () => {
+    if (!livePhaseResetTarget || !onAdminResetPhase) return;
+    setIsResettingLivePhase(true);
+    try {
+      const res = await onAdminResetPhase(livePhaseResetTarget);
+      if (typeof res === 'object' && res.success) {
+        setLiveResetFeedback(res.message || 'Etapa refeita com sucesso!');
+      } else if (res) {
+        setLiveResetFeedback('Etapa refeita com sucesso! Os atletas voltaram ao mercado.');
+      }
+      setTimeout(() => setLiveResetFeedback(null), 5000);
+      setLivePhaseResetTarget(null);
+    } catch (err: any) {
+      alert(`Erro ao refazer etapa: ${err?.message || 'Falha de comunicação'}`);
+    } finally {
+      setIsResettingLivePhase(false);
+    }
+  };
   const [isPassingTurn, setIsPassingTurn] = useState<boolean>(false);
   const [isStartingAuction, setIsStartingAuction] = useState<boolean>(false);
   const [isEndingAuction, setIsEndingAuction] = useState<boolean>(false);
@@ -323,21 +384,24 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
       ALL: availablePlayers.length,
       GOL: availablePlayers.filter((p) => p.position === 'GOL').length,
       ZAG: availablePlayers.filter((p) => p.position === 'ZAG').length,
-      LAT: availablePlayers.filter((p) => ['LE', 'LD'].includes(p.position)).length,
-      MEI: availablePlayers.filter((p) => ['VOL', 'MC', 'MEI', 'MD', 'ME'].includes(p.position)).length,
-      ATA: availablePlayers.filter((p) => ['ATA', 'PE', 'PD', 'SA'].includes(p.position)).length,
+      LD: availablePlayers.filter((p) => p.position === 'LD').length,
+      LE: availablePlayers.filter((p) => p.position === 'LE').length,
+      VOL: availablePlayers.filter((p) => p.position === 'VOL').length,
+      MC: availablePlayers.filter((p) => p.position === 'MC').length,
+      MEI: availablePlayers.filter((p) => p.position === 'MEI').length,
+      ATA: availablePlayers.filter((p) => p.position === 'ATA').length,
+      PE: availablePlayers.filter((p) => p.position === 'PE').length,
+      PD: availablePlayers.filter((p) => p.position === 'PD').length,
     };
   }, [availablePlayers]);
 
   const filteredAvailablePlayers = React.useMemo(() => {
     const q = searchNominate.toLowerCase().trim();
     return availablePlayers.filter((p) => {
-      // Position filter
-      if (positionFilterNominate === 'GOL' && p.position !== 'GOL') return false;
-      if (positionFilterNominate === 'ZAG' && p.position !== 'ZAG') return false;
-      if (positionFilterNominate === 'LAT' && !['LE', 'LD'].includes(p.position)) return false;
-      if (positionFilterNominate === 'MEI' && !['VOL', 'MC', 'MEI', 'MD', 'ME'].includes(p.position)) return false;
-      if (positionFilterNominate === 'ATA' && !['ATA', 'PE', 'PD', 'SA'].includes(p.position)) return false;
+      // Exact position filter
+      if (positionFilterNominate !== 'ALL' && p.position !== positionFilterNominate) {
+        return false;
+      }
 
       // Text search
       if (!q) return true;
@@ -555,8 +619,10 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
   // Renderizador do Card de Representação de Saldo do Usuário
   const renderUserAccountBalanceRepresentation = () => {
-    const budgetPercentUsed = userTotalBudget > 0 ? Math.min(100, Math.round((totalHeldInBids / userTotalBudget) * 100)) : 0;
-    const budgetPercentAvailable = 100 - budgetPercentUsed;
+    const officialCeiling = 400000000;
+    const percentSpentTotal = Math.min(100, Math.round((userSpentAmount / officialCeiling) * 100));
+    const percentHeldTotal = Math.min(100 - percentSpentTotal, Math.round((totalHeldInBids / officialCeiling) * 100));
+    const percentAvailableTotal = Math.max(0, 100 - percentSpentTotal - percentHeldTotal);
 
     return (
       <div 
@@ -596,46 +662,80 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-center">
+          <div className="flex items-center gap-2 self-start sm:self-center flex-wrap">
+            {/* Total Gasto Badge */}
+            <span className="text-[11px] font-bold text-purple-300 bg-purple-950/80 border border-purple-800/80 px-2.5 py-1 rounded-full flex items-center shadow-2xs">
+              <span>Gasto: {formatCurrency(userSpentAmount, true)} ({percentSpentTotal}%)</span>
+            </span>
+
             {totalHeldInBids > 0 ? (
-              <span className="text-[11px] font-bold text-amber-300 bg-amber-950/80 border border-amber-800/80 px-3 py-1 rounded-full flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                <span>{formatCurrency(totalHeldInBids, true)} retido em {userWinningBids.length} lance(s)</span>
+              <span className="text-[11px] font-bold text-amber-300 bg-amber-950/80 border border-amber-800/80 px-2.5 py-1 rounded-full flex items-center shadow-2xs">
+                <span>{formatCurrency(totalHeldInBids, true)} retido</span>
               </span>
             ) : (
-              <span className="text-[11px] font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-800/80 px-3 py-1 rounded-full flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-[11px] font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-800/80 px-2.5 py-1 rounded-full flex items-center shadow-2xs">
                 <span>Saldo 100% livre</span>
               </span>
             )}
           </div>
         </div>
 
-        {/* 3 Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-10">
-          {/* Card 1: Saldo Total em Conta */}
-          <div className="p-3.5 bg-slate-800/80 border border-slate-700/80 rounded-xl flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-              Saldo Total em Conta
+        {/* 4 Metric Cards: Total Gasto, Saldo em Caixa, Retido em Lances, Saldo Disponível */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 relative z-10">
+          {/* Card 1: Total Gasto em Contratações (NOVO) */}
+          <div className="p-3.5 bg-gradient-to-br from-purple-950/50 via-slate-900 to-slate-900 border border-purple-500/50 rounded-xl flex flex-col justify-between shadow-xs">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1">
+                <TrendingUp className="w-3 h-3 text-purple-400" />
+                Total Gasto
+              </span>
+              <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                {percentSpentTotal}%
+              </span>
+            </div>
+            <div className="text-lg sm:text-xl font-black text-purple-200 tracking-tight">
+              {currentUser ? formatCurrency(userSpentAmount, true) : '€ 0.0M'}
+            </div>
+            <span className="text-[10px] text-purple-300/80 mt-1 block font-medium">
+              {userContractedPlayers.length} {userContractedPlayers.length === 1 ? 'atleta no elenco' : 'atletas no elenco'}
             </span>
+          </div>
+
+          {/* Card 2: Saldo em Caixa (Patrimônio Total Restante) */}
+          <div className="p-3.5 bg-slate-800/80 border border-slate-700/80 rounded-xl flex flex-col justify-between shadow-xs">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <Wallet className="w-3 h-3 text-slate-400" />
+                Saldo em Caixa
+              </span>
+              <span className="text-[9px] font-bold text-slate-400">
+                {Math.max(0, 100 - percentSpentTotal)}%
+              </span>
+            </div>
             <div className="text-lg sm:text-xl font-black text-white tracking-tight">
               {currentUser ? formatCurrency(userTotalBudget, true) : '€ 400.0M'}
             </div>
             <span className="text-[10px] text-slate-400 mt-1 block">
-              Patrimônio oficial da liga
+              Patrimônio preservado
             </span>
           </div>
 
-          {/* Card 2: Retido em Lances Ativos (Debitado com o decorrer dos lances) */}
-          <div className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
+          {/* Card 3: Retido em Lances Ativos */}
+          <div className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between shadow-xs ${
             totalHeldInBids > 0
               ? 'bg-amber-950/40 border-amber-500/50 text-amber-200'
               : 'bg-slate-800/80 border-slate-700/80 text-slate-300'
           }`}>
-            <div className="mb-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                <Lock className="w-3 h-3" />
                 Retido em Lances
               </span>
+              {totalHeldInBids > 0 && (
+                <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  {userWinningBids.length} ativo
+                </span>
+              )}
             </div>
             <div className={`text-lg sm:text-xl font-black tracking-tight ${
               totalHeldInBids > 0 ? 'text-amber-300' : 'text-slate-400'
@@ -644,50 +744,76 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
             </div>
             <span className="text-[10px] text-slate-400 mt-1 block">
               {totalHeldInBids > 0
-                ? `Debitado de ${userWinningBids.length} ${userWinningBids.length === 1 ? 'proposta líder' : 'propostas líderes'}`
+                ? `${userWinningBids.length} ${userWinningBids.length === 1 ? 'proposta líder' : 'propostas líderes'}`
                 : 'Nenhum valor bloqueado'}
             </span>
           </div>
 
-          {/* Card 3: Saldo Disponível para Novos Lances */}
-          <div className="p-3.5 bg-emerald-950/40 border-2 border-emerald-500/50 rounded-xl flex flex-col justify-between">
-            <div className="mb-1">
-              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+          {/* Card 4: Saldo Disponível para Novos Lances */}
+          <div className="p-3.5 bg-emerald-950/40 border-2 border-emerald-500/50 rounded-xl flex flex-col justify-between shadow-xs">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                <Coins className="w-3 h-3 text-emerald-400" />
                 Saldo Disponível
+              </span>
+              <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                Livre
               </span>
             </div>
             <div className="text-lg sm:text-xl font-black text-emerald-300 tracking-tight">
               {currentUser ? formatCurrency(userAvailableBudget, true) : '€ 400.0M'}
             </div>
             <span className="text-[10px] text-emerald-400/80 mt-1 block font-medium">
-              Livre para cobrir ou abrir lances
+              Livre p/ novos lances
             </span>
           </div>
         </div>
 
-        {/* Liquidity Progress Bar */}
+        {/* Liquidity Progress Bar: Representação visual da fatia gasta, retida e disponível */}
         {currentUser && (
           <div className="mt-3.5 pt-3 border-t border-slate-800/90 relative z-10">
-            <div className="flex items-center justify-between text-[11px] mb-1.5 font-semibold">
-              <span className="text-slate-400">Distribuição do Orçamento:</span>
-              <span className="text-slate-300">
-                <span className="text-emerald-400 font-bold">{budgetPercentAvailable}% Disponível</span>
-                {budgetPercentUsed > 0 && (
-                  <span className="text-amber-400 font-bold"> • {budgetPercentUsed}% Retido</span>
-                )}
+            <div className="flex items-center justify-between text-[11px] mb-1.5 font-semibold flex-wrap gap-2">
+              <span className="text-slate-400 flex items-center gap-1.5">
+                <span>Distribuição do Teto da Liga (€ 400M):</span>
               </span>
+              <div className="flex items-center gap-3 text-xs flex-wrap">
+                <span className="flex items-center gap-1 text-purple-300 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" />
+                  <span>Gasto: {formatCurrency(userSpentAmount, true)} ({percentSpentTotal}%)</span>
+                </span>
+                {totalHeldInBids > 0 && (
+                  <span className="flex items-center gap-1 text-amber-300 font-bold">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                    <span>Retido: {formatCurrency(totalHeldInBids, true)} ({percentHeldTotal}%)</span>
+                  </span>
+                )}
+                <span className="flex items-center gap-1 text-emerald-300 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                  <span>Disponível: {formatCurrency(userAvailableBudget, true)} ({percentAvailableTotal}%)</span>
+                </span>
+              </div>
             </div>
-            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden flex">
-              <div 
-                className="bg-emerald-500 h-full transition-all duration-300" 
-                style={{ width: `${budgetPercentAvailable}%` }}
-                title={`Disponível: ${formatCurrency(userAvailableBudget, true)}`}
-              />
-              {budgetPercentUsed > 0 && (
+
+            <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden flex shadow-inner">
+              {percentSpentTotal > 0 && (
+                <div 
+                  className="bg-purple-500 h-full transition-all duration-300" 
+                  style={{ width: `${percentSpentTotal}%` }}
+                  title={`Total Gasto em Atletas: ${formatCurrency(userSpentAmount, true)} (${percentSpentTotal}%)`}
+                />
+              )}
+              {percentHeldTotal > 0 && (
                 <div 
                   className="bg-amber-400 h-full transition-all duration-300 animate-pulse" 
-                  style={{ width: `${budgetPercentUsed}%` }}
-                  title={`Retido em lances: ${formatCurrency(totalHeldInBids, true)}`}
+                  style={{ width: `${percentHeldTotal}%` }}
+                  title={`Retido em Lances: ${formatCurrency(totalHeldInBids, true)} (${percentHeldTotal}%)`}
+                />
+              )}
+              {percentAvailableTotal > 0 && (
+                <div 
+                  className="bg-emerald-500 h-full transition-all duration-300" 
+                  style={{ width: `${percentAvailableTotal}%` }}
+                  title={`Saldo Disponível para Lances: ${formatCurrency(userAvailableBudget, true)} (${percentAvailableTotal}%)`}
                 />
               )}
             </div>
@@ -899,83 +1025,6 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
         </div>
       )}
 
-      {/* 1.5. Visual Phase Cards - Tipos de Leilão (Anti-Burla) */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 text-white shadow-md">
-        <div className="flex items-center justify-between flex-wrap gap-2 pb-3 mb-3 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-black uppercase tracking-wider text-slate-200">
-              Setores em Disputa • Mercado Simultâneo Aberto
-            </span>
-          </div>
-          <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-500/40">
-            Regra Oficial: Sem fases • ATAQUE, MEIO CAMPO e DEFESA disponíveis simultaneamente
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* SETOR OFENSIVO: ATAQUE */}
-          <div className="p-3.5 rounded-xl border bg-emerald-950/30 border-emerald-500/60 shadow-xs transition-all">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500 text-white">
-                SETOR OFENSIVO
-              </span>
-              <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                DISPONÍVEL
-              </span>
-            </div>
-            <h5 className="text-xs font-black text-white">Ataque & Goleadores</h5>
-            <p className="text-[11px] text-slate-300 mt-1">
-              Atletas: <strong className="text-white">ATA, PE, PD, ME, MD, SA</strong>
-            </p>
-            <span className="text-[10px] text-emerald-300 block mt-1.5 font-medium">
-              🟢 Lances e indicações liberados (1h30m de disputa).
-            </span>
-          </div>
-
-          {/* MEIO-CAMPO */}
-          <div className="p-3.5 rounded-xl border bg-emerald-950/30 border-emerald-500/60 shadow-xs transition-all">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500 text-slate-950">
-                MEIO-CAMPO
-              </span>
-              <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                DISPONÍVEL
-              </span>
-            </div>
-            <h5 className="text-xs font-black text-white">Armação & Controle</h5>
-            <p className="text-[11px] text-slate-300 mt-1">
-              Atletas: <strong className="text-white">VOL, MC, MEI</strong>
-            </p>
-            <span className="text-[10px] text-emerald-300 block mt-1.5 font-medium">
-              🟢 Lances e indicações liberados (1h30m de disputa).
-            </span>
-          </div>
-
-          {/* DEFESA & GOLEIROS */}
-          <div className="p-3.5 rounded-xl border bg-emerald-950/30 border-emerald-500/60 shadow-xs transition-all">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-blue-600 text-white">
-                SISTEMA DEFENSIVO
-              </span>
-              <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                DISPONÍVEL
-              </span>
-            </div>
-            <h5 className="text-xs font-black text-white">Defesa & Goleiros</h5>
-            <p className="text-[11px] text-slate-300 mt-1">
-              Atletas: <strong className="text-white">GOL, ZAG, LD, LE</strong>
-            </p>
-            <span className="text-[10px] text-emerald-300 block mt-1.5 font-medium">
-              🟢 Lances e indicações liberados (1h30m de disputa).
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* 1.6. Radar de Observação de Jogadores (Todas as 3 Fases) */}
       <WatchlistRadarWidget
         watchedPlayerIds={watchedPlayerIds}
@@ -1054,9 +1103,6 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                       {/* Header badge */}
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-800">
                         <div className="flex items-center gap-2">
-                          <span className="flex h-3 w-3 relative">
-                            <span className="inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                          </span>
                           <span className="text-xs font-black tracking-wider uppercase text-amber-400 flex items-center gap-1.5">
                             <Clock className="w-4 h-4 text-amber-400" />
                             Cronômetro Oficial de Disputa ({standbyFormatted})
@@ -1075,9 +1121,6 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                               <span>Editar Tempo</span>
                             </button>
                           )}
-                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-600/50">
-                            ⏸️ Aguardando Início do Leilão
-                          </span>
                         </div>
                       </div>
 
@@ -2557,20 +2600,20 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
             {/* AUCTION MODE BANNER & PHASE STEPPER */}
             {isPhasedMode ? (
-              <div className="p-3.5 rounded-xl bg-gradient-to-r from-blue-950 via-slate-900 to-slate-900 text-white border border-blue-800/40 space-y-2.5 shadow-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-white/10">
+              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 space-y-2.5 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
                       📋 Leilão por Fases
                     </span>
-                    <span className="text-xs text-blue-200">
-                      Fase Atual: <strong className="text-white font-black">{activePhaseDef.label}</strong>
+                    <span className="text-xs text-slate-400">
+                      Fase Atual: <strong className="text-slate-100 font-bold">{activePhaseDef.label}</strong>
                     </span>
                   </div>
 
                   {currentUser?.role === 'ADMIN' && onAdminAuctionAction && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-amber-300 font-bold uppercase hidden sm:inline">Painel ADM:</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase hidden sm:inline">Painel ADM:</span>
                       <button
                         type="button"
                         onClick={() => {
@@ -2579,16 +2622,27 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                           const nextPhase = phases[(currentIdx + 1) % phases.length];
                           onAdminAuctionAction('SET_AUCTION_PHASE', nextPhase);
                         }}
-                        className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-[11px] font-black rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-xs"
+                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 active:bg-slate-850 text-slate-100 border border-slate-700 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
                         title="Avançar para a próxima fase do leilão"
                       >
                         <span>Avançar Fase</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                       </button>
+                      {onAdminResetPhase && (
+                        <button
+                          type="button"
+                          onClick={() => setLivePhaseResetTarget(auction.currentPhase || 'GOLEIROS')}
+                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 active:bg-slate-850 text-slate-200 border border-slate-700 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                          title="Refazer a etapa ativa: devolver jogadores ao mercado e estornar valor aos clubes"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Refazer Etapa</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => onAdminAuctionAction('SET_AUCTION_TYPE', 'FREE')}
-                        className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-slate-200 text-[11px] font-bold rounded-lg transition-colors border border-white/10 cursor-pointer"
+                        className="px-2.5 py-1 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold rounded-lg transition-colors border border-slate-700 cursor-pointer"
                         title="Mudar modalidade para Leilão Livre"
                       >
                         Mudar p/ Livre
@@ -2596,6 +2650,13 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                     </div>
                   )}
                 </div>
+
+                {liveResetFeedback && (
+                  <div className="p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-200 font-semibold flex items-center gap-2 animate-fade-in shadow-xs">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>{liveResetFeedback}</span>
+                  </div>
+                )}
 
                 {/* 4 Phases Stepper */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -2615,19 +2676,19 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                         }}
                         className={`p-2 rounded-xl border text-center transition-all ${
                           isCurrent
-                            ? 'bg-blue-600 text-white border-blue-400 shadow-md ring-2 ring-blue-400/40 scale-[1.02]'
-                            : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                        } ${currentUser?.role === 'ADMIN' && !isCurrent ? 'cursor-pointer hover:border-blue-400/50' : ''}`}
+                            ? 'bg-slate-800 text-white border-slate-500 shadow-sm ring-1 ring-slate-500/50 scale-[1.01]'
+                            : 'bg-slate-950/60 border-slate-800/90 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                        } ${currentUser?.role === 'ADMIN' && !isCurrent ? 'cursor-pointer hover:border-slate-700' : ''}`}
                         title={currentUser?.role === 'ADMIN' && !isCurrent ? `Clique para ativar a ${p.label}` : undefined}
                       >
                         <div className="flex items-center justify-center gap-1.5 text-xs">
                           <span>{p.icon}</span>
-                          <span className="font-extrabold text-[11px] truncate">{p.shortLabel}</span>
+                          <span className={`font-bold text-[11px] truncate ${isCurrent ? 'text-white font-black' : 'text-slate-300'}`}>{p.shortLabel}</span>
                         </div>
-                        <div className="text-[10px] mt-0.5 flex items-center justify-center gap-1 font-semibold opacity-90">
-                          <span>{countInPhase} disp.</span>
-                          <span>•</span>
-                          <span className={isCurrent ? 'text-amber-300 font-black' : 'text-slate-400'}>
+                        <div className="text-[10px] mt-0.5 flex items-center justify-center gap-1 font-medium opacity-90">
+                          <span className={isCurrent ? 'text-slate-300' : 'text-slate-500'}>{countInPhase} disp.</span>
+                          <span className="text-slate-600">•</span>
+                          <span className={isCurrent ? 'text-slate-100 font-bold' : 'text-slate-500'}>
                             {isCurrent ? 'No Ar' : `${idx + 1}ª Etapa`}
                           </span>
                         </div>
@@ -2637,12 +2698,12 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 text-white border border-emerald-800/40 flex items-center justify-between flex-wrap gap-2 shadow-xs">
+              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 flex items-center justify-between flex-wrap gap-2 shadow-sm">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
                     🌐 Leilão Livre (Todas as Posições)
                   </span>
-                  <span className="text-xs text-slate-300">
+                  <span className="text-xs text-slate-400">
                     Goleiros, Defensores, Meio-Campo e Atacantes liberados simultaneamente para todos os clubes.
                   </span>
                 </div>
@@ -2650,7 +2711,7 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                   <button
                     type="button"
                     onClick={() => onAdminAuctionAction('SET_AUCTION_TYPE', 'PHASED')}
-                    className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold rounded-lg transition-colors border border-white/10 cursor-pointer"
+                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition-colors border border-slate-700 cursor-pointer"
                     title="Mudar leilão para modo por fases (Goleiros -> Defensores -> Meio -> Atacantes)"
                   >
                     Ativar Leilão por Fases
@@ -2712,11 +2773,16 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                   {[
                     { id: 'ALL', label: 'Todos', count: nominationCounts.ALL },
-                    { id: 'GOL', label: 'Goleiros', count: nominationCounts.GOL },
-                    { id: 'ZAG', label: 'Zagueiros', count: nominationCounts.ZAG },
-                    { id: 'LAT', label: 'Laterais', count: nominationCounts.LAT },
-                    { id: 'MEI', label: 'Meio-Campo', count: nominationCounts.MEI },
-                    { id: 'ATA', label: 'Ataque', count: nominationCounts.ATA },
+                    { id: 'GOL', label: 'GOL', count: nominationCounts.GOL },
+                    { id: 'ZAG', label: 'ZAG', count: nominationCounts.ZAG },
+                    { id: 'LD', label: 'LD', count: nominationCounts.LD },
+                    { id: 'LE', label: 'LE', count: nominationCounts.LE },
+                    { id: 'VOL', label: 'VOL', count: nominationCounts.VOL },
+                    { id: 'MC', label: 'MC', count: nominationCounts.MC },
+                    { id: 'MEI', label: 'MEI', count: nominationCounts.MEI },
+                    { id: 'ATA', label: 'ATA', count: nominationCounts.ATA },
+                    { id: 'PE', label: 'PE', count: nominationCounts.PE },
+                    { id: 'PD', label: 'PD', count: nominationCounts.PD },
                   ].map((filter) => {
                     const isSelected = positionFilterNominate === filter.id;
                     return (
@@ -3496,11 +3562,16 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                 {[
                   { id: 'ALL', label: 'Todos', count: nominationCounts.ALL },
-                  { id: 'GOL', label: 'Goleiros', count: nominationCounts.GOL },
-                  { id: 'ZAG', label: 'Zagueiros', count: nominationCounts.ZAG },
-                  { id: 'LAT', label: 'Laterais', count: nominationCounts.LAT },
-                  { id: 'MEI', label: 'Meio-Campo', count: nominationCounts.MEI },
-                  { id: 'ATA', label: 'Ataque', count: nominationCounts.ATA },
+                  { id: 'GOL', label: 'GOL', count: nominationCounts.GOL },
+                  { id: 'ZAG', label: 'ZAG', count: nominationCounts.ZAG },
+                  { id: 'LD', label: 'LD', count: nominationCounts.LD },
+                  { id: 'LE', label: 'LE', count: nominationCounts.LE },
+                  { id: 'VOL', label: 'VOL', count: nominationCounts.VOL },
+                  { id: 'MC', label: 'MC', count: nominationCounts.MC },
+                  { id: 'MEI', label: 'MEI', count: nominationCounts.MEI },
+                  { id: 'ATA', label: 'ATA', count: nominationCounts.ATA },
+                  { id: 'PE', label: 'PE', count: nominationCounts.PE },
+                  { id: 'PD', label: 'PD', count: nominationCounts.PD },
                 ].map((filter) => {
                   const isSelected = positionFilterNominate === filter.id;
                   return (
@@ -3860,6 +3931,179 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
           </div>
         </div>
       )}
+      {/* MODAL DE CONFIRMAÇÃO DE REFAZER ETAPA NO LEILÃO AO VIVO */}
+      {livePhaseResetTarget !== null && (() => {
+        const stats = getLivePhaseStats(livePhaseResetTarget);
+        const affectedClubsCount = new Set(stats.sold.map((p) => p.soldTo?.userId)).size;
+
+        return (
+          <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0 text-xl">
+                  {stats.icon}
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 block">
+                    Painel ADM • Ação de Reinício de Etapa
+                  </span>
+                  <h3 className="font-black text-lg text-slate-900 leading-tight">
+                    Refazer {stats.name}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Seletor de Etapas no Modal */}
+              <div className="p-2 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Escolha a Etapa a Refazer:</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setLivePhaseResetTarget('ATACANTES')}
+                    className={`py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                      String(livePhaseResetTarget).toUpperCase().includes('ATAC') || livePhaseResetTarget === 3
+                        ? 'bg-rose-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    ⚽ Atacantes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLivePhaseResetTarget('MEIO_CAMPO')}
+                    className={`py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                      String(livePhaseResetTarget).toUpperCase().includes('MEIO') || livePhaseResetTarget === 2
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    ⚡ Meio-Campo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLivePhaseResetTarget('DEFENSORES')}
+                    className={`py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                      String(livePhaseResetTarget).toUpperCase() === 'DEFENSORES' || String(livePhaseResetTarget).toUpperCase() === 'DEFESA'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    🛡️ Defensores
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLivePhaseResetTarget('GOLEIROS')}
+                    className={`py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                      String(livePhaseResetTarget).toUpperCase().includes('GOL')
+                        ? 'bg-amber-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    🧤 Goleiros
+                  </button>
+                </div>
+              </div>
+
+              {/* Métricas de Impacto */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Atletas</span>
+                  <span className="text-base font-black text-rose-600 mt-0.5 block">{stats.sold.length}</span>
+                  <span className="text-[10px] text-slate-400">ao mercado</span>
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Estorno Total</span>
+                  <span className="text-base font-black text-emerald-600 mt-0.5 block">{formatCurrency(stats.refund, true)}</span>
+                  <span className="text-[10px] text-slate-400">aos clubes</span>
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Clubes</span>
+                  <span className="text-base font-black text-blue-600 mt-0.5 block">{affectedClubsCount}</span>
+                  <span className="text-[10px] text-slate-400">reembolsados</span>
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl text-xs space-y-1.5 text-amber-950">
+                <p className="font-bold flex items-center gap-1.5 text-amber-900">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  Efeitos no Leilão ao Vivo:
+                </p>
+                <ul className="list-disc pl-4 space-y-1 text-slate-700 text-[11px]">
+                  <li>
+                    Todos os <strong>{stats.sold.length} atletas</strong> de <strong>{stats.name}</strong> voltam a ficar <strong>"Disponível"</strong> para receber lances.
+                  </li>
+                  <li>
+                    O valor total de <strong>{formatCurrency(stats.refund)}</strong> pago por eles é estornado imediatamente para as contas dos usuários.
+                  </li>
+                  <li className="font-semibold text-emerald-800">
+                    Os atletas contratados em outras etapas NÃO sofrem alteração!
+                  </li>
+                  <li>
+                    A etapa ativa do leilão é fixada em <strong>{stats.shortName}</strong> para permitir novas nomeações de imediato.
+                  </li>
+                </ul>
+              </div>
+
+              {/* Lista Prévia dos Atletas */}
+              {stats.sold.length > 0 && (
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Atletas que retornarão ao mercado ({stats.sold.length}):
+                  </span>
+                  <div className="max-h-32 overflow-y-auto space-y-1 rounded-xl border border-slate-200 p-2 bg-slate-50/50">
+                    {stats.sold.map((p) => {
+                      const buyer = users.find((u) => u.id === p.soldTo?.userId);
+                      return (
+                        <div key={p.id} className="flex items-center justify-between text-xs py-1 px-2 bg-white rounded-lg border border-slate-100">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
+                              {p.position}
+                            </span>
+                            <span className="font-bold text-slate-900 truncate">{p.name}</span>
+                            <span className="text-[10px] text-slate-500 truncate">({buyer?.teamName || buyer?.name})</span>
+                          </div>
+                          <span className="font-black text-emerald-600 shrink-0">
+                            {formatCurrency(p.soldTo?.amount || 0)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setLivePhaseResetTarget(null)}
+                  disabled={isResettingLivePhase}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExecuteLiveResetPhase}
+                  disabled={isResettingLivePhase}
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 active:bg-amber-700 text-white font-black text-xs transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                >
+                  {isResettingLivePhase ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Refazendo Etapa...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Confirmar e Refazer {stats.shortName}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

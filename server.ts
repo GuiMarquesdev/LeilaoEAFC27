@@ -272,6 +272,24 @@ try {
       leagueState.auction.isFreeNominationMode = true;
     }
 
+    // Ensure positions MD and ME become PD and PE across all players
+    (leagueState.players || []).forEach((p) => {
+      if ((p.position as string) === 'MD') p.position = 'PD';
+      if ((p.position as string) === 'ME') p.position = 'PE';
+    });
+    if (leagueState.auction?.currentPlayer) {
+      if ((leagueState.auction.currentPlayer.position as string) === 'MD') leagueState.auction.currentPlayer.position = 'PD';
+      if ((leagueState.auction.currentPlayer.position as string) === 'ME') leagueState.auction.currentPlayer.position = 'PE';
+    }
+    if (leagueState.auction?.nominationQueue) {
+      leagueState.auction.nominationQueue.forEach((item) => {
+        if (item.player) {
+          if ((item.player.position as string) === 'MD') item.player.position = 'PD';
+          if ((item.player.position as string) === 'ME') item.player.position = 'PE';
+        }
+      });
+    }
+
     // Synchronize players with official INITIAL_PLAYERS and update initialPrices
     const existingPlayersMap = new Map<string, Player>();
     (leagueState.players || []).forEach((p) => {
@@ -364,15 +382,47 @@ function debouncedCloudSync() {
   }, 1200);
 }
 
-function saveState() {
+let saveStateTimer: NodeJS.Timeout | null = null;
+let isWritingState = false;
+let pendingStateWrite = false;
+
+async function executeStatePersistence() {
+  if (isWritingState) {
+    pendingStateWrite = true;
+    return;
+  }
+  isWritingState = true;
   try {
     const tmp = `${DB_FILE}.tmp.${Date.now()}`;
-    fs.writeFileSync(tmp, JSON.stringify(leagueState, null, 2), 'utf-8');
-    fs.renameSync(tmp, DB_FILE);
+    const data = JSON.stringify(leagueState);
+    await fs.promises.writeFile(tmp, data, 'utf-8');
+    await fs.promises.rename(tmp, DB_FILE);
   } catch (err) {
     console.error('Failed to persist database:', err);
+  } finally {
+    isWritingState = false;
+    if (pendingStateWrite) {
+      pendingStateWrite = false;
+      executeStatePersistence();
+    }
   }
   debouncedCloudSync();
+}
+
+function saveState(immediate = false) {
+  if (immediate) {
+    if (saveStateTimer) {
+      clearTimeout(saveStateTimer);
+      saveStateTimer = null;
+    }
+    executeStatePersistence();
+    return;
+  }
+  if (saveStateTimer) clearTimeout(saveStateTimer);
+  saveStateTimer = setTimeout(() => {
+    saveStateTimer = null;
+    executeStatePersistence();
+  }, 80);
 }
 
 function getAuctionDuration(): number {
@@ -395,8 +445,213 @@ function broadcast(message: WSMessage) {
   }
 }
 
-function broadcastState() {
-  broadcast({ type: 'STATE_SYNC', data: sanitizeLeagueState(leagueState) });
+let broadcastStateTimer: NodeJS.Timeout | null = null;
+
+function broadcastState(immediate = false) {
+  if (immediate) {
+    if (broadcastStateTimer) {
+      clearTimeout(broadcastStateTimer);
+      broadcastStateTimer = null;
+    }
+    broadcast({ type: 'STATE_SYNC', data: sanitizeLeagueState(leagueState) });
+    return;
+  }
+  // Coalesce rapid bursts into a single broadcast after 60ms
+  if (broadcastStateTimer) return;
+  broadcastStateTimer = setTimeout(() => {
+    broadcastStateTimer = null;
+    broadcast({ type: 'STATE_SYNC', data: sanitizeLeagueState(leagueState) });
+  }, 60);
+}
+
+// ==========================================
+// SINCRONIZAÇÃO COM PRODUÇÃO (RENDER)
+// ==========================================
+const PRODUCTION_ORIGIN = (process.env.PRODUCTION_SYNC_URL || 'https://leilaoeafc27.onrender.com').replace(/\/$/, '');
+let lastProductionSyncTime = Date.now();
+let isProductionWsConnected = false;
+let prodWsClient: WebSocket | null = null;
+let prodWsReconnectTimeout: NodeJS.Timeout | null = null;
+
+// Sincroniza o estado completo com o site de produção (Render)
+async function syncFromProductionState(forceBroadcast = true): Promise<{ success: boolean; message: string; timestamp: number }> {
+  try {
+    const res = await fetch(`${PRODUCTION_ORIGIN}/api/state`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    const json = await res.json();
+    if (!json.success || !json.data) {
+      throw new Error('Resposta de produção em formato inválido');
+    }
+    const prodData: LeagueState = json.data;
+
+    // Preserva senhas e hashes locais dos usuários existentes
+    const mergedUsers = (prodData.users || []).map((pu) => {
+      const existing = leagueState.users.find(
+        (lu) => lu.id === pu.id || lu.email.toLowerCase() === pu.email.toLowerCase()
+      );
+      return {
+        ...pu,
+        passwordHash: existing?.passwordHash || (existing?.password ? bcrypt.hashSync(existing.password, 10) : '')
+      };
+    });
+
+    if (mergedUsers.length > 0) leagueState.users = mergedUsers;
+    if (prodData.players && prodData.players.length > 0) leagueState.players = prodData.players;
+    if (prodData.auction) leagueState.auction = prodData.auction;
+    if (prodData.squads) leagueState.squads = prodData.squads;
+    if (prodData.watchlists && typeof prodData.watchlists === 'object') {
+      leagueState.watchlists = leagueState.watchlists || {};
+      for (const [uid, pIds] of Object.entries(prodData.watchlists)) {
+        if (Array.isArray(pIds) && pIds.length > 0) {
+          leagueState.watchlists[uid] = Array.from(new Set([...(leagueState.watchlists[uid] || []), ...pIds]));
+        }
+      }
+    }
+    if (prodData.defaultBudget) leagueState.defaultBudget = prodData.defaultBudget;
+
+    lastProductionSyncTime = Date.now();
+    saveState();
+
+    if (forceBroadcast) {
+      broadcastState();
+    }
+
+    console.log(`[Production Sync] ✅ Sincronizado com ${PRODUCTION_ORIGIN} com sucesso (${leagueState.users.length} participantes, ${leagueState.players.length} jogadores).`);
+    return {
+      success: true,
+      message: `Sincronizado com ${PRODUCTION_ORIGIN} com sucesso (${leagueState.users.length} participantes, ${leagueState.players.length} jogadores)!`,
+      timestamp: lastProductionSyncTime,
+    };
+  } catch (err: any) {
+    console.warn(`[Production Sync] ⚠️ Aviso ao sincronizar com ${PRODUCTION_ORIGIN}:`, err?.message || err);
+    return {
+      success: false,
+      message: `Falha ao sincronizar com ${PRODUCTION_ORIGIN}: ${err?.message || 'Servidor offline ou inacessível'}`,
+      timestamp: lastProductionSyncTime,
+    };
+  }
+}
+
+// Ponte WebSocket contínua com a instância de produção
+function startProductionWebSocketBridge() {
+  if (prodWsReconnectTimeout) {
+    clearTimeout(prodWsReconnectTimeout);
+    prodWsReconnectTimeout = null;
+  }
+
+  const wsProto = PRODUCTION_ORIGIN.startsWith('https') ? 'wss:' : 'ws:';
+  const wsHost = PRODUCTION_ORIGIN.replace(/^https?:\/\//, '');
+  const wsUrl = `${wsProto}//${wsHost}`;
+
+  try {
+    const ws = new WebSocket(wsUrl);
+    prodWsClient = ws;
+
+    ws.on('open', () => {
+      isProductionWsConnected = true;
+      console.log(`[Production Sync] 🟢 Ponte WebSocket conectada em tempo real com ${wsUrl}`);
+    });
+
+    ws.on('message', (data: any) => {
+      try {
+        const msg: WSMessage = JSON.parse(data.toString());
+        switch (msg.type) {
+          case 'STATE_SYNC':
+            if (msg.data) {
+              const prodData: LeagueState = msg.data;
+              const mergedUsers = (prodData.users || []).map((pu) => {
+                const existing = leagueState.users.find(
+                  (lu) => lu.id === pu.id || lu.email.toLowerCase() === pu.email.toLowerCase()
+                );
+                return {
+                  ...pu,
+                  passwordHash: existing?.passwordHash || ''
+                };
+              });
+              if (mergedUsers.length > 0) leagueState.users = mergedUsers;
+              if (prodData.players) leagueState.players = prodData.players;
+              if (prodData.auction) leagueState.auction = prodData.auction;
+              if (prodData.squads) leagueState.squads = prodData.squads;
+              if (prodData.watchlists && typeof prodData.watchlists === 'object') {
+                leagueState.watchlists = leagueState.watchlists || {};
+                for (const [uid, pIds] of Object.entries(prodData.watchlists)) {
+                  if (Array.isArray(pIds) && pIds.length > 0) {
+                    leagueState.watchlists[uid] = Array.from(new Set([...(leagueState.watchlists[uid] || []), ...pIds]));
+                  }
+                }
+              }
+              lastProductionSyncTime = Date.now();
+              saveState();
+              broadcastState();
+            }
+            break;
+
+          case 'NEW_BID':
+            if (msg.data) {
+              const incomingPlayer = msg.data.player;
+              const incomingBid = msg.data.bid;
+              const incomingAuction = msg.data.auction;
+
+              if (incomingAuction) {
+                leagueState.auction = {
+                  ...leagueState.auction,
+                  ...incomingAuction,
+                  currentBid: incomingBid || leagueState.auction.currentBid,
+                  lastUpdated: Date.now()
+                };
+              }
+              if (incomingPlayer) {
+                const pIdx = leagueState.players.findIndex((p) => p.id === incomingPlayer.id);
+                if (pIdx >= 0) {
+                  leagueState.players[pIdx] = {
+                    ...leagueState.players[pIdx],
+                    ...incomingPlayer,
+                    status: 'IN_AUCTION',
+                    currentPrice: incomingBid?.amount || incomingPlayer.currentPrice,
+                    currentBid: incomingBid || incomingPlayer.currentBid
+                  };
+                }
+              }
+              lastProductionSyncTime = Date.now();
+              saveState();
+              broadcast(msg);
+            }
+            break;
+
+          case 'AUCTION_STARTED':
+          case 'AUCTION_HAMMER':
+          case 'NOMINATION_TURN_CHANGE':
+          case 'CHAT_NOTIFICATION':
+            broadcast(msg as WSMessage);
+            break;
+        }
+      } catch {
+        // ignore parse error
+      }
+    });
+
+    ws.on('close', () => {
+      isProductionWsConnected = false;
+      prodWsClient = null;
+      prodWsReconnectTimeout = setTimeout(startProductionWebSocketBridge, 15000);
+    });
+
+    ws.on('error', () => {
+      isProductionWsConnected = false;
+      try {
+        ws.close();
+      } catch {
+        // ignore
+      }
+    });
+  } catch (err: any) {
+    prodWsReconnectTimeout = setTimeout(startProductionWebSocketBridge, 15000);
+  }
 }
 
 // Advance nomination turn to next active participant
@@ -558,11 +813,9 @@ function isPositionCompatibleWithSlot(slotRole: string, playerPos: string): bool
   if (slotRole === 'LD') return ['LD', 'LE', 'ZAG'].includes(playerPos);
   if (slotRole === 'VOL') return ['VOL', 'MC'].includes(playerPos);
   if (slotRole === 'MC') return ['MC', 'VOL', 'MEI'].includes(playerPos);
-  if (slotRole === 'MEI') return ['MEI', 'MC', 'ME', 'MD'].includes(playerPos);
-  if (slotRole === 'ME') return ['ME', 'PE', 'MC', 'MEI'].includes(playerPos);
-  if (slotRole === 'MD') return ['MD', 'PD', 'MC', 'MEI'].includes(playerPos);
-  if (slotRole === 'PE') return ['PE', 'ME', 'ATA'].includes(playerPos);
-  if (slotRole === 'PD') return ['PD', 'MD', 'ATA'].includes(playerPos);
+  if (slotRole === 'MEI') return ['MEI', 'MC', 'PE', 'PD'].includes(playerPos);
+  if (slotRole === 'PE') return ['PE', 'ATA'].includes(playerPos);
+  if (slotRole === 'PD') return ['PD', 'ATA'].includes(playerPos);
   if (slotRole === 'ATA') return ['ATA', 'SA', 'PE', 'PD'].includes(playerPos);
   return false;
 }
@@ -890,6 +1143,7 @@ async function startServer() {
         if (
           allowedOrigins.includes(origin) ||
           origin.endsWith('.run.app') ||
+          origin.includes('onrender.com') ||
           origin.includes('localhost') ||
           origin.includes('127.0.0.1')
         ) {
@@ -912,32 +1166,36 @@ async function startServer() {
 
   // 5. Rate Limiters with proxy header validation configured
   const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 600,
+    windowMs: 5 * 60 * 1000, // 5 min window
+    max: 3000, // generous allowance for high-frequency multiplayer events
     standardHeaders: true,
     legacyHeaders: false,
     validate: {
       xForwardedForHeader: false,
       forwardedHeader: false,
+    },
+    skip: (req) => {
+      // Do not rate-limit read-only sync, heartbeats or static uploads
+      return req.path === '/state' || req.path === '/auth/me' || req.path.startsWith('/uploads/');
     },
     message: { success: false, error: 'Muitas requisições. Por favor aguarde alguns instantes.' }
   });
 
   const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 25,
+    windowMs: 5 * 60 * 1000,
+    max: 100, // 100 login attempts per 5 minutes per IP
     standardHeaders: true,
     legacyHeaders: false,
     validate: {
       xForwardedForHeader: false,
       forwardedHeader: false,
     },
-    message: { success: false, error: 'Muitas tentativas de autenticação. Por segurança, aguarde alguns minutos.' }
+    message: { success: false, error: 'Muitas tentativas de login. Por segurança, aguarde alguns minutos.' }
   });
 
   const bidLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 60,
+    max: 120,
     standardHeaders: true,
     legacyHeaders: false,
     validate: {
@@ -948,7 +1206,8 @@ async function startServer() {
   });
 
   app.use('/api/', apiLimiter);
-  app.use('/api/auth/', authLimiter);
+  app.post('/api/auth/login', authLimiter);
+  app.post('/api/auth/register', authLimiter);
 
   // 6. Authentication Middlewares & Helpers
   interface AuthenticatedRequest extends Request {
@@ -1549,7 +1808,7 @@ async function startServer() {
       const phasePositions: Record<AuctionPhase, string[]> = {
         GOLEIROS: ['GOL'],
         DEFENSORES: ['ZAG', 'LE', 'LD'],
-        MEIO_CAMPO: ['VOL', 'MC', 'MEI', 'MD', 'ME'],
+        MEIO_CAMPO: ['VOL', 'MC', 'MEI'],
         ATACANTES: ['ATA', 'PE', 'PD', 'SA']
       };
       const allowedPositions = phasePositions[currentPhase] || [];
@@ -2115,7 +2374,9 @@ async function startServer() {
       return;
     }
 
-    const pos = (position && String(position).trim().toUpperCase()) || 'ATA';
+    let pos = (position && String(position).trim().toUpperCase()) || 'ATA';
+    if (pos === 'MD') pos = 'PD';
+    if (pos === 'ME') pos = 'PE';
 
     // Lance Mínimo Obrigatório: € 10.000.000 (€ 10M) para qualquer jogador extra
     const MIN_EXTRA_PRICE = 10000000;
@@ -2334,7 +2595,10 @@ async function startServer() {
     }
 
     player.name = nameCheck.value!;
-    player.position = positionCheck.position as PlayerPosition;
+    let normPos = positionCheck.position as string;
+    if (normPos === 'MD') normPos = 'PD';
+    if (normPos === 'ME') normPos = 'PE';
+    player.position = normPos as PlayerPosition;
     player.club = clubCheck.value!;
     if (nationality) {
       const nationalityCheck = validateString(nationality, 'Nacionalidade', 1, 100);
@@ -2407,6 +2671,61 @@ async function startServer() {
     });
 
     res.json({ success: true, player });
+  });
+
+  // Admin: Return multiple players to market in a single atomic batch
+  app.post('/api/admin/player/release-batch', (req: Request, res: Response) => {
+    if (!checkAdmin(req, res)) return;
+    const { playerIds } = req.body;
+    if (!Array.isArray(playerIds) || playerIds.length === 0) {
+      res.status(400).json({ success: false, error: 'Lista de IDs de jogadores inválida' });
+      return;
+    }
+
+    const releasedPlayers: Player[] = [];
+    for (const playerId of playerIds) {
+      const player = leagueState.players.find((p) => p.id === playerId);
+      if (!player) continue;
+
+      if (player.soldTo) {
+        const prevOwner = leagueState.users.find((u) => u.id === player.soldTo?.userId);
+        if (prevOwner) {
+          prevOwner.budget += player.soldTo.amount;
+          prevOwner.spent = Math.max(0, prevOwner.spent - player.soldTo.amount);
+        }
+
+        const ownerSquad = leagueState.squads[player.soldTo.userId];
+        if (ownerSquad) {
+          Object.keys(ownerSquad.starterSlots).forEach((slotId) => {
+            if (ownerSquad.starterSlots[slotId] === playerId) {
+              delete ownerSquad.starterSlots[slotId];
+            }
+          });
+          ownerSquad.benchPlayerIds = ownerSquad.benchPlayerIds.filter((id) => id !== playerId);
+        }
+      }
+
+      player.status = 'AVAILABLE';
+      player.currentPrice = player.initialPrice;
+      player.soldTo = undefined;
+      player.nominatedBy = undefined;
+      releasedPlayers.push(player);
+    }
+
+    saveState();
+    broadcastState();
+    if (releasedPlayers.length > 0) {
+      broadcast({
+        type: 'CHAT_NOTIFICATION',
+        data: {
+          message: `📢 ${releasedPlayers.length} ${releasedPlayers.length === 1 ? 'jogador foi devolvido' : 'jogadores foram devolvidos'} ao mercado de transferências!`,
+          timestamp: Date.now(),
+          type: 'info'
+        }
+      });
+    }
+
+    res.json({ success: true, count: releasedPlayers.length, players: releasedPlayers });
   });
 
   // 8. Admin: User management
@@ -2507,6 +2826,23 @@ async function startServer() {
     saveState();
     broadcastState();
     res.json({ success: true });
+  });
+
+  // Status da sincronização com o site de produção (Render)
+  app.get('/api/production-sync/status', (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      productionUrl: PRODUCTION_ORIGIN,
+      wsConnected: isProductionWsConnected,
+      lastSyncTime: lastProductionSyncTime,
+    });
+  });
+
+  // Admin: disparar sincronização com produção sob demanda
+  app.post('/api/admin/sync-production', async (req: Request, res: Response) => {
+    if (!checkAdmin(req, res)) return;
+    const result = await syncFromProductionState(true);
+    res.json(result);
   });
 
   // 9. Admin: Auction control action
@@ -2831,6 +3167,11 @@ async function startServer() {
       case 'TOGGLE_FREE_NOMINATION':
         leagueState.auction.isFreeNominationMode = !leagueState.auction.isFreeNominationMode;
         break;
+      case 'PASS_NOMINATION_TURN':
+      case 'ADVANCE_NOMINATION_TURN':
+        advanceNominationTurn();
+        leagueState.auction.nominationTimerRemaining = 45;
+        break;
       case 'SET_NOMINATOR':
         leagueState.auction.nominationTurnUserId = value;
         leagueState.auction.nominationTimerRemaining = 45;
@@ -2838,12 +3179,192 @@ async function startServer() {
       case 'RESET_MARKET_AND_SQUADS':
         executeResetMarketAndSquads(adminUser);
         break;
+      case 'RESET_PHASE':
+        executeResetPhase(Number(value) as 1 | 2 | 3, adminUser);
+        break;
     }
 
     saveState();
     broadcastState();
     res.json({ success: true, auction: leagueState.auction });
   });
+
+  function getPhaseTargetPositions(target: string | number): {
+    positions: string[];
+    phaseName: string;
+    targetAuctionPhase?: AuctionPhase;
+  } {
+    const t = String(target).toUpperCase().trim();
+    if (t === 'ATACANTES' || t === 'ATAQUE' || t === 'ATK' || t === '3') {
+      return {
+        positions: ['ATA', 'PD', 'PE', 'SA'],
+        phaseName: 'Etapa dos Atacantes (Centroavantes e Pontas)',
+        targetAuctionPhase: 'ATACANTES'
+      };
+    }
+    if (t === 'MEIO_CAMPO' || t === 'MEIO' || t === 'MID' || t === '2') {
+      return {
+        positions: ['VOL', 'MC', 'MEI'],
+        phaseName: 'Etapa do Meio-Campo (Volantes e Meias)',
+        targetAuctionPhase: 'MEIO_CAMPO'
+      };
+    }
+    if (t === 'DEFENSORES' || t === 'DEFESA' || t === 'DEF') {
+      return {
+        positions: ['ZAG', 'LE', 'LD'],
+        phaseName: 'Etapa dos Defensores (Zagueiros e Laterais)',
+        targetAuctionPhase: 'DEFENSORES'
+      };
+    }
+    if (t === 'GOLEIROS' || t === 'GOL') {
+      return {
+        positions: ['GOL'],
+        phaseName: 'Etapa dos Goleiros (GOL)',
+        targetAuctionPhase: 'GOLEIROS'
+      };
+    }
+    if (t === 'DEFESA_COMPLETA' || t === '1') {
+      return {
+        positions: ['GOL', 'ZAG', 'LE', 'LD'],
+        phaseName: 'Etapa de Defensores & Goleiros',
+        targetAuctionPhase: 'DEFENSORES'
+      };
+    }
+    return {
+      positions: ['ATA', 'PD', 'PE', 'SA'],
+      phaseName: 'Etapa dos Atacantes',
+      targetAuctionPhase: 'ATACANTES'
+    };
+  }
+
+  // Função centralizada para refazer o leilão por fase específica (ex: Atacantes)
+  function executeResetPhase(targetPhase: string | number, adminUser?: UserProfile) {
+    const { positions, phaseName, targetAuctionPhase } = getPhaseTargetPositions(targetPhase);
+    const adminLabel = adminUser?.adminTitle === 'Diretor'
+      ? 'O Diretor Guilherme Pereira'
+      : adminUser?.adminTitle === 'Presidente'
+      ? 'O Presidente Guilherme Tourinho'
+      : (adminUser ? `${adminUser.name} (${adminUser.adminTitle || 'Admin'})` : 'A Diretoria');
+
+    let releasedCount = 0;
+    let refundedTotal = 0;
+    const releasedPlayersList: Array<{ id: string; name: string; position: string; club: string; amount: number }> = [];
+    const refundedByClub: Record<string, { clubName: string; amount: number; count: number }> = {};
+
+    // 1. Encontrar todos os jogadores da fase que foram vendidos ou indicados
+    leagueState.players.forEach((player) => {
+      if (!positions.includes(player.position)) return;
+
+      // Se o jogador estiver vendido para um clube
+      if (player.soldTo) {
+        const amount = player.soldTo.amount || 0;
+        const buyerId = player.soldTo.userId;
+        const prevOwner = leagueState.users.find((u) => u.id === buyerId);
+
+        if (prevOwner) {
+          prevOwner.budget += amount;
+          prevOwner.spent = Math.max(0, prevOwner.spent - amount);
+
+          if (!refundedByClub[buyerId]) {
+            refundedByClub[buyerId] = {
+              clubName: prevOwner.teamName || prevOwner.name,
+              amount: 0,
+              count: 0
+            };
+          }
+          refundedByClub[buyerId].amount += amount;
+          refundedByClub[buyerId].count += 1;
+        }
+
+        // Remover do elenco do clube (titulares e reservas)
+        const ownerSquad = leagueState.squads[buyerId];
+        if (ownerSquad) {
+          Object.keys(ownerSquad.starterSlots).forEach((slotId) => {
+            if (ownerSquad.starterSlots[slotId] === player.id) {
+              delete ownerSquad.starterSlots[slotId];
+            }
+          });
+          ownerSquad.benchPlayerIds = ownerSquad.benchPlayerIds.filter((id) => id !== player.id);
+        }
+
+        refundedTotal += amount;
+        releasedCount += 1;
+        releasedPlayersList.push({
+          id: player.id,
+          name: player.name,
+          position: player.position,
+          club: prevOwner?.teamName || prevOwner?.name || 'Clube',
+          amount
+        });
+      }
+
+      // Restaurar o atleta como disponível para novos lances
+      player.status = 'AVAILABLE';
+      player.currentPrice = player.initialPrice;
+      player.soldTo = undefined;
+      player.nominatedBy = undefined;
+      player.currentBid = null;
+      player.bidHistory = [];
+      player.timerRemaining = undefined;
+      player.auctionExpiresAt = undefined;
+    });
+
+    // 2. Se o jogador atualmente em leilão for desta fase, cancela o leilão ativo
+    if (leagueState.auction.currentPlayer) {
+      if (positions.includes(leagueState.auction.currentPlayer.position)) {
+        leagueState.auction.status = 'IDLE';
+        leagueState.auction.currentPlayer = null;
+        leagueState.auction.currentBid = null;
+        leagueState.auction.bidHistory = [];
+        leagueState.auction.timerRemaining = 0;
+      }
+    }
+
+    // 3. Remover atletas dessa fase da fila de nomeações
+    if (leagueState.auction.nominationQueue && Array.isArray(leagueState.auction.nominationQueue)) {
+      leagueState.auction.nominationQueue = leagueState.auction.nominationQueue.filter((item) => {
+        const pos = item?.player?.position || (item as any)?.position;
+        return !positions.includes(pos);
+      });
+    }
+
+    // 4. Se houver fase de leilão correspondente, define o leilão para ela
+    if (targetAuctionPhase) {
+      leagueState.auction.auctionType = 'PHASED';
+      leagueState.auction.currentPhase = targetAuctionPhase;
+    }
+
+    // Se o leilão estava encerrado (ENDED), reabre o leilão para permitir novos lances na fase refeita
+    if (leagueState.auction.status === 'ENDED') {
+      leagueState.auction.status = 'NOT_STARTED';
+    }
+
+    leagueState.auction.lastUpdated = Date.now();
+
+    // 5. Salvar e transmitir
+    saveState();
+    broadcastState();
+
+    const formattedRefund = `€ ${(refundedTotal / 1000000).toFixed(1)}M`;
+    broadcast({
+      type: 'CHAT_NOTIFICATION',
+      data: {
+        message: `🔄 ${adminLabel} refez a etapa de leilão: ${phaseName}! ${releasedCount} ${releasedCount === 1 ? 'atleta retornou' : 'atletas retornaram'} ao mercado como disponíveis e ${formattedRefund} foram estornados integralmente aos cofres dos clubes compradores!`,
+        timestamp: Date.now(),
+        type: 'alert'
+      }
+    });
+
+    return {
+      phase: targetPhase,
+      phaseName,
+      targetAuctionPhase,
+      releasedCount,
+      refundedTotal,
+      refundedByClub,
+      releasedPlayersList
+    };
+  }
 
   // Função centralizada para resetar mercado, retirar jogadores dos clubes e devolver saldos
   function executeResetMarketAndSquads(adminUser?: UserProfile) {
@@ -2929,6 +3450,29 @@ async function startServer() {
     });
   });
 
+  // 10b. Admin: Refazer o leilão por fase específica (Atacantes, Meio-Campo, Defensores ou Goleiros)
+  app.post('/api/admin/auction/reset-phase', (req: Request, res: Response) => {
+    if (!checkAdmin(req, res)) return;
+    const adminId = req.headers['x-user-id'] as string;
+    const adminUser = leagueState.users.find((u) => u.id === adminId);
+    const { phase } = req.body;
+
+    if (!phase) {
+      res.status(400).json({ success: false, error: 'Identificador de fase inválido ou não fornecido.' });
+      return;
+    }
+
+    const result = executeResetPhase(phase, adminUser);
+    res.json({
+      success: true,
+      ...result,
+      message: `${result.phaseName} refeita com sucesso! ${result.releasedCount} ${result.releasedCount === 1 ? 'atleta retornou' : 'atletas retornaram'} ao mercado e € ${(result.refundedTotal / 1000000).toFixed(1)}M foram estornados aos clubes. A fase ativa do leilão foi posicionada para novas disputas.`,
+      auction: leagueState.auction,
+      players: leagueState.players,
+      users: leagueState.users
+    });
+  });
+
   // API 404 fallback - never serve HTML for /api requests
   app.use('/api', (_req: Request, res: Response) => {
     res.status(404).json({ success: false, error: 'Endpoint da API não encontrado' });
@@ -2984,6 +3528,31 @@ async function startServer() {
         };
       }
 
+      // 4. Merge players / sold statuses
+      if (cloudData.players && cloudData.players.length > 0) {
+        cloudData.players.forEach((cp) => {
+          const idx = leagueState.players.findIndex((p) => p.id === cp.id);
+          if (idx >= 0) {
+            leagueState.players[idx] = { ...leagueState.players[idx], ...cp };
+          } else {
+            leagueState.players.push(cp);
+          }
+        });
+        console.log(`[Firebase] Restored ${cloudData.players.length} modified players from Firestore.`);
+      }
+
+      // 5. Merge watchlists
+      if (cloudData.watchlists && Object.keys(cloudData.watchlists).length > 0) {
+        if (!leagueState.watchlists) leagueState.watchlists = {};
+        Object.entries(cloudData.watchlists).forEach(([uid, pIds]) => {
+          if (Array.isArray(pIds) && pIds.length > 0) {
+            const existing = leagueState.watchlists[uid] || [];
+            leagueState.watchlists[uid] = Array.from(new Set([...existing, ...pIds]));
+          }
+        });
+        console.log(`[Firebase] Restored watchlists for ${Object.keys(cloudData.watchlists).length} users from Firestore.`);
+      }
+
       saveState();
     } else {
       console.log('[Firebase] Initial run or empty cloud DB: seeding master state to Cloud Firestore...');
@@ -2992,6 +3561,16 @@ async function startServer() {
   } catch (cloudErr) {
     console.error('[Firebase] Failed to hydrate state from Firestore on boot:', cloudErr);
   }
+
+  // Sincronização automática com a instância em produção (Render)
+  try {
+    await syncFromProductionState(false);
+  } catch (syncErr) {
+    console.warn('[Production Sync] Sincronização inicial com produção adiada:', syncErr);
+  }
+
+  // Inicia ponte WebSocket em tempo real para sincronização contínua de eventos
+  startProductionWebSocketBridge();
 
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Khedira League Server running on http://0.0.0.0:${PORT}`);

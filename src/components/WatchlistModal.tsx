@@ -31,7 +31,7 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
   onNavigateToAuction,
   onNavigateToCatalog,
 }) => {
-  const [filterSector, setFilterSector] = useState<'ALL' | 'DEF' | 'MEI' | 'ATA'>('ALL');
+  const [filterPosition, setFilterPosition] = useState<string>('ALL');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'IN_AUCTION' | 'AVAILABLE' | 'SOLD'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -44,11 +44,27 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
     return players.filter((p) => watchedPlayerIds.includes(p.id));
   }, [players, watchedPlayerIds]);
 
+  const positionCounts = useMemo(() => {
+    return {
+      ALL: watchedPlayers.length,
+      GOL: watchedPlayers.filter((p) => p.position === 'GOL').length,
+      ZAG: watchedPlayers.filter((p) => p.position === 'ZAG').length,
+      LD: watchedPlayers.filter((p) => p.position === 'LD').length,
+      LE: watchedPlayers.filter((p) => p.position === 'LE').length,
+      VOL: watchedPlayers.filter((p) => p.position === 'VOL').length,
+      MC: watchedPlayers.filter((p) => p.position === 'MC').length,
+      MEI: watchedPlayers.filter((p) => p.position === 'MEI').length,
+      ATA: watchedPlayers.filter((p) => p.position === 'ATA').length,
+      PE: watchedPlayers.filter((p) => p.position === 'PE').length,
+      PD: watchedPlayers.filter((p) => p.position === 'PD').length,
+    };
+  }, [watchedPlayers]);
+
   const filteredList = useMemo(() => {
     return watchedPlayers.filter((player) => {
-      if (filterSector === 'DEF' && !['GOL', 'ZAG', 'LE', 'LD'].includes(player.position)) return false;
-      if (filterSector === 'MEI' && !['VOL', 'MC', 'MEI'].includes(player.position)) return false;
-      if (filterSector === 'ATA' && !['ATA', 'PE', 'PD', 'ME', 'MD', 'SA'].includes(player.position)) return false;
+      if (filterPosition !== 'ALL' && player.position !== filterPosition) {
+        return false;
+      }
 
       // Status check
       const isCurrentlyInAuction = auction.status === 'ACTIVE' && auction.currentPlayer?.id === player.id;
@@ -62,7 +78,7 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
 
       return true;
     });
-  }, [watchedPlayers, filterSector, filterStatus, searchTerm, auction.status, auction.currentPlayer]);
+  }, [watchedPlayers, filterPosition, filterStatus, searchTerm, auction.status, auction.currentPlayer]);
 
   if (!isOpen) return null;
 
@@ -139,40 +155,39 @@ export const WatchlistModal: React.FC<WatchlistModalProps> = ({
 
         {/* Filters and Search Bar */}
         <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          {/* Sector Filter Tabs */}
+          {/* Exact Position Filter Tabs */}
           <div className="flex items-center gap-1 p-1 bg-white rounded-xl border border-slate-200 text-xs overflow-x-auto">
-            <button
-              onClick={() => setFilterSector('ALL')}
-              className={`px-3 py-1 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                filterSector === 'ALL' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Todos ({watchedPlayers.length})
-            </button>
-            <button
-              onClick={() => setFilterSector('DEF')}
-              className={`px-3 py-1 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                filterSector === 'DEF' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Defesa & GOL ({watchedPlayers.filter((p) => ['GOL', 'ZAG', 'LE', 'LD'].includes(p.position)).length})
-            </button>
-            <button
-              onClick={() => setFilterSector('MEI')}
-              className={`px-3 py-1 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                filterSector === 'MEI' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Meio-Campo ({watchedPlayers.filter((p) => ['VOL', 'MC', 'MEI'].includes(p.position)).length})
-            </button>
-            <button
-              onClick={() => setFilterSector('ATA')}
-              className={`px-3 py-1 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                filterSector === 'ATA' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Ataque ({watchedPlayers.filter((p) => ['ATA', 'PE', 'PD', 'ME', 'MD', 'SA'].includes(p.position)).length})
-            </button>
+            {[
+              { id: 'ALL', label: 'Todos', count: positionCounts.ALL },
+              { id: 'GOL', label: 'GOL', count: positionCounts.GOL },
+              { id: 'ZAG', label: 'ZAG', count: positionCounts.ZAG },
+              { id: 'LD', label: 'LD', count: positionCounts.LD },
+              { id: 'LE', label: 'LE', count: positionCounts.LE },
+              { id: 'VOL', label: 'VOL', count: positionCounts.VOL },
+              { id: 'MC', label: 'MC', count: positionCounts.MC },
+              { id: 'MEI', label: 'MEI', count: positionCounts.MEI },
+              { id: 'ATA', label: 'ATA', count: positionCounts.ATA },
+              { id: 'PE', label: 'PE', count: positionCounts.PE },
+              { id: 'PD', label: 'PD', count: positionCounts.PD },
+            ].map((pos) => {
+              const isSelected = filterPosition === pos.id;
+              return (
+                <button
+                  key={pos.id}
+                  onClick={() => setFilterPosition(pos.id)}
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    isSelected ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span>{pos.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    isSelected ? 'bg-amber-700 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {pos.count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Search Box */}

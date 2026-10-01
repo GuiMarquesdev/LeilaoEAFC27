@@ -984,7 +984,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-99",
     "name": "Luis Díaz",
-    "position": "ME",
+    "position": "PE",
     "club": "Liverpool",
     "nationality": "Colômbia",
     "initialPrice": 45000000,
@@ -994,7 +994,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-100",
     "name": "Jack Grealish",
-    "position": "ME",
+    "position": "PE",
     "club": "Manchester City",
     "nationality": "Inglaterra",
     "initialPrice": 15000000,
@@ -1004,7 +1004,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-101",
     "name": "Michael Olise",
-    "position": "MD",
+    "position": "PD",
     "club": "Bayern de Munique",
     "nationality": "França",
     "initialPrice": 70000000,
@@ -11464,7 +11464,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1147",
     "name": "A. Diao",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11474,7 +11474,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1148",
     "name": "A. Dønnum",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11484,7 +11484,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1149",
     "name": "A. Fatawu",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11494,7 +11494,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1150",
     "name": "A. Kade",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11504,7 +11504,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1151",
     "name": "A. Khalaili",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11514,7 +11514,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1152",
     "name": "Aitor Ruibal",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11524,7 +11524,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1153",
     "name": "Amad",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11534,7 +11534,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1154",
     "name": "Brahim",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11544,7 +11544,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1155",
     "name": "C. Espinoza",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11554,7 +11554,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1156",
     "name": "C. Talbi",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11564,7 +11564,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1157",
     "name": "Carlos Álvarez",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11574,7 +11574,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1158",
     "name": "Carlos Forbs",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11584,7 +11584,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1159",
     "name": "Carlos Vicente",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11594,7 +11594,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1160",
     "name": "D. Bakwa",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11604,7 +11604,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1161",
     "name": "D. Brooks",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11614,7 +11614,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1162",
     "name": "D. McNeil",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11624,7 +11624,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1163",
     "name": "D. Ouattara",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11634,7 +11634,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1164",
     "name": "D. Zappacosta",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11644,7 +11644,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1165",
     "name": "Diego Moreira",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11654,7 +11654,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1166",
     "name": "E. Poku",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11664,7 +11664,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1167",
     "name": "E. Zhegrova",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11674,7 +11674,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1168",
     "name": "F. Chiesa",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11684,7 +11684,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1169",
     "name": "F. Honorat",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11694,7 +11694,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1170",
     "name": "F. Mastantuono",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11704,7 +11704,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1171",
     "name": "Geny Catamo",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11714,7 +11714,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1172",
     "name": "Geovany Quenda",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11724,7 +11724,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1173",
     "name": "Giuliano",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11734,7 +11734,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1174",
     "name": "I. Kebbal",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11744,7 +11744,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1175",
     "name": "J. Beste",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11754,7 +11754,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1176",
     "name": "J. Bowen",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11764,7 +11764,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1177",
     "name": "J. Ito",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11774,7 +11774,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1178",
     "name": "J. Leweling",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11784,7 +11784,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1179",
     "name": "J. McGinn",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11794,7 +11794,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1180",
     "name": "K. Adeyemi",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11804,7 +11804,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1181",
     "name": "K. Coman",
-    "position": "MD",
+    "position": "PD",
     "club": "Bayern de Munique",
     "nationality": "França",
     "initialPrice": 10000000,
@@ -11814,7 +11814,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1182",
     "name": "L. Blas",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11824,7 +11824,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1183",
     "name": "L. Karl",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11834,7 +11834,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1184",
     "name": "Luis Rioja",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11844,7 +11844,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1185",
     "name": "M. Diaby",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11854,7 +11854,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1186",
     "name": "M. Greenwood",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11864,7 +11864,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1187",
     "name": "M. Kudus",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11874,7 +11874,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1188",
     "name": "N. Kühn",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11884,7 +11884,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1189",
     "name": "N. Tella",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11894,7 +11894,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1190",
     "name": "O. Bobb",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11904,7 +11904,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1191",
     "name": "O. Hutchinson",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11914,7 +11914,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1192",
     "name": "P. Pflücke",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11924,7 +11924,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1193",
     "name": "R. Alvarado",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11934,7 +11934,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1194",
     "name": "R. Del Castillo",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11944,7 +11944,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1195",
     "name": "R. Doan",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11954,7 +11954,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1196",
     "name": "R. Orsolini",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11964,7 +11964,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1197",
     "name": "Rayan",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11974,7 +11974,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1198",
     "name": "Rubén García",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11984,7 +11984,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1199",
     "name": "S. Chukwueze",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -11994,7 +11994,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1200",
     "name": "Sergio Canales",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12004,7 +12004,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1201",
     "name": "T. Buchanan",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12014,7 +12014,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1202",
     "name": "T. Kubo",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12024,7 +12024,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1203",
     "name": "T. Palacios",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12034,7 +12034,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1204",
     "name": "V. Černý",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12044,7 +12044,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1205",
     "name": "Y. Minteh",
-    "position": "MD",
+    "position": "PD",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12054,7 +12054,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1206",
     "name": "A. Adli",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12064,7 +12064,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1207",
     "name": "A. Garnacho",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12074,7 +12074,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1208",
     "name": "A. Iwobi",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12084,7 +12084,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1209",
     "name": "A. Knauff",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12094,7 +12094,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1210",
     "name": "Afonso Moreira",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12104,7 +12104,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1211",
     "name": "Álex Baena",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12114,7 +12114,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1212",
     "name": "Ansu Fati",
-    "position": "ME",
+    "position": "PE",
     "club": "Barcelona",
     "nationality": "Espanha",
     "initialPrice": 10000000,
@@ -12124,7 +12124,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1213",
     "name": "B. Yılmaz",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12134,7 +12134,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1214",
     "name": "Bryan Zaragoza",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12144,7 +12144,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1215",
     "name": "C. Führich",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12154,7 +12154,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1216",
     "name": "C. Gakpo",
-    "position": "ME",
+    "position": "PE",
     "club": "Liverpool",
     "nationality": "Holanda",
     "initialPrice": 10000000,
@@ -12164,7 +12164,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1217",
     "name": "C. Hudson-Odoi",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12174,7 +12174,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1218",
     "name": "C. Summerville",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12184,7 +12184,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1219",
     "name": "Carreira",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12194,7 +12194,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1220",
     "name": "D. Maeda",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12204,7 +12204,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1221",
     "name": "D. Ndoye",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12214,7 +12214,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1222",
     "name": "Daniel Podence",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12224,7 +12224,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1223",
     "name": "E. Buendía",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12234,7 +12234,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1224",
     "name": "F. Sakala",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12244,7 +12244,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1225",
     "name": "G. Nkoudou",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12254,7 +12254,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1226",
     "name": "Galeno",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12264,7 +12264,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1227",
     "name": "Grimaldo",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12274,7 +12274,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1228",
     "name": "I. Ndiaye",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12284,7 +12284,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1229",
     "name": "Igor Paixão",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12294,7 +12294,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1230",
     "name": "Iñigo Vicente",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12304,7 +12304,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1231",
     "name": "J. Anthony",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12314,7 +12314,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1232",
     "name": "J. Bahoya",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12324,7 +12324,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1233",
     "name": "J. Campaz",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12334,7 +12334,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1234",
     "name": "J. Clarke",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12344,7 +12344,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1235",
     "name": "J. Gittens",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12354,7 +12354,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1236",
     "name": "J. Kamiński",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12364,7 +12364,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1237",
     "name": "J. Philogene",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12374,7 +12374,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1238",
     "name": "J. Rowe",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12384,7 +12384,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1239",
     "name": "Jesús Rodríguez",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12394,7 +12394,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1240",
     "name": "K. Aktürkoğlu",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12404,7 +12404,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1241",
     "name": "K. Mitoma",
-    "position": "ME",
+    "position": "PE",
     "club": "Brighton",
     "nationality": "Japão",
     "initialPrice": 10000000,
@@ -12414,7 +12414,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1242",
     "name": "K. Nakamura",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12424,7 +12424,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1243",
     "name": "K. Schade",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12434,7 +12434,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1244",
     "name": "Kevin",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12444,7 +12444,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1245",
     "name": "M. Al Tamari",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12454,7 +12454,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1246",
     "name": "M. Araújo",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12464,7 +12464,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1247",
     "name": "M. Fofana",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12474,7 +12474,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1248",
     "name": "M. Godo",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12484,7 +12484,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1249",
     "name": "M. Mudryk",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12494,7 +12494,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1250",
     "name": "M. Simon",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12504,7 +12504,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1251",
     "name": "M. Solomon",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12514,7 +12514,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1252",
     "name": "M. Tavernier",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12524,7 +12524,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1253",
     "name": "M. Tel",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12534,7 +12534,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1254",
     "name": "M. Vargas",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12544,7 +12544,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1255",
     "name": "Moleiro",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12554,7 +12554,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1256",
     "name": "N. Cambiaghi",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12564,7 +12564,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1257",
     "name": "N. González",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12574,7 +12574,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1258",
     "name": "N. Lang",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12584,7 +12584,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1259",
     "name": "N. Zalewski",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12594,7 +12594,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1260",
     "name": "O. Niang",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12604,7 +12604,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1261",
     "name": "P. Dorgu",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12614,7 +12614,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1262",
     "name": "P. Wimmer",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12624,7 +12624,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1263",
     "name": "Pedro Gonçalves",
-    "position": "ME",
+    "position": "PE",
     "club": "Sporting CP",
     "nationality": "Portugal",
     "initialPrice": 10000000,
@@ -12634,7 +12634,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1264",
     "name": "R. Hack",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12644,7 +12644,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1265",
     "name": "R. Ngumoha",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12654,7 +12654,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1266",
     "name": "Riquelme",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12664,7 +12664,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1267",
     "name": "S. Al Dawsari",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12674,7 +12674,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1268",
     "name": "S. Benrahma",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12684,7 +12684,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1269",
     "name": "S. El Mala",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12694,7 +12694,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1270",
     "name": "S. Mané",
-    "position": "ME",
+    "position": "PE",
     "club": "Al-Nassr",
     "nationality": "Senegal",
     "initialPrice": 10000000,
@@ -12704,7 +12704,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1271",
     "name": "T. Minamino",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12714,7 +12714,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1272",
     "name": "T. Werner",
-    "position": "ME",
+    "position": "PE",
     "club": "Tottenham",
     "nationality": "Alemanha",
     "initialPrice": 10000000,
@@ -12724,7 +12724,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1273",
     "name": "Tiago Tomás",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12734,7 +12734,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1274",
     "name": "V. Grifo",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12744,7 +12744,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1275",
     "name": "Valera",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12754,7 +12754,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1276",
     "name": "Víctor Muñoz",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12764,7 +12764,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1277",
     "name": "W. Odobert",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -12774,7 +12774,7 @@ export const INITIAL_PLAYERS: Player[] = [
   {
     "id": "p-1278",
     "name": "Yeremay",
-    "position": "ME",
+    "position": "PE",
     "club": "EAFC Elite",
     "nationality": "Internacional",
     "initialPrice": 10000000,
@@ -14397,10 +14397,10 @@ export const INITIAL_FORMATIONS: TacticalFormation[] = [
       { slotId: 'zag-e', role: 'ZAG', x: 38, y: 72 },
       { slotId: 'zag-d', role: 'ZAG', x: 62, y: 72 },
       { slotId: 'ld', role: 'LD', x: 84, y: 70 },
-      { slotId: 'me', role: 'ME', x: 18, y: 46 },
+      { slotId: 'me', role: 'PE', x: 18, y: 46 },
       { slotId: 'mc-e', role: 'MC', x: 38, y: 48 },
       { slotId: 'mc-d', role: 'MC', x: 62, y: 48 },
-      { slotId: 'md', role: 'MD', x: 82, y: 46 },
+      { slotId: 'md', role: 'PD', x: 82, y: 46 },
       { slotId: 'ata-e', role: 'ATA', x: 38, y: 18 },
       { slotId: 'ata-d', role: 'ATA', x: 62, y: 18 }
     ]

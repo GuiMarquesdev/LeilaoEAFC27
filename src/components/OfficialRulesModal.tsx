@@ -160,7 +160,7 @@ export const OfficialRulesModal: React.FC<OfficialRulesModalProps> = ({ isOpen, 
                   </div>
                   <h4 className="text-xs font-extrabold text-slate-900">Setor Ofensivo</h4>
                   <p className="text-[11px] text-slate-500 mt-1 leading-normal">
-                    Exclusivo para <strong>Pontas (PE / PD / ME / MD)</strong>, <strong>Segundos Atacantes (SA)</strong> e <strong>Centroavantes (ATA)</strong>.
+                    Exclusivo para <strong>Pontas (PE / PD)</strong>, <strong>Segundos Atacantes (SA)</strong> e <strong>Centroavantes (ATA)</strong>.
                   </p>
                 </div>
               </div>

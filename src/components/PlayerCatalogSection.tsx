@@ -98,6 +98,22 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
     return getPlayerEffectivePrice(p, auction);
   };
 
+  const positionCounts = useMemo(() => {
+    return {
+      ALL: scopedPlayers.length,
+      GOL: scopedPlayers.filter((p) => p.position === 'GOL').length,
+      ZAG: scopedPlayers.filter((p) => p.position === 'ZAG').length,
+      LD: scopedPlayers.filter((p) => p.position === 'LD').length,
+      LE: scopedPlayers.filter((p) => p.position === 'LE').length,
+      VOL: scopedPlayers.filter((p) => p.position === 'VOL').length,
+      MC: scopedPlayers.filter((p) => p.position === 'MC').length,
+      MEI: scopedPlayers.filter((p) => p.position === 'MEI').length,
+      ATA: scopedPlayers.filter((p) => p.position === 'ATA').length,
+      PE: scopedPlayers.filter((p) => p.position === 'PE').length,
+      PD: scopedPlayers.filter((p) => p.position === 'PD').length,
+    };
+  }, [scopedPlayers]);
+
   // Filter & sort logic
   const filteredPlayers = useMemo(() => {
     return scopedPlayers
@@ -469,83 +485,52 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
             />
           </div>
 
-          {/* Position Group Tabs */}
+          {/* Exact Position Tabs */}
           <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl overflow-x-auto text-xs font-medium">
-            <button
-              onClick={() => {
-                setCategoryFilter('ALL');
-                setExactPositionFilter(null);
-                setCurrentPage(1);
-              }}
-              className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                categoryFilter === 'ALL' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Todos ({players.length})
-            </button>
-
-            <button
-              onClick={() => {
-                setCategoryFilter('GOL');
-                setExactPositionFilter(null);
-                setCurrentPage(1);
-              }}
-              className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                categoryFilter === 'GOL' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Goleiros (GOL)
-            </button>
-
-            <button
-              onClick={() => {
-                setCategoryFilter('DEF');
-                setExactPositionFilter(null);
-                setCurrentPage(1);
-              }}
-              className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                categoryFilter === 'DEF' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Defesa (ZAG, LE, LD)
-            </button>
-
-            <button
-              onClick={() => {
-                setCategoryFilter('MEI');
-                setExactPositionFilter(null);
-                setCurrentPage(1);
-              }}
-              className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                categoryFilter === 'MEI' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Meio-Campo (VOL, MC, MEI)
-            </button>
-
-            <button
-              onClick={() => {
-                setCategoryFilter('ATA');
-                setExactPositionFilter(null);
-                setCurrentPage(1);
-              }}
-              className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-                categoryFilter === 'ATA' && !exactPositionFilter ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Ataque & Pontas (ATA, PE, PD...)
-            </button>
-
-            {exactPositionFilter && (
-              <button
-                onClick={() => setExactPositionFilter(null)}
-                className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-black shadow-xs flex items-center gap-1.5 whitespace-nowrap cursor-pointer animate-in fade-in"
-                title="Clique para remover filtro de posição"
-              >
-                <span>Filtro: {exactPositionFilter}</span>
-                <X className="w-3 h-3" />
-              </button>
-            )}
+            {[
+              { id: 'ALL', label: 'Todos', count: positionCounts.ALL },
+              { id: 'GOL', label: 'GOL', count: positionCounts.GOL },
+              { id: 'ZAG', label: 'ZAG', count: positionCounts.ZAG },
+              { id: 'LD', label: 'LD', count: positionCounts.LD },
+              { id: 'LE', label: 'LE', count: positionCounts.LE },
+              { id: 'VOL', label: 'VOL', count: positionCounts.VOL },
+              { id: 'MC', label: 'MC', count: positionCounts.MC },
+              { id: 'MEI', label: 'MEI', count: positionCounts.MEI },
+              { id: 'ATA', label: 'ATA', count: positionCounts.ATA },
+              { id: 'PE', label: 'PE', count: positionCounts.PE },
+              { id: 'PD', label: 'PD', count: positionCounts.PD },
+            ].map((pos) => {
+              const isSelected = pos.id === 'ALL'
+                ? !exactPositionFilter && categoryFilter === 'ALL'
+                : exactPositionFilter === pos.id;
+              return (
+                <button
+                  key={pos.id}
+                  onClick={() => {
+                    if (pos.id === 'ALL') {
+                      setCategoryFilter('ALL');
+                      setExactPositionFilter(null);
+                    } else {
+                      setExactPositionFilter(pos.id);
+                      setCategoryFilter('ALL');
+                    }
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-white text-slate-900 font-bold shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span>{pos.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    isSelected ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {pos.count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Status Filter */}

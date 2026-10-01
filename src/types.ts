@@ -2,9 +2,10 @@ export type UserRole = 'ADMIN' | 'PARTICIPANT';
 
 export type PlayerPosition = 
   | 'GOL' 
-  | 'ZAG' | 'LE' | 'LD' 
-  | 'VOL' | 'MC' | 'MEI' | 'MD' | 'ME' 
-  | 'ATA' | 'PD' | 'PE' | 'SA';
+  | 'ZAG' | 'LD' | 'LE' 
+  | 'VOL' | 'MC' | 'MEI' 
+  | 'ATA' | 'PE' | 'PD' 
+  | 'MD' | 'ME' | 'SA';
 
 export type PlayerStatus = 'AVAILABLE' | 'IN_AUCTION' | 'SOLD';
 
@@ -72,6 +73,7 @@ export interface NominationQueueItem {
 
 export type AuctionType = 'FREE' | 'PHASED';
 export type AuctionPhase = 'GOLEIROS' | 'DEFENSORES' | 'MEIO_CAMPO' | 'ATACANTES';
+export type ResetPhaseTarget = 'ATACANTES' | 'MEIO_CAMPO' | 'DEFENSORES' | 'GOLEIROS' | 'DEFESA_COMPLETA' | 1 | 2 | 3 | string;
 
 export interface AuctionState {
   status: 'NOT_STARTED' | 'IDLE' | 'NOMINATING' | 'ACTIVE' | 'PAUSED' | 'FINALIZING' | 'ENDED';

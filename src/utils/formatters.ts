@@ -126,7 +126,7 @@ export const AUCTION_PHASES: AuctionPhaseDefinition[] = [
     name: 'Meio-Campo',
     label: '3ª Fase: Meio-Campo',
     shortLabel: 'Meio-Campo',
-    positions: ['VOL', 'MC', 'MEI', 'MD', 'ME'],
+    positions: ['VOL', 'MC', 'MEI'],
     icon: '⚡',
     description: 'Volantes, Meias Centrais e Meias Ofensivos liberados.',
     badgeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300',
@@ -156,7 +156,7 @@ export function getPhaseInfo(phase?: AuctionPhase): AuctionPhaseDefinition {
 export function getPlayerPhaseKey(position: string): AuctionPhase {
   if (position === 'GOL') return 'GOLEIROS';
   if (['ZAG', 'LE', 'LD'].includes(position)) return 'DEFENSORES';
-  if (['VOL', 'MC', 'MEI', 'MD', 'ME'].includes(position)) return 'MEIO_CAMPO';
+  if (['VOL', 'MC', 'MEI'].includes(position)) return 'MEIO_CAMPO';
   return 'ATACANTES';
 }
 
@@ -208,7 +208,7 @@ export function getDayLabel(
   return {
     title: 'Leilão Livre (Todas as Posições)',
     subtitle: 'Goleiros, Defensores, Meio-Campo e Atacantes liberados simultaneamente',
-    positions: ['GOL', 'ZAG', 'LE', 'LD', 'VOL', 'MC', 'MEI', 'MD', 'ME', 'PE', 'PD', 'SA', 'ATA']
+    positions: ['GOL', 'ZAG', 'LD', 'LE', 'VOL', 'MC', 'MEI', 'ATA', 'PE', 'PD']
   };
 }
 
@@ -227,41 +227,68 @@ export function getPositionBadge(position: PlayerPosition): {
         borderClass: 'border-amber-200'
       };
     case 'ZAG':
-    case 'LE':
-    case 'LD':
       return {
-        label: position === 'ZAG' ? 'Zagueiro' : position === 'LE' ? 'Lat. Esquerdo' : 'Lat. Direito',
+        label: 'Zagueiro',
         bgClass: 'bg-blue-50',
         textClass: 'text-blue-800',
         borderClass: 'border-blue-200'
       };
-    case 'VOL':
-    case 'MC':
-    case 'MEI':
-    case 'MD':
-    case 'ME':
+    case 'LD':
       return {
-        label:
-          position === 'VOL'
-            ? 'Volante'
-            : position === 'MEI'
-            ? 'Meia Ofensivo'
-            : position === 'MD'
-            ? 'Meia Direita'
-            : position === 'ME'
-            ? 'Meia Esquerda'
-            : 'Meio-Campo',
+        label: 'Lateral Direito',
+        bgClass: 'bg-sky-50',
+        textClass: 'text-sky-800',
+        borderClass: 'border-sky-200'
+      };
+    case 'LE':
+      return {
+        label: 'Lateral Esquerdo',
+        bgClass: 'bg-cyan-50',
+        textClass: 'text-cyan-800',
+        borderClass: 'border-cyan-200'
+      };
+    case 'VOL':
+      return {
+        label: 'Volante',
         bgClass: 'bg-emerald-50',
         textClass: 'text-emerald-800',
         borderClass: 'border-emerald-200'
       };
-    case 'ATA':
+    case 'MC':
+      return {
+        label: 'Meio-Campo',
+        bgClass: 'bg-teal-50',
+        textClass: 'text-teal-800',
+        borderClass: 'border-teal-200'
+      };
+    case 'MEI':
+      return {
+        label: 'Meia Ofensivo',
+        bgClass: 'bg-violet-50',
+        textClass: 'text-violet-800',
+        borderClass: 'border-violet-200'
+      };
+    case 'MD':
     case 'PD':
+      return {
+        label: 'Ponta Direita',
+        bgClass: 'bg-orange-50',
+        textClass: 'text-orange-800',
+        borderClass: 'border-orange-200'
+      };
+    case 'ME':
     case 'PE':
+      return {
+        label: 'Ponta Esquerda',
+        bgClass: 'bg-pink-50',
+        textClass: 'text-pink-800',
+        borderClass: 'border-pink-200'
+      };
+    case 'ATA':
     case 'SA':
     default:
       return {
-        label: position === 'ATA' ? 'Atacante' : position === 'PD' ? 'Ponta Direita' : 'Ponta Esquerda',
+        label: 'Atacante',
         bgClass: 'bg-rose-50',
         textClass: 'text-rose-800',
         borderClass: 'border-rose-200'
@@ -272,7 +299,7 @@ export function getPositionBadge(position: PlayerPosition): {
 export function getPositionCategory(position: PlayerPosition): 'GOL' | 'DEF' | 'MEI' | 'ATA' {
   if (position === 'GOL') return 'GOL';
   if (['ZAG', 'LE', 'LD'].includes(position)) return 'DEF';
-  if (['VOL', 'MC', 'MEI', 'MD', 'ME'].includes(position)) return 'MEI';
+  if (['VOL', 'MC', 'MEI'].includes(position)) return 'MEI';
   return 'ATA';
 }
 
@@ -339,9 +366,7 @@ export function isCompatiblePosition(slotRole: string, playerPos: string): boole
   if (slotRole === 'LD') return ['LD', 'LE', 'ZAG'].includes(playerPos);
   if (slotRole === 'VOL') return ['VOL', 'MC'].includes(playerPos);
   if (slotRole === 'MC') return ['MC', 'VOL', 'MEI'].includes(playerPos);
-  if (slotRole === 'MEI') return ['MEI', 'MC', 'ME', 'MD'].includes(playerPos);
-  if (slotRole === 'ME') return ['ME', 'PE', 'MC', 'MEI'].includes(playerPos);
-  if (slotRole === 'MD') return ['MD', 'PD', 'MC', 'MEI'].includes(playerPos);
+  if (slotRole === 'MEI') return ['MEI', 'MC', 'PE', 'PD'].includes(playerPos);
   if (slotRole === 'PE') return ['PE', 'ME', 'ATA'].includes(playerPos);
   if (slotRole === 'PD') return ['PD', 'MD', 'ATA'].includes(playerPos);
   if (slotRole === 'ATA') return ['ATA', 'SA', 'PE', 'PD'].includes(playerPos);
@@ -354,7 +379,7 @@ export function getPlayerAuctionPhase(player: { position: string; soldTo?: { auc
   }
   if (['GOL', 'ZAG', 'LE', 'LD'].includes(player.position)) return 1;
   if (['VOL', 'MC', 'MEI'].includes(player.position)) return 2;
-  if (['ATA', 'PD', 'PE', 'MD', 'ME', 'SA'].includes(player.position)) return 3;
+  if (['ATA', 'PD', 'PE', 'SA'].includes(player.position)) return 3;
   return 1;
 }
 

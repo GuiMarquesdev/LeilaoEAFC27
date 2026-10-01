@@ -3,10 +3,11 @@ import {
   X, Shield, DollarSign, Plus, Pause, Play, 
   RotateCcw, Trash2, UserCog, AlertTriangle, Check, Gavel, Crown, Square,
   Calendar, Lock, Unlock, FileText, Wallet, CheckCircle2, RefreshCw,
-  ListOrdered, ChevronRight, Clock, Timer, Sliders, Edit3
+  ListOrdered, ChevronRight, Clock, Timer, Sliders, Edit3, Star,
+  Users, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { Player, UserProfile, AuctionState, PlayerPosition, AuctionType, AuctionPhase } from '../types';
-import { formatCurrency, getPositionBadge, getDayLabel, getUserRoleBadge, formatAuctionTimer, AUCTION_PHASES } from '../utils/formatters';
+import { Player, UserProfile, AuctionState, PlayerPosition, AuctionType, AuctionPhase, ResetPhaseTarget } from '../types';
+import { formatCurrency, getPositionBadge, getDayLabel, getUserRoleBadge, formatAuctionTimer, AUCTION_PHASES, getPlayerAuctionPhase } from '../utils/formatters';
 import { AdminSigningsReportSection } from './AdminSigningsReportSection';
 
 interface AdminModalProps {
@@ -38,6 +39,9 @@ interface AdminModalProps {
   onAdminUpdateUserBudget: (targetUserId: string, budget: number) => Promise<boolean>;
   onAdminResetUser: (targetUserId: string) => Promise<boolean>;
   onAdminResetLeague: () => Promise<boolean>;
+  onAdminResetPhase?: (phase: ResetPhaseTarget) => Promise<{ success: boolean; message?: string; releasedCount?: number; refundedTotal?: number } | boolean>;
+  onAdminSyncProduction?: () => Promise<{ success: boolean; message: string }>;
+  watchlists?: { [userId: string]: string[] };
 }
 
 export const AdminModal: React.FC<AdminModalProps> = ({
@@ -57,15 +61,49 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   onAdminUpdateUserBudget,
   onAdminResetUser,
   onAdminResetLeague,
+  onAdminResetPhase,
+  onAdminSyncProduction,
+  watchlists,
   initialTab,
 }) => {
   const [activeTab, setActiveTab] = useState<'auction' | 'players' | 'users' | 'danger' | 'report'>(initialTab || 'auction');
+  const [isSyncingProduction, setIsSyncingProduction] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleSyncProductionNow = async () => {
+    if (!onAdminSyncProduction) return;
+    setIsSyncingProduction(true);
+    setSyncFeedback(null);
+    try {
+      const res = await onAdminSyncProduction();
+      setSyncFeedback(res);
+      setTimeout(() => setSyncFeedback(null), 5000);
+    } catch (err: any) {
+      setSyncFeedback({ success: false, message: err?.message || 'Falha ao sincronizar com produção' });
+    } finally {
+      setIsSyncingProduction(false);
+    }
+  };
+
+  const prevIsOpenRef = React.useRef(isOpen);
+  const prevInitialTabRef = React.useRef(initialTab);
 
   useEffect(() => {
-    if (initialTab) {
-      setActiveTab(initialTab);
+    if (isOpen && (!prevIsOpenRef.current || prevInitialTabRef.current !== initialTab)) {
+      if (initialTab) {
+        setActiveTab(initialTab);
+      }
     }
+    prevIsOpenRef.current = isOpen;
+    prevInitialTabRef.current = initialTab;
   }, [initialTab, isOpen]);
+
+  // User Management State (Tab 3)
+  const [selectedWatchlistUserId, setSelectedWatchlistUserId] = useState<string | null>(null);
+  const [userResetConfirm, setUserResetConfirm] = useState<UserProfile | null>(null);
+  const [userRoleConfirm, setUserRoleConfirm] = useState<{ user: UserProfile; newRole: 'ADMIN' | 'PARTICIPANT' } | null>(null);
+  const [userActionFeedback, setUserActionFeedback] = useState<{ userId: string; msg: string; type: 'success' | 'error' } | null>(null);
+  const [isUpdatingUser, setIsUpdatingUser] = useState(false);
 
   // New Player Form State
   const [newName, setNewName] = useState('');
@@ -97,6 +135,106 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [showConfirmResetModal, setShowConfirmResetModal] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetFeedback, setResetFeedback] = useState<string | null>(null);
+
+  // Phase Reset confirmation state & handlers
+  const [phaseResetConfirm, setPhaseResetConfirm] = useState<ResetPhaseTarget | null>(null);
+  const [isResettingPhase, setIsResettingPhase] = useState(false);
+
+  // Sold players grouped by Phase & Sectors
+  const soldPlayersPhase1 = players.filter((p) => p.status === 'SOLD' && p.soldTo && getPlayerAuctionPhase(p) === 1);
+  const soldPlayersPhase2 = players.filter((p) => p.status === 'SOLD' && p.soldTo && getPlayerAuctionPhase(p) === 2);
+  const soldPlayersPhase3 = players.filter((p) => p.status === 'SOLD' && p.soldTo && getPlayerAuctionPhase(p) === 3);
+
+  const soldPlayersAtacantes = players.filter((p) => p.status === 'SOLD' && p.soldTo && ['ATA', 'PD', 'PE', 'SA'].includes(p.position));
+  const soldPlayersMeio = players.filter((p) => p.status === 'SOLD' && p.soldTo && ['VOL', 'MC', 'MEI'].includes(p.position));
+  const soldPlayersDefensores = players.filter((p) => p.status === 'SOLD' && p.soldTo && ['ZAG', 'LE', 'LD'].includes(p.position));
+  const soldPlayersGoleiros = players.filter((p) => p.status === 'SOLD' && p.soldTo && p.position === 'GOL');
+
+  const totalRefundPhase1 = soldPlayersPhase1.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+  const totalRefundPhase2 = soldPlayersPhase2.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+  const totalRefundPhase3 = soldPlayersPhase3.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+
+  const totalRefundAtacantes = soldPlayersAtacantes.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+  const totalRefundMeio = soldPlayersMeio.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+  const totalRefundDefensores = soldPlayersDefensores.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+  const totalRefundGoleiros = soldPlayersGoleiros.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+
+  const getPhaseResetDetails = (target: ResetPhaseTarget | null) => {
+    if (!target) return { name: '', positions: [] as string[], soldPlayers: [] as Player[], totalRefund: 0, icon: '🔄', badgeColor: 'blue' };
+    const t = String(target).toUpperCase();
+    if (t === 'ATACANTES' || t === 'ATAQUE' || t === '3') {
+      return {
+        name: '4ª Fase: Atacantes (Centroavantes e Pontas)',
+        shortName: 'Atacantes',
+        positions: ['ATA', 'PD', 'PE', 'SA'],
+        soldPlayers: soldPlayersAtacantes,
+        totalRefund: totalRefundAtacantes,
+        icon: '⚽',
+        badgeColor: 'rose'
+      };
+    }
+    if (t === 'MEIO_CAMPO' || t === 'MEIO' || t === '2') {
+      return {
+        name: '3ª Fase: Meio-Campo (Volantes e Meias)',
+        shortName: 'Meio-Campo',
+        positions: ['VOL', 'MC', 'MEI'],
+        soldPlayers: soldPlayersMeio,
+        totalRefund: totalRefundMeio,
+        icon: '⚡',
+        badgeColor: 'emerald'
+      };
+    }
+    if (t === 'DEFENSORES' || t === 'DEFESA') {
+      return {
+        name: '2ª Fase: Defensores (Zagueiros e Laterais)',
+        shortName: 'Defensores',
+        positions: ['ZAG', 'LE', 'LD'],
+        soldPlayers: soldPlayersDefensores,
+        totalRefund: totalRefundDefensores,
+        icon: '🛡️',
+        badgeColor: 'blue'
+      };
+    }
+    if (t === 'GOLEIROS' || t === 'GOL') {
+      return {
+        name: '1ª Fase: Goleiros (GOL)',
+        shortName: 'Goleiros',
+        positions: ['GOL'],
+        soldPlayers: soldPlayersGoleiros,
+        totalRefund: totalRefundGoleiros,
+        icon: '🧤',
+        badgeColor: 'amber'
+      };
+    }
+    return {
+      name: 'Fase 1: Defensores & Goleiros',
+      shortName: 'Defesa & Goleiros',
+      positions: ['GOL', 'ZAG', 'LE', 'LD'],
+      soldPlayers: soldPlayersPhase1,
+      totalRefund: totalRefundPhase1,
+      icon: '🛡️🧤',
+      badgeColor: 'blue'
+    };
+  };
+
+  const handleExecuteResetPhase = async () => {
+    if (!phaseResetConfirm || !onAdminResetPhase) return;
+    setIsResettingPhase(true);
+    try {
+      const res = await onAdminResetPhase(phaseResetConfirm);
+      if (typeof res === 'object' && res.success) {
+        setResetFeedback(res.message || `Etapa refeita com sucesso!`);
+      } else if (res) {
+        setResetFeedback(`Etapa refeita com sucesso! Os atletas voltaram ao mercado e os saldos foram estornados aos clubes.`);
+      }
+      setTimeout(() => setResetFeedback(null), 6000);
+      setPhaseResetConfirm(null);
+    } catch (err: any) {
+      alert(`Erro ao refazer fase: ${err?.message || 'Falha de comunicação com o servidor'}`);
+    } finally {
+      setIsResettingPhase(false);
+    }
+  };
 
   // Auction Timer Edit State
   const [customHours, setCustomHours] = useState('1');
@@ -267,9 +405,51 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const handleSaveBudget = async (userId: string) => {
     const num = Number(editBudgetValue);
     if (!isNaN(num) && num >= 0) {
-      await onAdminUpdateUserBudget(userId, num);
-      setEditingUserId(null);
+      setIsUpdatingUser(true);
+      const ok = await onAdminUpdateUserBudget(userId, num);
+      setIsUpdatingUser(false);
+      if (ok) {
+        setUserActionFeedback({ userId, msg: 'Orçamento atualizado com sucesso!', type: 'success' });
+        setEditingUserId(null);
+      } else {
+        setUserActionFeedback({ userId, msg: 'Falha ao atualizar orçamento.', type: 'error' });
+      }
+      setTimeout(() => setUserActionFeedback(null), 4000);
     }
+  };
+
+  const handleExecuteResetUser = async () => {
+    if (!userResetConfirm) return;
+    const target = userResetConfirm;
+    setIsUpdatingUser(true);
+    const ok = await onAdminResetUser(target.id);
+    setIsUpdatingUser(false);
+    setUserResetConfirm(null);
+    if (ok) {
+      setUserActionFeedback({ userId: target.id, msg: `Time e saldo de ${target.name} foram resetados com sucesso!`, type: 'success' });
+    } else {
+      setUserActionFeedback({ userId: target.id, msg: `Erro ao resetar time de ${target.name}.`, type: 'error' });
+    }
+    setTimeout(() => setUserActionFeedback(null), 4000);
+  };
+
+  const handleExecuteChangeRole = async () => {
+    if (!userRoleConfirm) return;
+    const { user, newRole } = userRoleConfirm;
+    setIsUpdatingUser(true);
+    const ok = await onAdminUpdateUserRole(user.id, newRole);
+    setIsUpdatingUser(false);
+    setUserRoleConfirm(null);
+    if (ok) {
+      setUserActionFeedback({
+        userId: user.id,
+        msg: `Função de ${user.name} alterada para ${newRole === 'ADMIN' ? 'ADMINISTRADOR' : 'PARTICIPANTE'} com sucesso!`,
+        type: 'success'
+      });
+    } else {
+      setUserActionFeedback({ userId: user.id, msg: 'Erro ao alterar função.', type: 'error' });
+    }
+    setTimeout(() => setUserActionFeedback(null), 4000);
   };
 
   const filteredPlayers = players
@@ -277,16 +457,16 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     .slice(0, 15);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs">
+      <div className={`bg-white rounded-2xl ${activeTab === 'report' ? 'max-w-6xl' : 'max-w-4xl'} w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200 transition-all`}>
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50/50">
+        <div className="shrink-0 px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs shrink-0">
               <Shield className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">
+              <h2 className="text-base font-bold text-slate-900 leading-tight">
                 Painel Administrativo da Khedira League
               </h2>
               <p className="text-xs text-slate-500">
@@ -296,17 +476,17 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60"
+            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 shrink-0 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center px-6 border-b border-slate-200 bg-slate-50/80 text-xs font-bold gap-2 overflow-x-auto">
+        <div className="shrink-0 flex items-center px-4 sm:px-6 border-b border-slate-200 bg-slate-50/80 text-xs font-bold gap-1 sm:gap-2 overflow-x-auto min-h-[46px] scrollbar-thin">
           <button
             onClick={() => setActiveTab('auction')}
-            className={`py-3 px-3 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+            className={`py-3 px-3 border-b-2 transition-all whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'auction'
                 ? 'border-amber-600 text-amber-900'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -316,7 +496,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('players')}
-            className={`py-3 px-3 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+            className={`py-3 px-3 border-b-2 transition-all whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'players'
                 ? 'border-amber-600 text-amber-900'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -325,18 +505,20 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             2. Preços Iniciais & Adicionar Jogadores
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('users')}
-            className={`py-3 px-3 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+            className={`py-3 px-3 border-b-2 transition-all whitespace-nowrap cursor-pointer shrink-0 flex items-center gap-1.5 ${
               activeTab === 'users'
-                ? 'border-amber-600 text-amber-900'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-amber-600 text-amber-900 font-black bg-amber-50/70 shadow-2xs'
+                : 'border-transparent text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-100/50'
             }`}
           >
-            3. Administrar Usuários & Funções
+            <Users className="w-3.5 h-3.5 text-amber-600" />
+            <span>3. Administrar Usuários & Funções</span>
           </button>
           <button
             onClick={() => setActiveTab('danger')}
-            className={`py-3 px-3 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+            className={`py-3 px-3 border-b-2 transition-all whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'danger'
                 ? 'border-rose-600 text-rose-900 font-bold'
                 : 'border-transparent text-slate-500 hover:text-rose-600'
@@ -346,7 +528,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('report')}
-            className={`py-3 px-3 border-b-2 transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+            className={`py-3 px-3 border-b-2 transition-all whitespace-nowrap cursor-pointer shrink-0 flex items-center gap-1.5 ${
               activeTab === 'report'
                 ? 'border-amber-600 text-amber-900 font-black'
                 : 'border-transparent text-slate-600 hover:text-slate-900 font-bold'
@@ -358,7 +540,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 min-h-0">
           {/* TAB 1: AUCTION CONTROLS */}
           {activeTab === 'auction' && (
             <div className="space-y-6">
@@ -418,6 +600,19 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                           <span>Voltar p/ Não Iniciado</span>
                         </button>
                       </>
+                    )}
+
+                    {onAdminSyncProduction && (
+                      <button
+                        type="button"
+                        onClick={handleSyncProductionNow}
+                        disabled={isSyncingProduction}
+                        className="px-3.5 py-2 bg-emerald-700/90 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        title="Sincronizar em tempo real com https://leilaoeafc27.onrender.com"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isSyncingProduction ? 'animate-spin' : ''}`} />
+                        <span>{isSyncingProduction ? 'Sincronizando...' : 'Sync Produção'}</span>
+                      </button>
                     )}
 
                     <button
@@ -940,28 +1135,118 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         );
                       })}
                     </div>
+
+                    {onAdminResetPhase && (
+                      <div className="pt-3 border-t border-slate-200/90 space-y-2.5">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+                            <span className="text-xs font-bold text-slate-800">
+                              Refazer Etapa Específica do Leilão
+                            </span>
+                            <span className="text-[11px] text-slate-500 font-normal hidden sm:inline">
+                              (estorna lances pagos aos clubes e devolve os atletas ao mercado)
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/90 px-2 py-0.5 rounded-md">
+                            Preserva as demais etapas
+                          </span>
+                        </div>
+
+                        {/* Grade com 4 Botões perfeitamente alinhados com as 4 etapas acima */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {/* 1ª Fase: Goleiros */}
+                          <button
+                            type="button"
+                            onClick={() => setPhaseResetConfirm('GOLEIROS')}
+                            className="p-2.5 rounded-xl border border-amber-200/90 bg-amber-50/70 hover:bg-amber-100/90 active:bg-amber-200/90 text-amber-950 transition-all flex flex-col justify-between text-left shadow-2xs group cursor-pointer hover:shadow-xs"
+                            title="Refazer 1ª Fase (Goleiros): Devolve goleiros ao mercado e estorna valores pagos aos clubes"
+                          >
+                            <div className="flex items-center justify-between gap-1 w-full">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm">🧤</span>
+                                <span className="text-xs font-black leading-tight text-amber-950">
+                                  Refazer Goleiros
+                                </span>
+                              </div>
+                              <RotateCcw className="w-3 h-3 text-amber-600 group-hover:-rotate-90 transition-transform duration-200 shrink-0" />
+                            </div>
+                            <div className="mt-2 pt-1.5 border-t border-amber-200/60 flex items-center justify-between text-[10px] font-semibold text-amber-800 w-full">
+                              <span>{soldPlayersGoleiros.length} contratado{soldPlayersGoleiros.length === 1 ? '' : 's'}</span>
+                              <span className="text-[9px] font-black uppercase text-amber-900 group-hover:underline">Estornar</span>
+                            </div>
+                          </button>
+
+                          {/* 2ª Fase: Defensores */}
+                          <button
+                            type="button"
+                            onClick={() => setPhaseResetConfirm('DEFENSORES')}
+                            className="p-2.5 rounded-xl border border-blue-200/90 bg-blue-50/70 hover:bg-blue-100/90 active:bg-blue-200/90 text-blue-950 transition-all flex flex-col justify-between text-left shadow-2xs group cursor-pointer hover:shadow-xs"
+                            title="Refazer 2ª Fase (Defensores): Devolve zagueiros e laterais ao mercado e estorna valores aos clubes"
+                          >
+                            <div className="flex items-center justify-between gap-1 w-full">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm">🛡️</span>
+                                <span className="text-xs font-black leading-tight text-blue-950">
+                                  Refazer Defesa
+                                </span>
+                              </div>
+                              <RotateCcw className="w-3 h-3 text-blue-600 group-hover:-rotate-90 transition-transform duration-200 shrink-0" />
+                            </div>
+                            <div className="mt-2 pt-1.5 border-t border-blue-200/60 flex items-center justify-between text-[10px] font-semibold text-blue-800 w-full">
+                              <span>{soldPlayersDefensores.length} contratado{soldPlayersDefensores.length === 1 ? '' : 's'}</span>
+                              <span className="text-[9px] font-black uppercase text-blue-900 group-hover:underline">Estornar</span>
+                            </div>
+                          </button>
+
+                          {/* 3ª Fase: Meio-Campo */}
+                          <button
+                            type="button"
+                            onClick={() => setPhaseResetConfirm('MEIO_CAMPO')}
+                            className="p-2.5 rounded-xl border border-emerald-200/90 bg-emerald-50/70 hover:bg-emerald-100/90 active:bg-emerald-200/90 text-emerald-950 transition-all flex flex-col justify-between text-left shadow-2xs group cursor-pointer hover:shadow-xs"
+                            title="Refazer 3ª Fase (Meio-Campo): Devolve volantes e meias ao mercado e estorna valores aos clubes"
+                          >
+                            <div className="flex items-center justify-between gap-1 w-full">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm">⚡</span>
+                                <span className="text-xs font-black leading-tight text-emerald-950">
+                                  Refazer Meio
+                                </span>
+                              </div>
+                              <RotateCcw className="w-3 h-3 text-emerald-600 group-hover:-rotate-90 transition-transform duration-200 shrink-0" />
+                            </div>
+                            <div className="mt-2 pt-1.5 border-t border-emerald-200/60 flex items-center justify-between text-[10px] font-semibold text-emerald-800 w-full">
+                              <span>{soldPlayersMeio.length} contratado{soldPlayersMeio.length === 1 ? '' : 's'}</span>
+                              <span className="text-[9px] font-black uppercase text-emerald-900 group-hover:underline">Estornar</span>
+                            </div>
+                          </button>
+
+                          {/* 4ª Fase: Atacantes */}
+                          <button
+                            type="button"
+                            onClick={() => setPhaseResetConfirm('ATACANTES')}
+                            className="p-2.5 rounded-xl border border-rose-200/90 bg-rose-50/70 hover:bg-rose-100/90 active:bg-rose-200/90 text-rose-950 transition-all flex flex-col justify-between text-left shadow-2xs group cursor-pointer hover:shadow-xs"
+                            title="Refazer 4ª Fase (Atacantes): Devolve atacantes e pontas ao mercado e estorna valores aos clubes"
+                          >
+                            <div className="flex items-center justify-between gap-1 w-full">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm">⚽</span>
+                                <span className="text-xs font-black leading-tight text-rose-950">
+                                  Refazer Ataque
+                                </span>
+                              </div>
+                              <RotateCcw className="w-3 h-3 text-rose-600 group-hover:-rotate-90 transition-transform duration-200 shrink-0" />
+                            </div>
+                            <div className="mt-2 pt-1.5 border-t border-rose-200/60 flex items-center justify-between text-[10px] font-semibold text-rose-800 w-full">
+                              <span>{soldPlayersAtacantes.length} contratado{soldPlayersAtacantes.length === 1 ? '' : 's'}</span>
+                              <span className="text-[9px] font-black uppercase text-rose-900 group-hover:underline">Estornar</span>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-
-              {/* Set Nominator Turn */}
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <span className="text-xs font-bold text-slate-700 block">
-                  Definir Vez de Anunciar (Turno):
-                </span>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={auction.nominationTurnUserId || ''}
-                    onChange={(e) => onAdminAuctionAction('SET_NOMINATOR', e.target.value)}
-                    className="flex-1 px-3 py-2 text-xs font-semibold bg-white border border-slate-200 rounded-xl text-slate-800"
-                  >
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.teamName})
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
             </div>
           )}
@@ -1258,8 +1543,16 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               <div className="space-y-3">
                 {users.map((u) => {
                   const roleBadge = getUserRoleBadge(u);
+                  const isEditingThisBudget = editingUserId === u.id;
+                  const isWatchlistExpanded = selectedWatchlistUserId === u.id;
+                  const userWatchedIds = watchlists?.[u.id] || [];
+                  const userWatchedPlayers = players.filter((p) => userWatchedIds.includes(p.id));
+                  const isFounder = ['guimarquesbrito@gmail.com', 'guilhermebtourinho@gmail.com'].includes(u.email.toLowerCase().trim());
+                  const actionFeedback = userActionFeedback?.userId === u.id ? userActionFeedback : null;
+
                   return (
-                    <div key={u.id} className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+                    <div key={u.id} className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-3 transition-all hover:border-slate-300">
+                      {/* Top Row: User info & Role Control */}
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div>
                           <div className="flex items-center gap-2">
@@ -1275,60 +1568,260 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-500">{u.email} • Time: <strong>{u.teamName}</strong></p>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {u.email} • Time: <strong className="text-slate-800">{u.teamName}</strong>
+                          </p>
                         </div>
 
-                        {/* Role Badge / Status */}
-                        <div>
-                          {u.role === 'ADMIN' ? (
-                            <span className="px-3 py-1 text-xs font-bold rounded-lg bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                        {/* Role Switcher */}
+                        <div className="flex items-center gap-2">
+                          {isFounder ? (
+                            <span className="px-3 py-1 text-xs font-bold rounded-lg bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5 shadow-2xs">
                               <Shield className="w-3.5 h-3.5 text-amber-600" />
-                              {roleBadge.title}
+                              {roleBadge.title} (Diretoria Fixa)
                             </span>
                           ) : (
-                            <span className="px-3 py-1 text-xs font-medium rounded-lg bg-slate-50 text-slate-600 border border-slate-200">
-                              Participante da Liga
-                            </span>
+                            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                              <button
+                                type="button"
+                                onClick={() => setUserRoleConfirm({ user: u, newRole: 'PARTICIPANT' })}
+                                disabled={u.role === 'PARTICIPANT' || isUpdatingUser}
+                                className={`px-2 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                                  u.role === 'PARTICIPANT'
+                                    ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
+                                    : 'text-slate-500 hover:text-slate-800'
+                                }`}
+                              >
+                                Participante
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setUserRoleConfirm({ user: u, newRole: 'ADMIN' })}
+                                disabled={u.role === 'ADMIN' || isUpdatingUser}
+                                className={`px-2 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                                  u.role === 'ADMIN'
+                                    ? 'bg-amber-500 text-slate-950 font-black shadow-2xs'
+                                    : 'text-slate-500 hover:text-amber-800'
+                                }`}
+                              >
+                                <Crown className="w-3 h-3" />
+                                <span>ADM</span>
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
 
-                    {/* Budget & Squad status */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2 text-xs">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-slate-500">Saldo:</span>
-                          <span className="font-extrabold text-emerald-700">
-                            {formatCurrency(u.budget)}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-medium">
-                            (Base: €400M fixo)
-                          </span>
+                      {/* Action Feedback alert if any */}
+                      {actionFeedback && (
+                        <div className={`p-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 animate-in fade-in ${
+                          actionFeedback.type === 'success'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : 'bg-rose-50 text-rose-800 border border-rose-200'
+                        }`}>
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>{actionFeedback.msg}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-slate-500">Elenco:</span>
-                          <span className={`font-black text-xs px-2 py-0.5 rounded ${
-                            players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === u.id).length >= 23
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-slate-100 text-slate-800'
-                          }`}>
-                            {players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === u.id).length}/23 atletas
-                          </span>
-                        </div>
-                      </div>
+                      )}
 
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`Tem certeza que deseja resetar todas as compras e saldo de ${u.name}?`)) {
-                            onAdminResetUser(u.id);
-                          }
-                        }}
-                        className="text-xs text-rose-600 hover:text-rose-700 font-bold cursor-pointer"
-                      >
-                        Resetar Time / Saldo
-                      </button>
+                      {/* Budget Editing Form (inline) */}
+                      {isEditingThisBudget ? (
+                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-700">
+                              Editar Saldo de {u.name} (Atual: {formatCurrency(u.budget)}):
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditBudgetValue('400000000')}
+                                className="px-2 py-0.5 text-[10px] font-bold bg-white hover:bg-slate-100 border border-slate-200 rounded text-slate-700 cursor-pointer"
+                              >
+                                € 400M Padrão
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditBudgetValue((prev) => String((Number(prev) || 0) + 10000000))}
+                                className="px-2 py-0.5 text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded cursor-pointer"
+                              >
+                                + € 10M
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditBudgetValue((prev) => String(Math.max(0, (Number(prev) || 0) - 10000000)))}
+                                className="px-2 py-0.5 text-[10px] font-bold bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 rounded cursor-pointer"
+                              >
+                                - € 10M
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                              <span className="absolute left-3 top-2 text-xs font-black text-slate-400">€</span>
+                              <input
+                                type="number"
+                                step="1000000"
+                                min="0"
+                                value={editBudgetValue}
+                                onChange={(e) => setEditBudgetValue(e.target.value)}
+                                className="w-full pl-7 pr-3 py-1.5 text-xs font-bold bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-emerald-500"
+                                placeholder="400000000"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveBudget(u.id)}
+                              disabled={isUpdatingUser}
+                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                            >
+                              Salvar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingUserId(null)}
+                              className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Budget & Squad status */
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2 text-xs">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-slate-500 font-medium">Saldo:</span>
+                              <span className="font-extrabold text-emerald-700 text-sm">
+                                {formatCurrency(u.budget)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingUserId(u.id);
+                                  setEditBudgetValue(String(u.budget));
+                                }}
+                                className="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded transition-colors cursor-pointer"
+                                title="Editar Saldo do Participante"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              <span className="text-slate-500 font-medium">Elenco:</span>
+                              <span className={`font-black text-xs px-2 py-0.5 rounded ${
+                                players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === u.id).length >= 23
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-slate-100 text-slate-800'
+                              }`}>
+                                {players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === u.id).length}/23 atletas
+                              </span>
+                            </div>
+
+                            {/* Clickable Radar Badge Button */}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedWatchlistUserId(isWatchlistExpanded ? null : u.id)}
+                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                                isWatchlistExpanded
+                                  ? 'bg-amber-500 text-slate-950 border-amber-600 shadow-xs'
+                                  : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200/80'
+                              }`}
+                              title={isWatchlistExpanded ? 'Recolher lista do Radar' : 'Visualizar atletas marcados no Radar'}
+                            >
+                              <Star className={`w-3 h-3 ${isWatchlistExpanded ? 'fill-slate-950 text-slate-950' : 'text-amber-500 fill-amber-400'}`} />
+                              <span>{userWatchedIds.length} no Radar</span>
+                              {isWatchlistExpanded ? (
+                                <ChevronUp className="w-3 h-3 ml-0.5" />
+                              ) : (
+                                <ChevronDown className="w-3 h-3 ml-0.5 text-amber-700" />
+                              )}
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setUserResetConfirm(u)}
+                            className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                          >
+                            Resetar Time / Saldo
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Expandable Radar Watchlist Explorer */}
+                      {isWatchlistExpanded && (
+                        <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-200/70 space-y-2.5 animate-in fade-in">
+                          <div className="flex items-center justify-between text-xs text-amber-900">
+                            <span className="font-bold flex items-center gap-1.5">
+                              <Star className="w-3.5 h-3.5 text-amber-600 fill-amber-400" />
+                              <span>Atletas no Radar de {u.name} ({userWatchedPlayers.length} encontrados)</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedWatchlistUserId(null)}
+                              className="text-amber-700 hover:text-amber-900 text-[11px] font-bold cursor-pointer"
+                            >
+                              Fechar
+                            </button>
+                          </div>
+
+                          {userWatchedPlayers.length === 0 ? (
+                            <p className="text-xs text-slate-500 italic py-2">
+                              Nenhum atleta marcado no Radar por este treinador até o momento.
+                            </p>
+                          ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-56 overflow-y-auto pr-1">
+                              {userWatchedPlayers.map((p) => {
+                                const isSold = p.status === 'SOLD';
+                                const isInAuction = p.status === 'IN_AUCTION';
+                                const posBadge = getPositionBadge(p.position);
+                                return (
+                                  <div
+                                    key={p.id}
+                                    className={`p-2 rounded-lg border text-xs flex items-center justify-between gap-1.5 ${
+                                      isSold
+                                        ? 'bg-slate-100 border-slate-200 text-slate-500'
+                                        : isInAuction
+                                        ? 'bg-rose-50 border-rose-200 text-rose-950 font-bold'
+                                        : 'bg-white border-amber-200 text-slate-900'
+                                    }`}
+                                  >
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-extrabold border ${posBadge.bgClass} ${posBadge.textClass} ${posBadge.borderClass}`}>
+                                          {p.position}
+                                        </span>
+                                        <span className="font-bold truncate">{p.name}</span>
+                                      </div>
+                                      <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                                        {p.club} • Base: {formatCurrency(p.initialPrice)}
+                                      </div>
+                                    </div>
+                                    <div className="shrink-0 text-right">
+                                      {isSold ? (
+                                        <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
+                                          Vendido
+                                        </span>
+                                      ) : isInAuction ? (
+                                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-200 text-rose-900 animate-pulse">
+                                          Disputa
+                                        </span>
+                                      ) : (
+                                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                                          Livre
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
                   );
                 })}
               </div>
@@ -1338,12 +1831,252 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           {/* TAB 4: DANGER ZONE / RESET */}
           {activeTab === 'danger' && (
             <div className="space-y-6">
+              {/* CARD DE SINCRONIZAÇÃO EM TEMPO REAL COM PRODUÇÃO (RENDER) */}
+              <div className="p-6 bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 border border-slate-700 text-white rounded-2xl shadow-md space-y-4 relative overflow-hidden">
+                <div className="flex items-start justify-between flex-wrap gap-4 relative z-10">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400">
+                        Sincronização com Produção (Render)
+                      </span>
+                    </div>
+                    <h3 className="text-base font-black text-white">
+                      Ponte de Produção: https://leilaoeafc27.onrender.com
+                    </h3>
+                    <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                      Sincronização bidirecional em tempo real com a versão de produção. O sistema transmite e recebe atualizações instantâneas de participantes, cronômetro oficial, lances ativos e configurações dos elencos.
+                    </p>
+                  </div>
+
+                  {onAdminSyncProduction && (
+                    <button
+                      type="button"
+                      onClick={handleSyncProductionNow}
+                      disabled={isSyncingProduction}
+                      className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isSyncingProduction ? 'animate-spin' : ''}`} />
+                      <span>{isSyncingProduction ? 'Sincronizando...' : 'Sincronizar com Produção Agora'}</span>
+                    </button>
+                  )}
+                </div>
+
+                {syncFeedback && (
+                  <div className={`p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${
+                    syncFeedback.success
+                      ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-600/50'
+                      : 'bg-rose-950/80 text-rose-300 border border-rose-600/50'
+                  }`}>
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                    <span>{syncFeedback.message}</span>
+                  </div>
+                )}
+              </div>
+
               {resetFeedback && (
                 <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-xs text-emerald-900 font-semibold animate-fade-in">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                   <span>{resetFeedback}</span>
                 </div>
               )}
+
+              {/* CARD DE REFAZER LEILÃO POR FASE ESPECÍFICA (Atacantes, Meio-Campo, Defensores ou Goleiros) */}
+              <div className="p-6 bg-white rounded-2xl shadow-xs border border-slate-200 space-y-5">
+                <div className="flex items-start justify-between flex-wrap gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+                      <RotateCcw className="w-4 h-4" />
+                      Refazer Leilão por Fase Específica
+                    </span>
+                    <h3 className="text-lg font-black text-slate-900">
+                      Reiniciar Etapa de Atacantes, Meio-Campo, Defensores ou Goleiros
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-2xl leading-relaxed">
+                      Permite refazer exclusivamente uma das etapas do leilão (ex: apenas a etapa dos atacantes). Todos os atletas da posição selecionada retornam ao mercado como disponíveis e os valores pagos por eles são devolvidos integralmente aos cofres dos clubes compradores. Contratações de outras etapas continuam 100% salvas e preservadas nos seus clubes.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 4 Cards das Fases Oficiais com métricas em tempo real */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-1">
+                  {/* FASE 4: ATACANTES */}
+                  <div className="p-4 rounded-xl border border-rose-200 bg-gradient-to-b from-rose-50/70 to-white flex flex-col justify-between space-y-4 shadow-2xs hover:border-rose-300 transition-all">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
+                          4ª Fase
+                        </span>
+                        <span className="text-base">⚽</span>
+                      </div>
+                      <h4 className="font-black text-slate-900 text-sm">
+                        Atacantes & Pontas
+                      </h4>
+                      <p className="text-[10px] text-slate-500">ATA, PD, PE, SA</p>
+                      <div className="space-y-1 pt-1 border-t border-rose-100">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Contratados:</span>
+                          <span className="font-extrabold text-slate-900">{soldPlayersAtacantes.length} atletas</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">A Estornar:</span>
+                          <span className="font-extrabold text-emerald-600">{formatCurrency(totalRefundAtacantes, true)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setPhaseResetConfirm('ATACANTES')}
+                      disabled={soldPlayersAtacantes.length === 0}
+                      className={`w-full py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
+                        soldPlayersAtacantes.length === 0
+                          ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                          : 'bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white'
+                      }`}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>{soldPlayersAtacantes.length === 0 ? 'Nenhum Vendido' : 'Refazer Atacantes'}</span>
+                    </button>
+                  </div>
+
+                  {/* FASE 3: MEIO-CAMPO */}
+                  <div className="p-4 rounded-xl border border-emerald-200 bg-gradient-to-b from-emerald-50/70 to-white flex flex-col justify-between space-y-4 shadow-2xs hover:border-emerald-300 transition-all">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          3ª Fase
+                        </span>
+                        <span className="text-base">⚡</span>
+                      </div>
+                      <h4 className="font-black text-slate-900 text-sm">
+                        Meio-Campo
+                      </h4>
+                      <p className="text-[10px] text-slate-500">VOL, MC, MEI</p>
+                      <div className="space-y-1 pt-1 border-t border-emerald-100">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Contratados:</span>
+                          <span className="font-extrabold text-slate-900">{soldPlayersMeio.length} atletas</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">A Estornar:</span>
+                          <span className="font-extrabold text-emerald-600">{formatCurrency(totalRefundMeio, true)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setPhaseResetConfirm('MEIO_CAMPO')}
+                      disabled={soldPlayersMeio.length === 0}
+                      className={`w-full py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
+                        soldPlayersMeio.length === 0
+                          ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                          : 'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white'
+                      }`}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>{soldPlayersMeio.length === 0 ? 'Nenhum Vendido' : 'Refazer Meio-Campo'}</span>
+                    </button>
+                  </div>
+
+                  {/* FASE 2: DEFENSORES */}
+                  <div className="p-4 rounded-xl border border-blue-200 bg-gradient-to-b from-blue-50/70 to-white flex flex-col justify-between space-y-4 shadow-2xs hover:border-blue-300 transition-all">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
+                          2ª Fase
+                        </span>
+                        <span className="text-base">🛡️</span>
+                      </div>
+                      <h4 className="font-black text-slate-900 text-sm">
+                        Defensores
+                      </h4>
+                      <p className="text-[10px] text-slate-500">ZAG, LE, LD</p>
+                      <div className="space-y-1 pt-1 border-t border-blue-100">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Contratados:</span>
+                          <span className="font-extrabold text-slate-900">{soldPlayersDefensores.length} atletas</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">A Estornar:</span>
+                          <span className="font-extrabold text-emerald-600">{formatCurrency(totalRefundDefensores, true)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setPhaseResetConfirm('DEFENSORES')}
+                      disabled={soldPlayersDefensores.length === 0}
+                      className={`w-full py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
+                        soldPlayersDefensores.length === 0
+                          ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white'
+                      }`}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>{soldPlayersDefensores.length === 0 ? 'Nenhum Vendido' : 'Refazer Defensores'}</span>
+                    </button>
+                  </div>
+
+                  {/* FASE 1: GOLEIROS */}
+                  <div className="p-4 rounded-xl border border-amber-200 bg-gradient-to-b from-amber-50/70 to-white flex flex-col justify-between space-y-4 shadow-2xs hover:border-amber-300 transition-all">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
+                          1ª Fase
+                        </span>
+                        <span className="text-base">🧤</span>
+                      </div>
+                      <h4 className="font-black text-slate-900 text-sm">
+                        Goleiros
+                      </h4>
+                      <p className="text-[10px] text-slate-500">GOL</p>
+                      <div className="space-y-1 pt-1 border-t border-amber-100">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Contratados:</span>
+                          <span className="font-extrabold text-slate-900">{soldPlayersGoleiros.length} atletas</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">A Estornar:</span>
+                          <span className="font-extrabold text-emerald-600">{formatCurrency(totalRefundGoleiros, true)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setPhaseResetConfirm('GOLEIROS')}
+                      disabled={soldPlayersGoleiros.length === 0}
+                      className={`w-full py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
+                        soldPlayersGoleiros.length === 0
+                          ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                          : 'bg-amber-600 hover:bg-amber-500 active:bg-amber-700 text-white'
+                      }`}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>{soldPlayersGoleiros.length === 0 ? 'Nenhum Vendido' : 'Refazer Goleiros'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Opção Adicional: Defesa Completa (Goleiros + Defensores) */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between flex-wrap gap-2 text-xs">
+                  <span className="text-slate-600 font-medium">
+                    Quer refazer toda a retaguarda junta (Goleiros + Defensores)?
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPhaseResetConfirm(1)}
+                    disabled={soldPlayersPhase1.length === 0}
+                    className="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
+                    <span>Refazer Defesa Completa ({soldPlayersPhase1.length} atletas • {formatCurrency(totalRefundPhase1, true)})</span>
+                  </button>
+                </div>
+              </div>
 
               {/* CARD PRINCIPAL DE RESET */}
               <div className="p-6 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl shadow-md space-y-5 border border-slate-700">
@@ -1484,12 +2217,128 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               users={users}
               auction={auction}
               onAdminReleasePlayer={onAdminReleasePlayer}
+              onAdminResetPhase={onAdminResetPhase}
             />
           )}
         </div>
       </div>
 
-      {/* MODAL DE CONFIRMAÇÃO DE RESET SEGURO */}
+      {/* MODAL DE CONFIRMAÇÃO DE RESET INDIVIDUAL DE USUÁRIO */}
+      {userResetConfirm && (
+        <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up">
+            <div className="flex items-center gap-3 text-rose-700">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                <RotateCcw className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="font-black text-base text-slate-900">
+                  Resetar Time de {userResetConfirm.name}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Clube: {userResetConfirm.teamName} ({userResetConfirm.email})
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 space-y-1.5 leading-relaxed">
+              <p>
+                Esta ação devolverá todos os atletas contratados por <strong>{userResetConfirm.name}</strong> ao mercado aberto da liga e restaurará o saldo dele para <strong>€ 400.000.000</strong>.
+              </p>
+              <p className="font-bold text-rose-950">
+                A conta, login e favoritos do treinador permanecem preservados.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setUserResetConfirm(null)}
+                disabled={isUpdatingUser}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteResetUser}
+                disabled={isUpdatingUser}
+                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs font-black rounded-xl shadow-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isUpdatingUser ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Resetando...</span>
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Sim, Resetar Time & Saldo</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE ALTERAÇÃO DE FUNÇÃO */}
+      {userRoleConfirm && (
+        <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up">
+            <div className="flex items-center gap-3 text-amber-700">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                <Crown className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-black text-base text-slate-900">
+                  Alterar Função de {userRoleConfirm.user.name}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Nova função: <strong>{userRoleConfirm.newRole === 'ADMIN' ? 'ADMINISTRADOR' : 'PARTICIPANTE'}</strong>
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              {userRoleConfirm.newRole === 'ADMIN' ? (
+                <>Deseja conceder permissões de <strong>Administrador</strong> para {userRoleConfirm.user.name}? O usuário terá acesso completo ao controle de rodadas, cronômetro e gestão da liga.</>
+              ) : (
+                <>Deseja remover as permissões de Administrador de {userRoleConfirm.user.name}? O usuário passará a ser um <strong>Participante normal</strong> da liga.</>
+              )}
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setUserRoleConfirm(null)}
+                disabled={isUpdatingUser}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteChangeRole}
+                disabled={isUpdatingUser}
+                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-slate-950 text-xs font-black rounded-xl shadow-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isUpdatingUser ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Salvando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Confirmar Alteração</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showConfirmResetModal && (
         <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scale-up">
@@ -1551,6 +2400,180 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           </div>
         </div>
       )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE REFAZER FASE DO LEILÃO */}
+      {phaseResetConfirm !== null && (() => {
+        const details = getPhaseResetDetails(phaseResetConfirm);
+        const affectedClubsCount = new Set(details.soldPlayers.map(p => p.soldTo?.userId)).size;
+
+        return (
+          <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center gap-3 text-amber-600">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0 text-xl">
+                  {details.icon}
+                </div>
+                <div>
+                  <h3 className="font-black text-lg text-slate-900 leading-tight">
+                    Refazer {details.name}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Devolução seletiva de atletas ao mercado e estorno financeiro aos clubes
+                  </p>
+                </div>
+              </div>
+
+              {/* Seletor de Etapas no Modal */}
+              <div className="p-2 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Escolha a Etapa a Refazer:</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setPhaseResetConfirm('ATACANTES')}
+                    className={`py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                      String(phaseResetConfirm).toUpperCase().includes('ATAC') || phaseResetConfirm === 3
+                        ? 'bg-rose-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    ⚽ Atacantes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPhaseResetConfirm('MEIO_CAMPO')}
+                    className={`py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                      String(phaseResetConfirm).toUpperCase().includes('MEIO') || phaseResetConfirm === 2
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    ⚡ Meio-Campo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPhaseResetConfirm('DEFENSORES')}
+                    className={`py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                      String(phaseResetConfirm).toUpperCase() === 'DEFENSORES' || String(phaseResetConfirm).toUpperCase() === 'DEFESA'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    🛡️ Defensores
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPhaseResetConfirm('GOLEIROS')}
+                    className={`py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                      String(phaseResetConfirm).toUpperCase().includes('GOL')
+                        ? 'bg-amber-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    🧤 Goleiros
+                  </button>
+                </div>
+              </div>
+
+              {/* Métricas de Impacto */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Atletas</span>
+                  <span className="text-base font-black text-rose-600 mt-0.5 block">{details.soldPlayers.length}</span>
+                  <span className="text-[10px] text-slate-400">ao mercado</span>
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Estorno Total</span>
+                  <span className="text-base font-black text-emerald-600 mt-0.5 block">{formatCurrency(details.totalRefund, true)}</span>
+                  <span className="text-[10px] text-slate-400">aos clubes</span>
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Clubes</span>
+                  <span className="text-base font-black text-blue-600 mt-0.5 block">{affectedClubsCount}</span>
+                  <span className="text-[10px] text-slate-400">reembolsados</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-xl space-y-2 text-xs text-amber-950">
+                <p className="font-bold flex items-center gap-1.5 text-amber-900">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  Atenção aos efeitos da operação:
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-slate-700 text-[11px]">
+                  <li>
+                    Todos os <strong>{details.soldPlayers.length} atletas</strong> de <strong>{details.shortName}</strong> voltarão imediatamente ao mercado como <strong>"Disponível"</strong> para novos lances.
+                  </li>
+                  <li>
+                    O montante total de <strong>{formatCurrency(details.totalRefund)}</strong> será estornado integralmente para as contas dos clubes compradores.
+                  </li>
+                  <li>
+                    Os atletas serão removidos das escalações (titulares e reservas) dos times que os contrataram.
+                  </li>
+                  <li className="font-bold text-emerald-800">
+                    Os jogadores contratados nas outras fases permanecerão 100% preservados e inalterados em seus respectivos clubes!
+                  </li>
+                </ul>
+              </div>
+
+              {/* Lista Prévia dos Atletas */}
+              {details.soldPlayers.length > 0 && (
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Atletas a devolver ({details.soldPlayers.length}):
+                  </span>
+                  <div className="max-h-32 overflow-y-auto space-y-1 rounded-xl border border-slate-200 p-2 bg-slate-50/50">
+                    {details.soldPlayers.map((p) => {
+                      const buyer = users.find((u) => u.id === p.soldTo?.userId);
+                      return (
+                        <div key={p.id} className="flex items-center justify-between text-xs py-1 px-2 bg-white rounded-lg border border-slate-100">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
+                              {p.position}
+                            </span>
+                            <span className="font-bold text-slate-900 truncate">{p.name}</span>
+                            <span className="text-[10px] text-slate-500 truncate">({buyer?.teamName || buyer?.name})</span>
+                          </div>
+                          <span className="font-black text-emerald-600 shrink-0">
+                            {formatCurrency(p.soldTo?.amount || 0)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setPhaseResetConfirm(null)}
+                  disabled={isResettingPhase}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExecuteResetPhase}
+                  disabled={isResettingPhase}
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 active:bg-amber-700 text-white font-black text-xs transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                >
+                  {isResettingPhase ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Refazendo Etapa...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Confirmar e Refazer {details.shortName}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

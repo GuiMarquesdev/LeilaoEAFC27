@@ -20,11 +20,6 @@ import { LeagueState, UserProfile, UserSquad, Player, AuctionState } from '../ty
 // criado (confirmados no Console em 24/09) - usados como semente unica do
 // indice, para nao perder quem ja tinha se cadastrado.
 const LEGACY_KNOWN_USER_IDS = [
-  // Administradores: sempre recriados localmente (independem do Firestore
-  // pra existir como usuario), entao nunca entravam no indice sozinhos -
-  // sem isso aqui, o squad/watchlist deles nunca era sequer verificado.
-  'user-admin-default',
-  'user-admin-tourinho',
   'user-1790259041454-mewkw',
   'user-1790259670059-zxvzd',
   'user-1790260795753-20s8c',
@@ -104,9 +99,9 @@ export async function loadStateFromFirestore(fallbackState: LeagueState): Promis
 
     // 1. Load all registered users (por id individual, via indice)
     const loadedUsers: UserProfile[] = [];
-    const userIds = await readIndexIds('user_index');
     try {
-      for (const id of userIds) {
+      const ids = await readIndexIds('user_index');
+      for (const id of ids) {
         try {
           const snap = await getDoc(doc(db, 'users', id));
           if (snap.exists()) {
@@ -117,21 +112,15 @@ export async function loadStateFromFirestore(fallbackState: LeagueState): Promis
           console.error(`[Firebase] Failed to read users/${id}:`, e);
         }
       }
-      console.log(`[Firebase] ✅ Step 1/4 OK: read ${loadedUsers.length}/${userIds.length} doc(s) from 'users'.`);
+      console.log(`[Firebase] ✅ Step 1/4 OK: read ${loadedUsers.length}/${ids.length} doc(s) from 'users'.`);
     } catch (e) {
       console.error("[Firebase] ❌ Step 1/4 FAILED reading 'users' via index:", e);
     }
 
-    // A lista de usuarios de verdade (quem realmente se cadastrou) e a fonte
-    // mais confiavel de ids possiveis para elenco/favoritos - qualquer um que
-    // tenha salvo algo antes do indice proprio de squads/watchlists existir
-    // ainda e encontrado por aqui, em vez de depender so da lista fixa legada.
-    const allKnownUserIds = Array.from(new Set([...userIds, ...loadedUsers.map((u) => u.id)]));
-
-    // 2. Load all squads (por id individual, via indice + todos os usuarios conhecidos)
+    // 2. Load all squads (por id individual, via indice)
     const loadedSquads: { [userId: string]: UserSquad } = {};
     try {
-      const ids = Array.from(new Set([...(await readIndexIds('squad_index')), ...allKnownUserIds]));
+      const ids = await readIndexIds('squad_index');
       let found = 0;
       for (const id of ids) {
         try {
@@ -152,18 +141,25 @@ export async function loadStateFromFirestore(fallbackState: LeagueState): Promis
       console.error("[Firebase] ❌ Step 2/4 FAILED reading 'squads' via index:", e);
     }
 
-    // 3. Load watchlists (por id individual, via indice + todos os usuarios conhecidos)
+    // 3. Load watchlists (por id individual, via indice + usuarios conhecidos)
     const loadedWatchlists: { [userId: string]: string[] } = {};
     try {
-      const ids = Array.from(new Set([...(await readIndexIds('watchlist_index')), ...allKnownUserIds]));
+      const indexIds = await readIndexIds('watchlist_index');
+      const allTargetIds = Array.from(new Set([
+        ...indexIds,
+        ...loadedUsers.map((u) => u.id),
+        ...(fallbackState?.users || []).map((u) => u.id),
+        'user-admin-default',
+        'user-admin-tourinho'
+      ]));
       let found = 0;
-      for (const id of ids) {
+      for (const id of allTargetIds) {
         try {
           const snap = await getDoc(doc(db, 'watchlists', id));
           if (snap.exists()) {
             const data = snap.data();
-            if (data && data.userId && Array.isArray(data.playerIds)) {
-              loadedWatchlists[data.userId] = data.playerIds;
+            if (data && Array.isArray(data.playerIds)) {
+              loadedWatchlists[id] = data.playerIds;
               found++;
             }
           }
@@ -171,9 +167,9 @@ export async function loadStateFromFirestore(fallbackState: LeagueState): Promis
           console.error(`[Firebase] Failed to read watchlists/${id}:`, e);
         }
       }
-      console.log(`[Firebase] ✅ Step 3/4 OK: read ${found}/${ids.length} doc(s) from 'watchlists'.`);
+      console.log(`[Firebase] ✅ Step 3/4 OK: read ${found}/${allTargetIds.length} doc(s) from 'watchlists'.`);
     } catch (e) {
-      console.error("[Firebase] ❌ Step 3/4 FAILED reading 'watchlists' via index:", e);
+      console.error("[Firebase] ❌ Step 3/4 FAILED reading 'watchlists':", e);
     }
 
     // 4. Load master league state (auction, players status)
@@ -189,6 +185,8 @@ export async function loadStateFromFirestore(fallbackState: LeagueState): Promis
         }
         if (Array.isArray(masterData.players)) {
           loadedPlayers = masterData.players as Player[];
+        } else if (Array.isArray(masterData.modifiedPlayers)) {
+          loadedPlayers = masterData.modifiedPlayers as Player[];
         }
       }
       console.log(`[Firebase] ✅ Step 4/4 OK: 'league/current_state' exists=${masterSnap.exists()}.`);
@@ -209,6 +207,31 @@ export async function loadStateFromFirestore(fallbackState: LeagueState): Promis
     console.error('[Firebase] Error loading state from Firestore:', err);
     return null;
   }
+}
+
+/**
+ * Recursively removes all `undefined` values and converts them so Firestore does not reject the document.
+ * In Firestore Web SDK, any key with value `undefined` throws "Unsupported field value: undefined".
+ */
+export function sanitizeForFirestore<T>(data: T): T {
+  if (data === undefined) {
+    return null as any;
+  }
+  if (data === null || typeof data !== 'object') {
+    return data;
+  }
+  if (Array.isArray(data)) {
+    return data
+      .filter((item) => item !== undefined)
+      .map((item) => sanitizeForFirestore(item)) as any;
+  }
+  const clean: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data as Record<string, any>)) {
+    if (value !== undefined) {
+      clean[key] = sanitizeForFirestore(value);
+    }
+  }
+  return clean as T;
 }
 
 /**
@@ -233,7 +256,7 @@ export async function syncUserToFirestore(user: UserProfile): Promise<void> {
     if (user.passwordHash) userPayload.passwordHash = user.passwordHash;
     if (user.avatarUrl) userPayload.avatarUrl = user.avatarUrl;
 
-    await setDoc(docRef, userPayload, { merge: true });
+    await setDoc(docRef, sanitizeForFirestore(userPayload), { merge: true });
     await addToIndex('user_index', user.id);
     console.log(`[Firebase] 💾 User "${user.name}" (${user.email}) persisted to Firestore.`);
   } catch (err) {
@@ -248,10 +271,11 @@ export async function syncSquadToFirestore(squad: UserSquad): Promise<void> {
   if (!db || !squad?.userId) return;
   try {
     const docRef = doc(db, 'squads', squad.userId);
-    await setDoc(docRef, {
+    const squadPayload = {
       ...squad,
       updatedAt: Date.now()
-    }, { merge: true });
+    };
+    await setDoc(docRef, sanitizeForFirestore(squadPayload), { merge: true });
     await addToIndex('squad_index', squad.userId);
     console.log(`[Firebase] 💾 Squad for user "${squad.userId}" persisted to Firestore.`);
   } catch (err) {
@@ -266,11 +290,12 @@ export async function syncWatchlistToFirestore(userId: string, playerIds: string
   if (!db || !userId) return;
   try {
     const docRef = doc(db, 'watchlists', userId);
-    await setDoc(docRef, {
+    const watchlistPayload = {
       userId,
       playerIds,
       updatedAt: Date.now()
-    }, { merge: true });
+    };
+    await setDoc(docRef, sanitizeForFirestore(watchlistPayload), { merge: true });
     await addToIndex('watchlist_index', userId);
     console.log(`[Firebase] 💾 Watchlist (${playerIds.length} players) for user "${userId}" persisted to Firestore.`);
   } catch (err) {
@@ -316,17 +341,15 @@ export async function syncLeagueMasterToFirestore(state: LeagueState): Promise<v
       (p) => p.status !== 'AVAILABLE' || p.isManualExtra || (p.currentBid && p.currentBid.amount > p.initialPrice)
     );
 
-    await setDoc(
-      masterDocRef,
-      {
-        id: 'current_state',
-        defaultBudget: state.defaultBudget,
-        auction: state.auction,
-        modifiedPlayers,
-        lastUpdated: Date.now()
-      },
-      { merge: true }
-    );
+    const masterPayload = {
+      id: 'current_state',
+      defaultBudget: state.defaultBudget,
+      auction: state.auction,
+      modifiedPlayers,
+      lastUpdated: Date.now()
+    };
+
+    await setDoc(masterDocRef, sanitizeForFirestore(masterPayload), { merge: true });
   } catch (err) {
     console.error('[Firebase] Failed to persist master league state to Firestore:', err);
   }
@@ -348,6 +371,16 @@ export async function syncAllStateToFirestore(state: LeagueState): Promise<void>
     }
     // 3. Sync master state
     await syncLeagueMasterToFirestore(state);
+
+    // 4. Sync watchlists
+    if (state.watchlists) {
+      for (const [userId, pIds] of Object.entries(state.watchlists)) {
+        if (Array.isArray(pIds) && pIds.length > 0) {
+          await syncWatchlistToFirestore(userId, pIds);
+        }
+      }
+    }
+
     console.log('[Firebase] 🚀 Full state synced to Cloud Firestore.');
   } catch (err) {
     console.error('[Firebase] Full state sync error:', err);
