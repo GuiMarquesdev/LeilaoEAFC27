@@ -225,9 +225,16 @@ export const QuickBidModal: React.FC<QuickBidModalProps> = ({
                   <span className="font-bold block">
                     {isUserLeading ? '👑 Você está liderando esta disputa (Pode aumentar o lance)' : 'Disputa ativa por este atleta'}
                   </span>
-                  <span className="text-[11px] opacity-80">
-                    Restam: {player.timerRemaining ? formatAuctionTimer(player.timerRemaining) : '1h 30m'}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] opacity-80">
+                      Restam: {formatAuctionTimer(player.timerRemaining ?? (auction.timerRemaining > 0 ? auction.timerRemaining : 5400))}
+                    </span>
+                    {(player.timerRemaining ?? auction.timerRemaining) <= 60 && (
+                      <span className="text-[9px] bg-rose-200 text-rose-950 font-black px-1.5 py-0.2 rounded border border-rose-300">
+                        ⚡ +60s se cobrir
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <span className="font-black text-sm">

@@ -64,7 +64,8 @@ export const PlayerDetailsModal: React.FC<PlayerDetailsModalProps> = ({
   const isInAuction = player.status === 'IN_AUCTION' || auction.currentPlayer?.id === player.id;
   const isSold = player.status === 'SOLD';
   const isQueued = auction.nominationQueue?.some((q) => q.player.id === player.id);
-  const timer = player.timerRemaining ?? (auction.currentPlayer?.id === player.id ? auction.timerRemaining : 5400);
+  const officialAuctionTimer = auction.timerRemaining > 0 ? auction.timerRemaining : (auction.defaultDurationSeconds || 5400);
+  const timer = player.timerRemaining ?? (auction.currentPlayer?.id === player.id ? auction.timerRemaining : officialAuctionTimer);
 
   // Collect and sort all bids for this specific player
   const allPlayerBids: Bid[] = (() => {

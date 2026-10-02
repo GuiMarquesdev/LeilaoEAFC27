@@ -301,11 +301,12 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
     let mine = 0;
     let endingSoon = 0;
 
+    const officialTimer = auction.timerRemaining > 0 ? auction.timerRemaining : (auction.defaultDurationSeconds || 5400);
     activeAuctionPlayers.forEach((p) => {
       const activeBid = getPlayerActiveBid(p, auction);
       const isLeading = activeBid?.userId === currentUser?.id;
       const hasBid = (p.bidHistory || []).some((b) => b.userId === currentUser?.id);
-      const pTimer = p.timerRemaining ?? (auction.currentPlayer?.id === p.id ? auction.timerRemaining : 5400);
+      const pTimer = p.timerRemaining ?? (auction.currentPlayer?.id === p.id ? auction.timerRemaining : officialTimer);
 
       if (isLeading) leading++;
       if (hasBid && !isLeading) outbid++;
@@ -318,11 +319,12 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
   // Filtered simultaneous dispute players
   const filteredDisputePlayers = React.useMemo(() => {
+    const officialTimer = auction.timerRemaining > 0 ? auction.timerRemaining : (auction.defaultDurationSeconds || 5400);
     return activeAuctionPlayers.filter((p) => {
       const activeBid = getPlayerActiveBid(p, auction);
       const isLeading = activeBid?.userId === currentUser?.id;
       const hasBid = (p.bidHistory || []).some((b) => b.userId === currentUser?.id);
-      const pTimer = p.timerRemaining ?? (auction.currentPlayer?.id === p.id ? auction.timerRemaining : 5400);
+      const pTimer = p.timerRemaining ?? (auction.currentPlayer?.id === p.id ? auction.timerRemaining : officialTimer);
 
       if (disputeSearch.trim()) {
         const q = disputeSearch.toLowerCase().trim();
@@ -346,7 +348,8 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
   const focusedBid = getPlayerActiveBid(focusedPlayer, auction);
   const focusedEffectivePrice = getPlayerEffectivePrice(focusedPlayer, auction);
-  const focusedTimerRemaining = focusedPlayer?.timerRemaining ?? (auction.currentPlayer?.id === focusedPlayer?.id ? auction.timerRemaining : 5400);
+  const officialAuctionClock = auction.timerRemaining > 0 ? auction.timerRemaining : (auction.defaultDurationSeconds || 5400);
+  const focusedTimerRemaining = focusedPlayer?.timerRemaining ?? (auction.currentPlayer?.id === focusedPlayer?.id ? auction.timerRemaining : officialAuctionClock);
 
   const userWonPlayersCount = currentUser
     ? players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === currentUser.id).length
@@ -1832,12 +1835,14 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                               {filteredDisputePlayers.map((p) => {
                                 const pBid = getPlayerActiveBid(p, auction);
                                 const pPrice = getPlayerEffectivePrice(p, auction);
-                                const pTimer = p.timerRemaining ?? (auction.currentPlayer?.id === p.id ? auction.timerRemaining : 5400);
+                                const officialAuctionClock = auction.timerRemaining > 0 ? auction.timerRemaining : (auction.defaultDurationSeconds || 5400);
+                                const pTimer = p.timerRemaining ?? (auction.currentPlayer?.id === p.id ? auction.timerRemaining : officialAuctionClock);
                                 const isSelected = (!isFocusedPlayerClosed && ((focusedPlayer || currentPlayer)?.id === p.id));
                                 const isUserLeading = pBid?.userId === currentUser?.id;
                                 const hasUserBid = (p.bidHistory || []).some((b) => b.userId === currentUser?.id);
                                 const isUserOutbid = hasUserBid && !isUserLeading;
                                 const pBadge = getPositionBadge(p.position);
+                                const hasOvertime = p.timerRemaining && auction.timerRemaining > 0 && p.timerRemaining > auction.timerRemaining;
 
                                 return (
                                   <div
@@ -1888,11 +1893,16 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                                         <span className="text-xs font-black text-emerald-700 block">
                                           {formatCurrency(pPrice)}
                                         </span>
-                                        <span className={`text-[10px] font-bold flex items-center justify-end gap-0.5 ${
-                                          pTimer <= 900 ? 'text-rose-600 animate-pulse' : 'text-amber-700'
+                                        <span className={`text-[10px] font-bold flex items-center justify-end gap-1 ${
+                                          pTimer <= 60 ? 'text-rose-600 font-black animate-pulse' : pTimer <= 900 ? 'text-rose-600' : 'text-amber-700'
                                         }`}>
                                           <Clock className="w-2.5 h-2.5" />
-                                          {formatAuctionTimer(pTimer)}
+                                          <span>{formatAuctionTimer(pTimer)}</span>
+                                          {hasOvertime && (
+                                            <span className="text-[8px] bg-rose-100 text-rose-800 px-1 rounded border border-rose-300 font-black">
+                                              +60s
+                                            </span>
+                                          )}
                                         </span>
                                       </div>
                                     </div>
@@ -1962,11 +1972,13 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                                   {filteredDisputePlayers.map((p) => {
                                     const pBid = getPlayerActiveBid(p, auction);
                                     const pPrice = getPlayerEffectivePrice(p, auction);
-                                    const pTimer = p.timerRemaining ?? (auction.currentPlayer?.id === p.id ? auction.timerRemaining : 5400);
+                                    const officialAuctionClock = auction.timerRemaining > 0 ? auction.timerRemaining : (auction.defaultDurationSeconds || 5400);
+                                    const pTimer = p.timerRemaining ?? (auction.currentPlayer?.id === p.id ? auction.timerRemaining : officialAuctionClock);
                                     const isUserLeading = pBid?.userId === currentUser?.id;
                                     const hasUserBid = (p.bidHistory || []).some((b) => b.userId === currentUser?.id);
                                     const isUserOutbid = hasUserBid && !isUserLeading;
                                     const pBadge = getPositionBadge(p.position);
+                                    const hasOvertime = p.timerRemaining && auction.timerRemaining > 0 && p.timerRemaining > auction.timerRemaining;
 
                                     return (
                                       <tr
@@ -2015,11 +2027,18 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                                           {formatCurrency(pPrice)}
                                         </td>
                                         <td className="py-2 px-3 text-center">
-                                          <span className={`font-mono text-xs font-bold ${
-                                            pTimer <= 900 ? 'text-rose-600 animate-pulse' : 'text-slate-700'
-                                          }`}>
-                                            {formatAuctionTimer(pTimer)}
-                                          </span>
+                                          <div className="flex flex-col items-center justify-center gap-0.5">
+                                            <span className={`font-mono text-xs font-bold ${
+                                              pTimer <= 60 ? 'text-rose-600 font-black animate-pulse' : pTimer <= 900 ? 'text-rose-600' : 'text-slate-700'
+                                            }`}>
+                                              {formatAuctionTimer(pTimer)}
+                                            </span>
+                                            {hasOvertime && (
+                                              <span className="text-[8px] bg-rose-100 text-rose-800 font-black px-1 rounded border border-rose-300">
+                                                +60s Acréscimo
+                                              </span>
+                                            )}
+                                          </div>
                                         </td>
                                         <td className="py-2 px-3 text-right">
                                           <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>

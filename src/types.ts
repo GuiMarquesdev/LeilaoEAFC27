@@ -22,6 +22,7 @@ export interface Player {
   bidHistory?: Bid[];
   auctionExpiresAt?: number;
   timerRemaining?: number;
+  hasOvertimeExtension?: boolean; // Acréscimo anti-sniper de +60s concedido nos momentos finais da disputa
   soldTo?: {
     userId: string;
     userName: string;

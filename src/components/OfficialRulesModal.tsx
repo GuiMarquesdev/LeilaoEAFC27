@@ -86,10 +86,20 @@ export const OfficialRulesModal: React.FC<OfficialRulesModalProps> = ({ isOpen, 
               <div className="p-3.5 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1.5">
                 <span className="text-xs font-bold text-amber-900 block flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-amber-600" />
-                  Propostas por 1h e 30 Minutos
+                  Cronômetro Oficial do Leilão
                 </span>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Em cada rodada de leilão, as propostas pelo jogador ficam disponíveis pelo período de <strong className="text-amber-800 font-bold">1 hora e 30 minutos (90 minutos)</strong>.
+                  O tempo de leilão de cada atleta acompanha estritamente o <strong className="text-amber-800 font-bold">cronômetro oficial definido pelo administrador</strong> da liga, garantindo sincronia entre todas as disputas abertas.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-rose-50/60 border border-rose-200 rounded-xl space-y-1.5">
+                <span className="text-xs font-bold text-rose-900 block flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-rose-600" />
+                  Acréscimo de 60s (Anti-Sniper)
+                </span>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Caso haja proposta nos últimos segundos (≤ 60s), concede-se um <strong className="text-rose-800 font-bold">acréscimo de 60 segundos exclusivamente</strong> para a disputa daquele atleta, oportunizando contraproposta justa.
                 </p>
               </div>
 

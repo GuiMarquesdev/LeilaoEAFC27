@@ -907,11 +907,12 @@ function finalizeSpecificPlayerAuction(player: Player) {
     if (nextInAuction) {
       leagueState.auction.currentPlayer = nextInAuction;
       leagueState.auction.currentBid = getHighestBidForPlayer(nextInAuction);
-      leagueState.auction.timerRemaining = nextInAuction.timerRemaining || getAuctionDuration();
+      if (!leagueState.auction.timerRemaining || leagueState.auction.timerRemaining <= 0) {
+        leagueState.auction.timerRemaining = nextInAuction.timerRemaining || 0;
+      }
     } else {
       leagueState.auction.currentPlayer = null;
       leagueState.auction.currentBid = null;
-      leagueState.auction.timerRemaining = 0;
     }
   }
 
@@ -1063,11 +1064,14 @@ setInterval(() => {
       leagueState.auction.timerRemaining -= 1;
       leagueState.auction.lastUpdated = Date.now();
       stateChanged = true;
-      if (leagueState.auction.timerRemaining === 0 && leagueState.auction.currentPlayer) {
-        const cp = leagueState.players.find((pl) => pl.id === leagueState.auction.currentPlayer?.id);
-        if (cp && cp.status === 'IN_AUCTION') {
-          finalizeSpecificPlayerAuction(cp);
-          saveState();
+      if (leagueState.auction.timerRemaining === 0) {
+        // Se o cronômetro oficial zerou, atletas com acréscimo continuam até seu timer individual zerar
+        if (leagueState.auction.currentPlayer) {
+          const cp = leagueState.players.find((pl) => pl.id === leagueState.auction.currentPlayer?.id);
+          if (cp && cp.status === 'IN_AUCTION' && (typeof cp.timerRemaining !== 'number' || cp.timerRemaining <= 0)) {
+            finalizeSpecificPlayerAuction(cp);
+            saveState();
+          }
         }
       }
     }
@@ -1870,22 +1874,37 @@ async function startServer() {
       isAnonymous
     };
 
-    const auctionDur = getAuctionDuration();
+    const isAuctionAlreadyActive = leagueState.auction.status === 'ACTIVE' && leagueState.auction.timerRemaining > 0;
+    const officialTimer = isAuctionAlreadyActive
+      ? leagueState.auction.timerRemaining
+      : getAuctionDuration();
+
     player.status = 'IN_AUCTION';
     player.nominatedBy = user.id;
     player.currentBid = newBid;
     if (!player.bidHistory) player.bidHistory = [];
     player.bidHistory.unshift(newBid);
     player.currentPrice = openingAmount;
-    player.timerRemaining = auctionDur;
-    player.auctionExpiresAt = Date.now() + auctionDur * 1000;
+
+    // Regra 1: O tempo de leilão do jogador DEVE ACOMPANHAR O CRONÔMETRO OFICIAL DO LEILÃO DEFINIDO PELO ADMINISTRADOR
+    player.timerRemaining = officialTimer;
+
+    // Regra 2: Caso o leilão esteja nos últimos segundos (<= 60s), dá-se acréscimo de 60 segundos somente para este jogador
+    let receivedOvertime = false;
+    if (player.timerRemaining <= 60) {
+      player.timerRemaining += 60;
+      receivedOvertime = true;
+    }
+    player.auctionExpiresAt = Date.now() + player.timerRemaining * 1000;
 
     leagueState.auction.status = 'ACTIVE';
     leagueState.auction.currentPlayer = player;
     leagueState.auction.currentBid = newBid;
     if (!leagueState.auction.bidHistory) leagueState.auction.bidHistory = [];
     leagueState.auction.bidHistory.unshift(newBid);
-    leagueState.auction.timerRemaining = auctionDur;
+    if (!isAuctionAlreadyActive) {
+      leagueState.auction.timerRemaining = officialTimer;
+    }
     leagueState.auction.lastUpdated = Date.now();
 
     saveState();
@@ -1976,17 +1995,26 @@ async function startServer() {
       }
     }
 
-    const startDur = getAuctionDuration();
+    const isAuctionAlreadyActive = leagueState.auction.status === 'ACTIVE' && leagueState.auction.timerRemaining > 0;
+    const officialTimer = isAuctionAlreadyActive
+      ? leagueState.auction.timerRemaining
+      : getAuctionDuration();
+
     targetPlayer.status = 'IN_AUCTION';
     targetPlayer.nominatedBy = item.nominatedByUserId;
-    targetPlayer.timerRemaining = startDur;
-    targetPlayer.auctionExpiresAt = Date.now() + startDur * 1000;
+    targetPlayer.timerRemaining = officialTimer;
+    if (targetPlayer.timerRemaining <= 60) {
+      targetPlayer.timerRemaining += 60;
+    }
+    targetPlayer.auctionExpiresAt = Date.now() + targetPlayer.timerRemaining * 1000;
 
     leagueState.auction.status = 'ACTIVE';
     leagueState.auction.currentPlayer = targetPlayer;
     leagueState.auction.currentBid = null;
     leagueState.auction.bidHistory = [];
-    leagueState.auction.timerRemaining = startDur;
+    if (!isAuctionAlreadyActive) {
+      leagueState.auction.timerRemaining = officialTimer;
+    }
     leagueState.auction.lastUpdated = Date.now();
 
     saveState();
@@ -2137,11 +2165,22 @@ async function startServer() {
     player.bidHistory.unshift(newBid);
     player.currentPrice = bidAmount;
 
-    // Duration timer or anti-snipe 5 min
+    // Regra 1: O tempo de leilão do jogador DEVE ACOMPANHAR O CRONÔMETRO OFICIAL DO LEILÃO DEFINIDO PELO ADMINISTRADOR
+    const officialTimer = (leagueState.auction.status === 'ACTIVE' && leagueState.auction.timerRemaining > 0)
+      ? leagueState.auction.timerRemaining
+      : (leagueState.auction.defaultDurationSeconds || getAuctionDuration());
+
     if (!player.timerRemaining || player.timerRemaining <= 0) {
-      player.timerRemaining = getAuctionDuration();
-    } else if (player.timerRemaining < 300) {
-      player.timerRemaining = 300;
+      player.timerRemaining = officialTimer;
+    }
+
+    // Regra 2: Caso o usuário faça uma oferta em um jogador e no cronômetro oficial (ou no cronômetro do jogador)
+    // estiver nos últimos segundos (<= 60s), concede-se um acréscimo de 60 segundos SOMENTE para aquele leilão específico
+    let receivedOvertime = false;
+    const isUnderLastSeconds = player.timerRemaining <= 60 || officialTimer <= 60;
+    if (isUnderLastSeconds) {
+      player.timerRemaining += 60;
+      receivedOvertime = true;
     }
     player.auctionExpiresAt = Date.now() + (player.timerRemaining * 1000);
 
@@ -2187,8 +2226,22 @@ async function startServer() {
       }
     });
 
+    if (receivedOvertime) {
+      const minsRem = Math.floor(player.timerRemaining / 60);
+      const secsRem = player.timerRemaining % 60;
+      const formattedRem = minsRem > 0 ? `${minsRem}m${secsRem > 0 ? ` ${secsRem}s` : ''}` : `${secsRem}s`;
+      broadcast({
+        type: 'CHAT_NOTIFICATION',
+        data: {
+          message: `⏱️ Acréscimo de +60s! Proposta recebida na reta final por ${player.name}. Tempo restante apenas deste atleta estendido para ${formattedRem} para disputa justa!`,
+          timestamp: Date.now(),
+          type: 'alert'
+        }
+      });
+    }
+
     broadcastState();
-    res.json({ success: true, bid: newBid, player, auction: leagueState.auction });
+    res.json({ success: true, bid: newBid, player, auction: leagueState.auction, receivedOvertime });
   });
 
   // 5. Pass nomination turn
@@ -2965,6 +3018,16 @@ async function startServer() {
       }
       case 'START_LEAGUE_AUCTION':
         leagueState.auction.status = 'ACTIVE';
+        if (!leagueState.auction.timerRemaining || leagueState.auction.timerRemaining <= 0) {
+          leagueState.auction.timerRemaining = leagueState.auction.defaultDurationSeconds || AUCTION_DURATION_SECONDS;
+        }
+        // Regra 1: Todos os jogadores atualmente em leilão acompanham o cronômetro oficial definido pelo administrador
+        leagueState.players.forEach((p) => {
+          if (p.status === 'IN_AUCTION') {
+            p.timerRemaining = leagueState.auction.timerRemaining;
+            p.auctionExpiresAt = Date.now() + p.timerRemaining * 1000;
+          }
+        });
         leagueState.auction.lastUpdated = Date.now();
         broadcast({
           type: 'CHAT_NOTIFICATION',

@@ -630,7 +630,8 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                     ? getPlayerActiveBid(player, auction)
                     : null;
                   const effectivePrice = getPlayerEffectivePrice(player, auction);
-                  const playerTimerRemaining = player.timerRemaining ?? (auction.currentPlayer?.id === player.id ? auction.timerRemaining : 5400);
+                  const officialAuctionTimer = auction.timerRemaining > 0 ? auction.timerRemaining : (auction.defaultDurationSeconds || 5400);
+                  const playerTimerRemaining = player.timerRemaining ?? (auction.currentPlayer?.id === player.id ? auction.timerRemaining : officialAuctionTimer);
                   const queueIndex = auction.nominationQueue?.findIndex((q) => q.player.id === player.id) ?? -1;
                   const isQueued = queueIndex !== -1;
                   const queueItem = isQueued && auction.nominationQueue ? auction.nominationQueue[queueIndex] : null;
@@ -750,9 +751,16 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                                   )}
                                 </span>
                               </div>
-                              <div className="text-[10px] text-amber-700 font-semibold flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-amber-600" />
-                                <span>Restam {formatAuctionTimer(playerTimerRemaining)}</span>
+                              <div className="text-[10px] text-amber-700 font-semibold flex items-center gap-1.5 flex-wrap">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-amber-600" />
+                                  <span>Restam {formatAuctionTimer(playerTimerRemaining)}</span>
+                                </div>
+                                {player.timerRemaining && auction.timerRemaining > 0 && player.timerRemaining > auction.timerRemaining && (
+                                  <span className="text-[9px] bg-rose-100 text-rose-800 font-extrabold px-1.5 py-0.5 rounded border border-rose-300 animate-pulse">
+                                    +60s Acréscimo
+                                  </span>
+                                )}
                               </div>
                             </div>
                           ) : (
@@ -764,9 +772,16 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                               <p className="text-[11px] text-slate-500 font-medium">
                                 Base: <strong className="text-slate-700">{formatCurrency(player.initialPrice)}</strong>
                               </p>
-                              <div className="text-[10px] text-amber-700 font-semibold flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-amber-600" />
-                                <span>Restam {formatAuctionTimer(playerTimerRemaining)}</span>
+                              <div className="text-[10px] text-amber-700 font-semibold flex items-center gap-1.5 flex-wrap">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-amber-600" />
+                                  <span>Restam {formatAuctionTimer(playerTimerRemaining)}</span>
+                                </div>
+                                {player.timerRemaining && auction.timerRemaining > 0 && player.timerRemaining > auction.timerRemaining && (
+                                  <span className="text-[9px] bg-rose-100 text-rose-800 font-extrabold px-1.5 py-0.5 rounded border border-rose-300 animate-pulse">
+                                    +60s Acréscimo
+                                  </span>
+                                )}
                               </div>
                             </div>
                           )
@@ -857,7 +872,7 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                                 }
                                 setSelectedPlayerForBid(player);
                               }}
-                              className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer ${
+                              className={`inline-flex items-center justify-center px-3 py-1.5 text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer ${
                                 activeBid?.userId === currentUser?.id
                                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                                   : 'bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white animate-pulse'
@@ -868,14 +883,13 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                                   : 'Cobrir proposta por este atleta no leilão simultâneo'
                               }
                             >
-                              <Flame className="w-3.5 h-3.5" />
                               <span>{activeBid?.userId === currentUser?.id ? 'Liderando' : 'Cobrir Proposta'}</span>
                             </button>
                           )}
 
                           <button
                             onClick={() => onViewPreview(player)}
-                            className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs ${
+                            className={`inline-flex items-center justify-center px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs ${
                               isPlayerInSquad(player.id)
                                 ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300'
                                 : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-sm'
@@ -886,11 +900,6 @@ export const PlayerCatalogSection: React.FC<PlayerCatalogSectionProps> = ({
                                 : 'Enviar este jogador para o elenco prévia e visualizar na prancheta'
                             }
                           >
-                            {isPlayerInSquad(player.id) ? (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            ) : (
-                              <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
-                            )}
                             <span>Ver Prévia</span>
                           </button>
 
