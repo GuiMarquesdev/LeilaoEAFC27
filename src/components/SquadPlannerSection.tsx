@@ -3,7 +3,7 @@ import {
   Users, Lock, Sparkles, RefreshCw, Check, 
   Share2, ArrowRightLeft, DollarSign, Trophy, Info, Trash2,
   GripVertical, CheckCircle2, ArrowDownCircle, Target, Star,
-  ListPlus, ExternalLink, Plus, UserPlus
+  ListPlus, ExternalLink, Plus, UserPlus, X, Search, ChevronRight
 } from 'lucide-react';
 import { Player, UserProfile, UserSquad, FormationSlot, TacticalFormation, AuctionState } from '../types';
 import { INITIAL_FORMATIONS } from '../data/initialPlayers';
@@ -83,8 +83,14 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
   const [copiedNotification, setCopiedNotification] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Drag and drop states
+  // Drag and drop & Tap-to-Swap substitution states (Mobile & Desktop Friendly)
   const [draggedItem, setDraggedItem] = useState<DragItemData | null>(null);
+  const [selectedForSwap, setSelectedForSwap] = useState<DragItemData | null>(null);
+  const [slotActionMenu, setSlotActionMenu] = useState<{
+    slot: FormationSlot;
+    player: Player;
+    isOwned: boolean;
+  } | null>(null);
   const [dragOverSlotId, setDragOverSlotId] = useState<string | null>(null);
   const [isBenchDragOver, setIsBenchDragOver] = useState<boolean>(false);
   const [feedbackToast, setFeedbackToast] = useState<{ message: string; type: 'success' | 'swap' | 'bench' } | null>(null);
@@ -319,6 +325,63 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
     }
   };
 
+  // Core substitution function supporting both Touch Tap-to-Swap and Desktop Drag-and-Drop
+  const executeSubstitution = (data: DragItemData, targetSlotId: string) => {
+    const { playerId, from, sourceSlotId } = data;
+    const targetSlot = currentFormation.slots.find((s) => s.slotId === targetSlotId);
+    const player = players.find((p) => p.id === playerId);
+    const existingPlayerId = starterSlots[targetSlotId];
+    const existingPlayer = existingPlayerId ? players.find((p) => p.id === existingPlayerId) : null;
+
+    const newSlots = { ...starterSlots };
+    let newBench = [...benchPlayerIds];
+
+    if (from === 'bench') {
+      // If target slot already had a player
+      if (existingPlayerId) {
+        if (!newBench.includes(existingPlayerId)) {
+          newBench.push(existingPlayerId);
+        }
+      }
+      // Remove newly assigned player from bench
+      newBench = newBench.filter((id) => id !== playerId);
+      newSlots[targetSlotId] = playerId;
+
+      if (player && targetSlot) {
+        const msg = existingPlayer
+          ? `🔄 ${player.name} substituiu ${existingPlayer.name} na vaga ${targetSlot.role}!`
+          : `⚡ ${player.name} escalado como titular em ${targetSlot.role}!`;
+        showFeedback(msg, existingPlayer ? 'swap' : 'success');
+      }
+    } else if (from === 'slot' && sourceSlotId) {
+      if (sourceSlotId === targetSlotId) {
+        setDraggedItem(null);
+        setSelectedForSwap(null);
+        return;
+      }
+      // Swap the two slots
+      newSlots[sourceSlotId] = existingPlayerId || null;
+      newSlots[targetSlotId] = playerId;
+
+      if (player && targetSlot) {
+        const msg = existingPlayer
+          ? `🔄 Inversão tática: ${player.name} ⮂ ${existingPlayer.name}!`
+          : `⚡ ${player.name} reposicionado para ${targetSlot.role}!`;
+        showFeedback(msg, 'swap');
+      }
+    }
+
+    setStarterSlots(newSlots);
+    setBenchPlayerIds(newBench);
+    setDraggedItem(null);
+    setSelectedForSwap(null);
+    playBidSound();
+
+    if (currentUser) {
+      onSaveSquad(selectedFormationId, newSlots, newBench);
+    }
+  };
+
   const handleDropOnSlot = (e: React.DragEvent, targetSlotId: string) => {
     e.preventDefault();
     setDragOverSlotId(null);
@@ -338,60 +401,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
       return;
     }
 
-    const { playerId, from, sourceSlotId } = data;
-    const targetSlot = currentFormation.slots.find((s) => s.slotId === targetSlotId);
-    const player = players.find((p) => p.id === playerId);
-    const existingPlayerId = starterSlots[targetSlotId];
-    const existingPlayer = existingPlayerId ? players.find((p) => p.id === existingPlayerId) : null;
-
-    const newSlots = { ...starterSlots };
-    let newBench = [...benchPlayerIds];
-
-    if (from === 'bench') {
-      // If target slot already had a player
-      if (existingPlayerId) {
-        // If that existing player is owned by user, return them to bench
-        if (ownedPlayerIds.includes(existingPlayerId)) {
-          if (!newBench.includes(existingPlayerId)) {
-            newBench.push(existingPlayerId);
-          }
-        }
-      }
-      // Remove newly assigned player from bench
-      newBench = newBench.filter((id) => id !== playerId);
-      newSlots[targetSlotId] = playerId;
-
-      if (player && targetSlot) {
-        const msg = existingPlayer
-          ? `🔄 ${player.name} substituiu ${existingPlayer.name} na vaga ${targetSlot.role}!`
-          : `⚡ ${player.name} escalado como titular em ${targetSlot.role}!`;
-        showFeedback(msg, existingPlayer ? 'swap' : 'success');
-      }
-    } else if (from === 'slot' && sourceSlotId) {
-      if (sourceSlotId === targetSlotId) {
-        setDraggedItem(null);
-        return;
-      }
-      // Swap the two slots
-      newSlots[sourceSlotId] = existingPlayerId || null;
-      newSlots[targetSlotId] = playerId;
-
-      if (player && targetSlot) {
-        const msg = existingPlayer
-          ? `🔄 Inversão tática: ${player.name} ⮂ ${existingPlayer.name}!`
-          : `⚡ ${player.name} reposicionado para ${targetSlot.role}!`;
-        showFeedback(msg, 'swap');
-      }
-    }
-
-    setStarterSlots(newSlots);
-    setBenchPlayerIds(newBench);
-    setDraggedItem(null);
-    playBidSound();
-
-    if (currentUser) {
-      onSaveSquad(selectedFormationId, newSlots, newBench);
-    }
+    executeSubstitution(data, targetSlotId);
   };
 
   const handleDragOverBench = (e: React.DragEvent) => {
@@ -399,6 +409,30 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
     e.dataTransfer.dropEffect = 'move';
     if (!isBenchDragOver) {
       setIsBenchDragOver(true);
+    }
+  };
+
+  const handleMoveStarterToBench = (sourceSlotId: string, playerId: string) => {
+    const newSlots = { ...starterSlots, [sourceSlotId]: null };
+    let newBench = [...benchPlayerIds];
+
+    if (!newBench.includes(playerId)) {
+      newBench.push(playerId);
+    }
+
+    setStarterSlots(newSlots);
+    setBenchPlayerIds(newBench);
+    setDraggedItem(null);
+    setSelectedForSwap(null);
+    playBidSound();
+
+    const player = players.find((p) => p.id === playerId);
+    if (player) {
+      showFeedback(`📋 ${player.name} movido para o Banco de Reservas.`, 'bench');
+    }
+
+    if (currentUser) {
+      onSaveSquad(selectedFormationId, newSlots, newBench);
     }
   };
 
@@ -421,28 +455,80 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
       return;
     }
 
-    const { playerId, sourceSlotId } = data;
-    const player = players.find((p) => p.id === playerId);
+    handleMoveStarterToBench(data.sourceSlotId, data.playerId);
+  };
 
-    const newSlots = { ...starterSlots, [sourceSlotId]: null };
-    let newBench = [...benchPlayerIds];
+  // Direct Click/Tap on Tactical Slot (Mobile & Desktop Friendly)
+  const handleSlotClick = (slot: FormationSlot) => {
+    const assignedPlayerId = starterSlots[slot.slotId];
 
-    if (ownedPlayerIds.includes(playerId) && !newBench.includes(playerId)) {
-      newBench.push(playerId);
+    // If already in Tap-to-Swap mode:
+    if (selectedForSwap) {
+      // If user taps the exact same slot that was already selected, cancel swap mode
+      if (selectedForSwap.from === 'slot' && selectedForSwap.sourceSlotId === slot.slotId) {
+        setSelectedForSwap(null);
+        return;
+      }
+      // Execute substitution!
+      executeSubstitution(selectedForSwap, slot.slotId);
+      return;
     }
 
-    setStarterSlots(newSlots);
-    setBenchPlayerIds(newBench);
-    setDraggedItem(null);
-    playBidSound();
+    // Not in swap mode:
+    if (assignedPlayerId) {
+      const player = players.find((p) => p.id === assignedPlayerId);
+      if (player) {
+        const isOwned = ownedPlayerIds.includes(assignedPlayerId);
+        setSlotActionMenu({ slot, player, isOwned });
+      }
+    } else {
+      // Empty slot -> open picker
+      handleOpenSlot(slot);
+    }
+  };
 
-    if (player) {
-      showFeedback(`📋 ${player.name} movido para o Banco de Reservas.`, 'bench');
+  // Direct Click/Tap on Bench Player
+  const handleBenchPlayerClick = (benchPlayerId: string) => {
+    if (selectedForSwap) {
+      if (selectedForSwap.from === 'slot' && selectedForSwap.sourceSlotId) {
+        // User had a pitch starter selected, now clicked a bench player -> swap them!
+        const targetSlotId = selectedForSwap.sourceSlotId;
+        const starterPlayerId = selectedForSwap.playerId;
+        const benchPlayer = players.find((p) => p.id === benchPlayerId);
+        const starterPlayer = players.find((p) => p.id === starterPlayerId);
+        const targetSlot = currentFormation.slots.find((s) => s.slotId === targetSlotId);
+
+        const newSlots = { ...starterSlots, [targetSlotId]: benchPlayerId };
+        let newBench = benchPlayerIds.filter((id) => id !== benchPlayerId);
+        if (!newBench.includes(starterPlayerId)) {
+          newBench.push(starterPlayerId);
+        }
+
+        setStarterSlots(newSlots);
+        setBenchPlayerIds(newBench);
+        setSelectedForSwap(null);
+        playBidSound();
+        showFeedback(
+          `🔄 ${benchPlayer?.name} entrou como titular em ${targetSlot?.role || ''} no lugar de ${starterPlayer?.name}!`,
+          'swap'
+        );
+
+        if (currentUser) {
+          onSaveSquad(selectedFormationId, newSlots, newBench);
+        }
+        return;
+      } else if (selectedForSwap.from === 'bench') {
+        if (selectedForSwap.playerId === benchPlayerId) {
+          setSelectedForSwap(null);
+        } else {
+          setSelectedForSwap({ playerId: benchPlayerId, from: 'bench' });
+        }
+        return;
+      }
     }
 
-    if (currentUser) {
-      onSaveSquad(selectedFormationId, newSlots, newBench);
-    }
+    // Not in swap mode -> activate swap mode for this bench player!
+    setSelectedForSwap({ playerId: benchPlayerId, from: 'bench' });
   };
 
   // Quick 1-click assign from bench
@@ -898,6 +984,30 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
               </div>
             )}
 
+            {/* Helper bar for mobile and desktop substitution */}
+            <div className="flex items-center justify-between gap-2 px-1 mb-2">
+              <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                <span className="font-bold text-slate-800 flex items-center gap-1">
+                  <RefreshCw className="w-3.5 h-3.5 text-emerald-600" /> Substituição por Toque:
+                </span>
+                <span className="hidden sm:inline text-[11px] text-slate-500">
+                  Toque em qualquer titular ou reserva para trocar de posição diretamente no campo.
+                </span>
+                <span className="sm:hidden text-[11px] text-slate-500">
+                  Toque no atleta para trocar no campo.
+                </span>
+              </div>
+              {selectedForSwap && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedForSwap(null)}
+                  className="text-[11px] font-black text-rose-600 hover:text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                >
+                  <X className="w-3 h-3" /> Cancelar Troca
+                </button>
+              )}
+            </div>
+
             {/* Visual Pitch Container */}
             <div 
               id="squad-pitch-container"
@@ -922,21 +1032,30 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                 <path d="M 40% 80% A 10% 10% 0 0 1 60% 80%" />
               </svg>
 
-              {/* Active Dragging Banner Overlay */}
-              {draggedItem && (
-                <div className="absolute top-3 left-3 right-3 z-30 bg-slate-950/90 text-white backdrop-blur-md px-3.5 py-2 rounded-xl border border-amber-400/80 shadow-2xl flex items-center justify-between text-xs animate-in fade-in zoom-in-95">
+              {/* Active Dragging or Tap-to-Swap Banner Overlay */}
+              {(draggedItem || selectedForSwap) && (
+                <div className="absolute top-3 left-3 right-3 z-30 bg-slate-950/95 text-white backdrop-blur-md px-3.5 py-2.5 rounded-xl border-2 border-amber-400 shadow-2xl flex items-center justify-between text-xs animate-in slide-in-from-top-2">
                   <div className="flex items-center gap-2.5 truncate">
                     <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
                     <span className="font-black text-amber-300 truncate">
-                      Arraste e solte {players.find(p => p.id === draggedItem.playerId)?.name || 'atleta'} ({players.find(p => p.id === draggedItem.playerId)?.position})
+                      {(selectedForSwap || draggedItem)?.from === 'bench' ? '⚡ Escalando reserva:' : '🔄 Substituindo:'}{' '}
+                      {players.find(p => p.id === (selectedForSwap || draggedItem)?.playerId)?.name} ({players.find(p => p.id === (selectedForSwap || draggedItem)?.playerId)?.position})
                     </span>
                     <span className="text-slate-300 text-[11px] hidden sm:inline">
-                      — Solte em qualquer posição destacada
+                      — Toque na posição desejada para confirmar
                     </span>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md border border-amber-500/30 shrink-0">
-                    Modo Arraste
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedForSwap(null);
+                      setDraggedItem(null);
+                    }}
+                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] rounded-lg shadow-sm transition-all active:scale-95 shrink-0 ml-2 cursor-pointer flex items-center gap-1"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Cancelar</span>
+                  </button>
                 </div>
               )}
 
@@ -951,10 +1070,12 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                   : false;
                 const isTargeted = Boolean(player && !isOwnedByMe && localWatchedIds.includes(player.id));
 
+                const activeSwapOrDrag = selectedForSwap || draggedItem;
+                const isThisSelected = activeSwapOrDrag?.playerId === assignedPlayerId;
+                const swappingPlayer = activeSwapOrDrag ? players.find((p) => p.id === activeSwapOrDrag.playerId) : null;
+                const isCompatible = swappingPlayer ? isCompatiblePosition(slot.role, swappingPlayer.position) : false;
                 const isSlotHovered = dragOverSlotId === slot.slotId;
-                const isDraggingAny = Boolean(draggedItem);
-                const draggedPlayer = draggedItem ? players.find((p) => p.id === draggedItem.playerId) : null;
-                const isCompatible = draggedPlayer ? isCompatiblePosition(slot.role, draggedPlayer.position) : false;
+                const isDraggingAny = Boolean(activeSwapOrDrag);
 
                 return (
                   <div
@@ -968,7 +1089,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                     onDragLeave={() => handleDragLeaveSlot(slot.slotId)}
                     onDrop={(e) => handleDropOnSlot(e, slot.slotId)}
                     className={`absolute z-10 transition-all duration-200 ${
-                      isSlotHovered ? 'z-30 scale-120' : isDraggingAny ? 'z-20' : ''
+                      isSlotHovered || isThisSelected ? 'z-30 scale-110' : isDraggingAny ? 'z-20' : ''
                     }`}
                   >
                     <div
@@ -983,35 +1104,45 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                         }
                       }}
                       onDragEnd={handleDragEnd}
-                      onClick={() => handleOpenSlot(slot)}
-                      className={`group relative flex flex-col items-center justify-center transition-all ${
-                        assignedPlayerId ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+                      onClick={() => handleSlotClick(slot)}
+                      className={`group relative flex flex-col items-center justify-center transition-all touch-manipulation cursor-pointer ${
+                        assignedPlayerId ? 'active:scale-95' : ''
                       }`}
                       title={
                         assignedPlayerId
-                          ? `${player?.name} (${player?.position}) - Arraste para reposicionar ou trocar`
-                          : `Vaga livre (${slot.role}) - Clique para escolher ou arraste um reserva aqui`
+                          ? `${player?.name} (${player?.position}) - Toque para opções ou arraste para trocar`
+                          : `Vaga livre (${slot.role}) - Toque para escalar ou escolher reserva`
                       }
                     >
                       {/* Node Avatar / Circle */}
                       <div
                         className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shadow-lg font-bold text-xs transition-all border-2 relative ${
-                          isSlotHovered
+                          isThisSelected
+                            ? 'bg-amber-400 text-slate-950 border-amber-300 ring-4 ring-amber-400/80 shadow-2xl scale-115 animate-bounce'
+                            : isSlotHovered
                             ? 'bg-amber-400 text-slate-950 border-amber-300 ring-4 ring-amber-300/80 shadow-2xl scale-110'
+                            : isDraggingAny && isCompatible
+                            ? 'bg-emerald-900/90 text-emerald-100 border-emerald-400 ring-4 ring-emerald-400/70 animate-pulse shadow-emerald-500/50'
+                            : isDraggingAny
+                            ? 'bg-slate-900/80 text-white border-dashed border-amber-300/80 ring-2 ring-white/40'
                             : player
                             ? isOwnedByMe
                               ? 'bg-emerald-950 text-emerald-200 border-emerald-400 ring-2 ring-emerald-500/40'
                               : 'bg-slate-900 text-blue-200 border-blue-400 ring-2 ring-blue-500/30'
-                            : isDraggingAny && isCompatible
-                            ? 'bg-emerald-900/80 text-emerald-100 border-emerald-400 ring-4 ring-emerald-400/50 animate-pulse'
-                            : isDraggingAny
-                            ? 'bg-white/30 text-white border-dashed border-amber-300/80 ring-2 ring-white/40'
                             : 'bg-white/20 hover:bg-white/30 text-white/90 border-dashed border-white/60 backdrop-blur-xs'
                         }`}
                       >
-                        {isSlotHovered ? (
+                        {isThisSelected ? (
+                          <span className="text-[9px] font-black tracking-tight uppercase text-center leading-none">
+                            Trocando
+                          </span>
+                        ) : isSlotHovered ? (
                           <span className="text-[10px] font-black tracking-tight uppercase">
                             {player ? 'Trocar' : 'Soltar'}
+                          </span>
+                        ) : isDraggingAny ? (
+                          <span className="text-[9px] font-black tracking-tight uppercase text-center leading-none">
+                            {player ? 'Trocar' : 'Escalar'}
                           </span>
                         ) : player ? (
                           <div className="text-center">
@@ -1032,15 +1163,15 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                           </span>
                         )}
 
-                        {/* Compatible badge tag while dragging */}
-                        {isDraggingAny && isCompatible && !isSlotHovered && (
-                          <span className="absolute -top-2.5 -right-2 bg-emerald-500 text-slate-950 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-md animate-bounce border border-emerald-300">
+                        {/* Compatible badge tag while dragging or in tap-to-swap */}
+                        {isDraggingAny && isCompatible && !isSlotHovered && !isThisSelected && (
+                          <span className="absolute -top-2.5 -right-2 bg-emerald-500 text-slate-950 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-md animate-bounce border border-emerald-300 z-20">
                             Ideal
                           </span>
                         )}
 
                         {/* Target badge on node */}
-                        {isTargeted && !isSlotHovered && (
+                        {isTargeted && !isSlotHovered && !isThisSelected && (
                           <span 
                             className="absolute -top-1.5 -left-1.5 bg-amber-400 text-slate-950 p-0.5 rounded-full shadow-md border border-amber-300 ring-2 ring-amber-400/40 z-20"
                             title="Atleta Definido como Alvo do Leilão"
@@ -1053,23 +1184,33 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                       {/* Name Tag beneath */}
                       <div
                         className={`mt-1 px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-bold tracking-tight shadow-md max-w-[90px] sm:max-w-[110px] truncate text-center transition-all ${
-                          isSlotHovered
+                          isThisSelected
+                            ? 'bg-amber-400 text-slate-950 border border-amber-300 font-black ring-2 ring-amber-300/60'
+                            : isSlotHovered
                             ? 'bg-amber-400 text-slate-950 border border-amber-300 font-black'
+                            : isDraggingAny && isCompatible
+                            ? 'bg-emerald-950 text-emerald-200 border border-emerald-400 font-extrabold'
+                            : isDraggingAny
+                            ? 'bg-slate-900 text-amber-200 border border-amber-400/60'
                             : player
                             ? isOwnedByMe
                               ? 'bg-emerald-900/90 text-emerald-100 border border-emerald-500/50'
                               : isTargeted
                               ? 'bg-amber-950/90 text-amber-100 border border-amber-400/80 shadow-amber-500/20'
                               : 'bg-slate-900/90 text-white border border-slate-700'
-                            : isDraggingAny && isCompatible
-                            ? 'bg-emerald-950/90 text-emerald-200 border border-emerald-400'
                             : 'bg-black/40 text-white/80'
                         }`}
                       >
-                        {isSlotHovered
+                        {isThisSelected
+                          ? 'Selecionado'
+                          : isSlotHovered
                           ? player
                             ? `Substituir ${player.name.split(' ').slice(-1)[0]}`
                             : `Soltar em ${slot.role}`
+                          : isDraggingAny
+                          ? player
+                            ? `Trocar c/ ${player.name.split(' ').slice(-1)[0]}`
+                            : `Colocar em ${slot.role}`
                           : player
                           ? `${player.name.split(' ').slice(-1)[0]}${isTargeted ? ' 🎯' : ''}`
                           : `+ ${slot.role}`}
@@ -1200,14 +1341,61 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                           <Star className={`w-3.5 h-3.5 ${isTargeted ? 'fill-amber-400 text-amber-500' : ''}`} />
                         </button>
                       )}
+
+                      {/* Swap button */}
                       <button
-                        onClick={() => handleOpenSlot(slot)}
-                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[10px] transition-colors cursor-pointer"
+                        type="button"
+                        onClick={() => {
+                          if (selectedForSwap) {
+                            if (selectedForSwap.from === 'slot' && selectedForSwap.sourceSlotId === slot.slotId) {
+                              setSelectedForSwap(null);
+                            } else {
+                              executeSubstitution(selectedForSwap, slot.slotId);
+                            }
+                          } else if (player) {
+                            setSelectedForSwap({
+                              playerId: player.id,
+                              from: 'slot',
+                              sourceSlotId: slot.slotId,
+                            });
+                          } else {
+                            handleOpenSlot(slot);
+                          }
+                        }}
+                        className={`px-2 py-1 font-bold rounded-lg text-[10px] transition-colors cursor-pointer flex items-center gap-1 ${
+                          selectedForSwap?.playerId === player?.id
+                            ? 'bg-amber-500 text-slate-950 font-black ring-2 ring-amber-300'
+                            : selectedForSwap
+                            ? 'bg-emerald-600 text-white hover:bg-emerald-700 font-extrabold animate-pulse'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                        }`}
+                        title={player ? "Trocar posição ou substituir no campo" : "Escalar jogador"}
                       >
-                        {player ? 'Trocar' : '+ Escalar'}
+                        <RefreshCw className={`w-3 h-3 ${selectedForSwap?.playerId === player?.id ? 'animate-spin' : ''}`} />
+                        <span>
+                          {selectedForSwap?.playerId === player?.id
+                            ? 'Trocando...'
+                            : selectedForSwap
+                            ? 'Trocar Aqui'
+                            : player
+                            ? 'Trocar'
+                            : '+ Escalar'}
+                        </span>
                       </button>
+
+                      {/* Direct Search / Pick button */}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenSlot(slot)}
+                        className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md transition-colors cursor-pointer"
+                        title="Buscar atleta no catálogo"
+                      >
+                        <Search className="w-3.5 h-3.5" />
+                      </button>
+
                       {player && (
                         <button
+                          type="button"
                           onClick={() => handleRemoveFromStarter(slot.slotId, player.id)}
                           className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
                           title="Remover para o banco"
@@ -1258,17 +1446,33 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                   <Plus className="w-3 h-3" />
                   <span>Adicionar Reserva</span>
                 </button>
-                {benchPlayerIds.length > 0 && (
-                  <span className="hidden sm:flex text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full items-center gap-1">
-                    <GripVertical className="w-3 h-3" /> Arraste para o campo
-                  </span>
-                )}
               </div>
             </div>
 
             <p className="text-[11px] text-slate-400 mb-3">
-              Arraste reservas para as vagas do campo ou clique em <strong className="text-slate-600">Adicionar Reserva</strong> para planejar seu banco de conceito.
+              Toque em <strong className="text-slate-600">Trocar / Escalar</strong> para escolher a vaga no campinho, ou arraste com o mouse.
             </p>
+
+            {/* Helper banner when a starter is selected for swap */}
+            {selectedForSwap && selectedForSwap.from === 'slot' && (
+              <div className="mb-3 p-3 bg-amber-50 border-2 border-dashed border-amber-400 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 animate-in fade-in">
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-950">
+                  <RefreshCw className="w-4 h-4 text-amber-700 animate-spin shrink-0" />
+                  <span>
+                    Substituindo <strong>{players.find(p => p.id === selectedForSwap.playerId)?.name}</strong>: Toque em um reserva abaixo para colocá-lo no lugar, ou:
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleMoveStarterToBench(selectedForSwap.sourceSlotId!, selectedForSwap.playerId);
+                  }}
+                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-lg text-xs shrink-0 shadow-xs transition-all cursor-pointer text-center"
+                >
+                  Mover para o Banco
+                </button>
+              </div>
+            )}
 
             {/* Drop helper highlight when dragging from pitch */}
             {isBenchDragOver && (
@@ -1286,6 +1490,7 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                   const isOwned = ownedPlayerIds.includes(pId);
                   const badge = getPositionBadge(player.position);
                   const isBeingDragged = draggedItem?.playerId === pId;
+                  const isSelected = selectedForSwap?.playerId === pId;
 
                   return (
                     <div
@@ -1293,12 +1498,19 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                       draggable
                       onDragStart={(e) => handleDragStart(e, { playerId: pId, from: 'bench' })}
                       onDragEnd={handleDragEnd}
-                      className={`p-2.5 rounded-xl flex items-center justify-between text-xs transition-all cursor-grab active:cursor-grabbing select-none group border ${
-                        isOwned
+                      onClick={() => handleBenchPlayerClick(pId)}
+                      className={`p-2.5 rounded-xl flex items-center justify-between text-xs transition-all cursor-pointer select-none group border touch-manipulation ${
+                        isSelected
+                          ? 'bg-amber-100 border-amber-400 ring-2 ring-amber-400/60 shadow-md'
+                          : isOwned
                           ? 'bg-emerald-50/60 hover:bg-emerald-50 border-emerald-200 hover:border-emerald-400 hover:shadow-md'
                           : 'bg-amber-50/50 hover:bg-amber-50 border-amber-200 hover:border-amber-400 hover:shadow-md'
                       } ${isBeingDragged ? 'opacity-40 ring-2 ring-emerald-500 scale-98' : ''}`}
-                      title={isOwned ? "Jogador comprado — Arraste para o campinho ou clique em Escalar" : "Jogador de conceito — Arraste para o campinho, escale ou transfira para os alvos"}
+                      title={
+                        selectedForSwap?.from === 'slot'
+                          ? `Toque para colocar ${player.name} no lugar do titular selecionado`
+                          : "Toque para selecionar ou arraste para o campinho"
+                      }
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="text-slate-400 group-hover:text-emerald-700 transition-colors shrink-0">
@@ -1337,12 +1549,25 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleQuickAssignFromBench(pId);
+                            handleBenchPlayerClick(pId);
                           }}
-                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[10px] shadow-2xs transition-all active:scale-95 cursor-pointer"
-                          title="Escalar automaticamente no campo"
+                          className={`px-2.5 py-1 font-bold rounded-lg text-[10px] shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center gap-1 ${
+                            isSelected
+                              ? 'bg-amber-500 text-slate-950 font-black ring-2 ring-amber-300'
+                              : selectedForSwap && selectedForSwap.from === 'slot'
+                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white font-black animate-pulse'
+                              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          }`}
+                          title="Substituir titular ou escolher vaga no campo"
                         >
-                          Escalar
+                          <RefreshCw className={`w-3 h-3 ${isSelected ? 'animate-spin' : ''}`} />
+                          <span>
+                            {isSelected
+                              ? 'Toque no Campo'
+                              : selectedForSwap && selectedForSwap.from === 'slot'
+                              ? 'Entrar no Lugar'
+                              : 'Trocar / Escalar'}
+                          </span>
                         </button>
 
                         {!isOwned && (
@@ -1390,6 +1615,177 @@ export const SquadPlannerSection: React.FC<SquadPlannerSectionProps> = ({
              feedbackToast.type === 'swap' ? <ArrowRightLeft className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
           </div>
           <span className="text-xs font-bold">{feedbackToast.message}</span>
+        </div>
+      )}
+
+      {/* Quick Action Modal for Pitch Slot (Mobile Friendly) */}
+      {slotActionMenu && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setSlotActionMenu(null)}
+        >
+          <div 
+            className="bg-white border border-slate-200 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-xs font-black text-emerald-300">
+                  {slotActionMenu.slot.role}
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-white leading-tight">
+                    {slotActionMenu.player.name}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-black ${getPositionBadge(slotActionMenu.player.position).bgClass} ${getPositionBadge(slotActionMenu.player.position).textClass}`}>
+                      {slotActionMenu.player.position}
+                    </span>
+                    <span className="text-[11px] text-slate-300 font-semibold">
+                      {formatCurrency(slotActionMenu.player.soldTo?.amount || slotActionMenu.player.initialPrice, true)}
+                    </span>
+                    {slotActionMenu.isOwned ? (
+                      <span className="text-[10px] text-emerald-300 font-bold flex items-center gap-0.5">
+                        <Lock className="w-3 h-3" /> Comprado
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-amber-300 font-bold flex items-center gap-0.5">
+                        <Sparkles className="w-3 h-3" /> Planejado
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSlotActionMenu(null)}
+                className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+              {/* Action 1: Touch-to-swap on field */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedForSwap({
+                    playerId: slotActionMenu.player.id,
+                    from: 'slot',
+                    sourceSlotId: slotActionMenu.slot.slotId,
+                  });
+                  setSlotActionMenu(null);
+                }}
+                className="w-full p-3.5 bg-amber-50 hover:bg-amber-100 border-2 border-amber-300/80 rounded-2xl flex items-center justify-between text-left transition-all group cursor-pointer shadow-xs active:scale-98"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                    <RefreshCw className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-sm text-slate-900 block">
+                      Trocar no Campo (Modo Toque)
+                    </span>
+                    <span className="text-xs text-slate-600 block mt-0.5">
+                      Toque em outro titular para inverter ou em um reserva para substituir
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-amber-700 shrink-0" />
+              </button>
+
+              {/* Direct replacement from Bench (if bench has players) */}
+              {benchPlayerIds.length > 0 && (
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                      <Users className="w-3.5 h-3.5 text-emerald-600" />
+                      Substituir por um Reserva do Banco:
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {benchPlayerIds.length} disponível{benchPlayerIds.length !== 1 ? 'is' : ''}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+                    {benchPlayerIds.map((bId) => {
+                      const benchP = players.find((p) => p.id === bId);
+                      if (!benchP) return null;
+                      const isComp = isCompatiblePosition(slotActionMenu.slot.role, benchP.position);
+                      const badge = getPositionBadge(benchP.position);
+
+                      return (
+                        <button
+                          key={bId}
+                          type="button"
+                          onClick={() => {
+                            executeSubstitution(
+                              { playerId: bId, from: 'bench' },
+                              slotActionMenu.slot.slotId
+                            );
+                            setSlotActionMenu(null);
+                          }}
+                          className={`w-full p-2.5 rounded-xl border flex items-center justify-between text-left transition-all hover:shadow-xs cursor-pointer active:scale-98 ${
+                            isComp
+                              ? 'bg-emerald-50/80 hover:bg-emerald-100 border-emerald-300'
+                              : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`px-1.5 py-0.5 text-[9px] font-black rounded ${badge.bgClass} ${badge.textClass} shrink-0`}>
+                              {benchP.position}
+                            </span>
+                            <span className="font-bold text-xs text-slate-900 truncate">
+                              {benchP.name}
+                            </span>
+                            {isComp && (
+                              <span className="text-[9px] font-extrabold bg-emerald-200 text-emerald-900 px-1 py-0.2 rounded shrink-0">
+                                Posição Ideal
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-black text-emerald-800 bg-white border border-emerald-300 px-2 py-0.5 rounded-lg shrink-0 shadow-2xs">
+                            Entrar no lugar
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Secondary Actions */}
+              <div className="pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const s = slotActionMenu.slot;
+                    setSlotActionMenu(null);
+                    handleOpenSlot(s);
+                  }}
+                  className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Search className="w-4 h-4 text-slate-600" />
+                  <span>Buscar no Catálogo</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleRemoveFromStarter(slotActionMenu.slot.slotId, slotActionMenu.player.id);
+                    setSlotActionMenu(null);
+                  }}
+                  className="p-2.5 bg-slate-100 hover:bg-amber-100 text-slate-800 hover:text-amber-900 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <ArrowDownCircle className="w-4 h-4 text-amber-700" />
+                  <span>Mover para o Banco</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

@@ -4,7 +4,7 @@ import {
   Gavel, Clock, ArrowUpRight, DollarSign, UserCheck, 
   Flame, CheckCircle2, ChevronRight, Search, 
   AlertCircle, Shield, Plus, Crown, Volume2, SkipForward,
-  Play, Square, Sparkles, Trophy, Users as UsersIcon, RotateCcw,
+  Play, Square, Sparkles, Users as UsersIcon, RotateCcw,
   Lock, Unlock, FileText, ShieldAlert, Calendar, Star,
   ListOrdered, Trash2, Loader2, Wallet, Coins, LayoutGrid, X, Filter,
   ChevronDown, ChevronUp, Eye, Zap, Table, AlertTriangle, Activity,
@@ -1273,9 +1273,6 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
               {/* Header do Encerramento */}
               <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 pb-5 border-b border-slate-200 text-center sm:text-left">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border-2 border-amber-400 text-amber-600 flex items-center justify-center shrink-0 shadow-xs">
-                    <Trophy className="w-8 h-8" />
-                  </div>
                   <div>
                     <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
                       <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-slate-900 text-amber-300 rounded-md">
@@ -1315,9 +1312,6 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
               {isAdmin && onOpenAdminReport && (
                 <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-500/20 via-slate-900/10 to-amber-500/20 border-2 border-amber-400 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
                   <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-xs">
-                      <FileText className="w-6 h-6" />
-                    </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-900 text-amber-300">
@@ -1346,11 +1340,10 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {/* 1. Quantos jogadores contratou */}
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="mb-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       Jogadores Contratados
                     </span>
-                    <UsersIcon className="w-4 h-4 text-emerald-600 shrink-0" />
                   </div>
                   <div>
                     <div className="text-2xl font-black text-slate-900">
@@ -1364,11 +1357,10 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
                 {/* 2. Quanto dinheiro tinha (Orçamento Inicial) */}
                 <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="mb-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700">
                       Orçamento Inicial
                     </span>
-                    <Wallet className="w-4 h-4 text-blue-600 shrink-0" />
                   </div>
                   <div>
                     <div className="text-2xl font-black text-blue-900">
@@ -1382,11 +1374,10 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
                 {/* 3. Quanto dinheiro foi gasto */}
                 <div className="p-4 bg-amber-50/70 border border-amber-300 rounded-xl flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="mb-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
                       Dinheiro Gasto
                     </span>
-                    <Coins className="w-4 h-4 text-amber-600 shrink-0" />
                   </div>
                   <div>
                     <div className="text-2xl font-black text-amber-900">
@@ -1400,11 +1391,10 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
 
                 {/* 4. Saldo Restante em Conta */}
                 <div className="p-4 bg-emerald-50/80 border border-emerald-300 rounded-xl flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="mb-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
                       Saldo Restante
                     </span>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   </div>
                   <div>
                     <div className="text-2xl font-black text-emerald-800">
@@ -1479,9 +1469,6 @@ export const LiveAuctionSection: React.FC<LiveAuctionSectionProps> = ({
                                 {player.position}
                               </span>
                             </div>
-                            <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                              {player.club} • {player.nationality}
-                            </p>
                           </div>
 
                           <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
