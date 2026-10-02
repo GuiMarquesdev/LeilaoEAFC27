@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { UserProfile, LeagueState, Bid } from '../types.js';
+import { UserProfile, LeagueState, Bid } from '../types';
 
 // Secret key for HMAC token signing (never exposed to client)
 const SESSION_SECRET = process.env.SESSION_SECRET || 'khedira-league-secret-auth-key-2027-eafc';

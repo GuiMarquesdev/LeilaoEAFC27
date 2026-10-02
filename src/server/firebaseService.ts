@@ -8,7 +8,7 @@ import {
 } from 'firebase/firestore';
 import path from 'path';
 import fs from 'fs';
-import { LeagueState, UserProfile, UserSquad, Player, AuctionState } from '../types.js';
+import { LeagueState, UserProfile, UserSquad, Player, AuctionState } from '../types';
 
 // O banco Firestore "Starter / cota compartilhada de IA" deste projeto nega
 // consultas de listagem de coleção inteira (getDocs em uma collection), mesmo
