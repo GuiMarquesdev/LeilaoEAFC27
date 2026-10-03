@@ -341,7 +341,7 @@ try {
     if (leagueState.auction?.currentPlayer) {
       const match = updatedPlayers.find((p) => p.id === leagueState.auction.currentPlayer?.id);
       if (match) {
-        if (!match.currentBid && leagueState.auction.currentBid) {
+        if (!match.currentBid && leagueState.auction.currentBid && leagueState.auction.currentBid.playerId === match.id) {
           match.currentBid = leagueState.auction.currentBid;
           match.currentPrice = leagueState.auction.currentBid.amount;
         } else if (match.currentBid && !leagueState.auction.currentBid) {
@@ -371,6 +371,104 @@ try {
   console.error('Error loading DB, resetting to initial state:', e);
   leagueState = getInitialState();
 }
+
+function applyDisputeResolutionsAndResumeAuction() {
+  const resolvedDisputes = [
+    { id: 'p-270', name: 'Y. Sommer', uid: 'user-1790259670059-zxvzd', uname: 'Lucas campos', tname: 'Pau de oculos', email: 'lamaralcampos@gmail.com', amount: 10000000, slot: 'gol' },
+    { id: 'p-265', name: 'W. Falcone', uid: 'user-admin-tourinho', uname: 'Guilherme Tourinho', tname: 'CLARICE DO BAR', email: 'guilhermebtourinho@gmail.com', amount: 10000000, slot: 'bench' },
+    { id: 'p-235', name: 'M. ter Stegen', uid: 'user-1790261315866-noq3i', uname: 'Dudu', tname: 'DONA NORMA NETOS FUTEBOL CLUBE', email: 'lued07.sampaioguimaraes@gmail.com', amount: 10000000, slot: 'gol' },
+    { id: 'p-234', name: 'M. Svilar', uid: 'user-1790724401870-rxt7p', uname: 'Lucas Freitas', tname: 'Vitória', email: 'lucasfreitasgeo@hotmail.com', amount: 10000000, slot: 'bench' },
+    { id: 'p-574', name: 'O. Aina', uid: 'user-1790724401870-rxt7p', uname: 'Lucas Freitas', tname: 'Vitória', email: 'lucasfreitasgeo@hotmail.com', amount: 10000000, slot: 'ld' },
+    { id: 'p-33', name: 'Eric García', uid: 'user-1790724401870-rxt7p', uname: 'Lucas Freitas', tname: 'Vitória', email: 'lucasfreitasgeo@hotmail.com', amount: 25000000, slot: 'bench' }
+  ];
+
+  const disputedPids = resolvedDisputes.map(d => d.id);
+
+  resolvedDisputes.forEach(rd => {
+    const pl = leagueState.players.find(p => p.id === rd.id);
+    if (pl) {
+      pl.status = 'SOLD';
+      pl.currentPrice = rd.amount;
+      pl.timerRemaining = 0;
+      pl.auctionExpiresAt = undefined;
+      pl.soldTo = {
+        userId: rd.uid,
+        userName: rd.uname,
+        teamName: rd.tname,
+        amount: rd.amount,
+        auctionDay: 'ALL',
+        soldAt: 1790992241855
+      };
+      const validBid: Bid = {
+        id: `bid-${rd.id}-resolved`,
+        playerId: rd.id,
+        playerName: rd.name,
+        userId: rd.uid,
+        userName: rd.uname,
+        teamName: rd.tname,
+        userEmail: rd.email,
+        amount: rd.amount,
+        timestamp: 1790992241855,
+        isAnonymous: true
+      };
+      pl.currentBid = validBid;
+      pl.bidHistory = [validBid];
+    }
+
+    if (!leagueState.squads[rd.uid]) {
+      leagueState.squads[rd.uid] = {
+        userId: rd.uid,
+        formationId: '4-3-3',
+        starterSlots: {},
+        benchPlayerIds: []
+      };
+    }
+    const winSquad = leagueState.squads[rd.uid];
+    if (rd.slot !== 'bench' && !winSquad.starterSlots[rd.slot]) {
+      winSquad.starterSlots[rd.slot] = rd.id;
+    } else {
+      const isStarter = Object.values(winSquad.starterSlots || {}).includes(rd.id);
+      if (!isStarter && !winSquad.benchPlayerIds.includes(rd.id)) {
+        winSquad.benchPlayerIds.push(rd.id);
+      }
+    }
+  });
+
+  // Remove disputed players and M. Palestra from PAULO BOMBA squad
+  const pbSquad = leagueState.squads['user-admin-default'];
+  if (pbSquad) {
+    for (const [slot, pid] of Object.entries(pbSquad.starterSlots || {})) {
+      if (disputedPids.includes(pid as string) || pid === 'p-561') {
+        pbSquad.starterSlots[slot] = null;
+      }
+    }
+    pbSquad.benchPlayerIds = (pbSquad.benchPlayerIds || []).filter(
+      pid => !disputedPids.includes(pid) && pid !== 'p-561'
+    );
+    if (!pbSquad.starterSlots['ld'] && pbSquad.benchPlayerIds.includes('p-598')) {
+      pbSquad.starterSlots['ld'] = 'p-598';
+      pbSquad.benchPlayerIds = pbSquad.benchPlayerIds.filter(id => id !== 'p-598');
+    }
+  }
+
+  // Devolve o valor de €75M a PAULO BOMBA (user-admin-default)
+  const pbUser = leagueState.users.find(u => u.id === 'user-admin-default');
+  if (pbUser) {
+    pbUser.budget = 277000000;
+    pbUser.spent = 123000000;
+  }
+
+  // Retoma o progresso do leilão em andamento na fase de Meio Campo
+  leagueState.auction.status = 'ACTIVE';
+  leagueState.auction.currentPhase = 'MEIO_CAMPO';
+  leagueState.auction.auctionType = 'PHASED';
+  if (!leagueState.auction.timerRemaining || leagueState.auction.timerRemaining <= 0) {
+    leagueState.auction.timerRemaining = leagueState.auction.defaultDurationSeconds || 300;
+  }
+  leagueState.auction.lastUpdated = Date.now();
+}
+
+applyDisputeResolutionsAndResumeAuction();
 
 let cloudSyncTimer: NodeJS.Timeout | null = null;
 function debouncedCloudSync() {
@@ -693,11 +791,14 @@ function advanceNominationTurn() {
 
 // Obter a proposta mais alta (a última válida) registrada para um atleta
 function getHighestBidForPlayer(player: Player): Bid | null {
-  let highest: Bid | null = player.currentBid || null;
+  let highest: Bid | null = null;
+  if (player.currentBid && (player.currentBid.playerId === player.id || player.currentBid.playerName === player.name)) {
+    highest = player.currentBid;
+  }
 
   if (player.bidHistory && player.bidHistory.length > 0) {
     for (const b of player.bidHistory) {
-      if (b && typeof b.amount === 'number' && (!highest || b.amount > highest.amount)) {
+      if (b && (b.playerId === player.id || b.playerName === player.name) && typeof b.amount === 'number' && (!highest || b.amount > highest.amount)) {
         highest = b;
       }
     }
@@ -3698,20 +3799,30 @@ async function startServer() {
         console.log(`[Firebase] Restored watchlists for ${Object.keys(cloudData.watchlists).length} users from Firestore.`);
       }
 
-      saveState();
+      applyDisputeResolutionsAndResumeAuction();
+      saveState(true);
+      await syncAllStateToFirestore(leagueState);
     } else {
       console.log('[Firebase] Initial run or empty cloud DB: seeding master state to Cloud Firestore...');
+      applyDisputeResolutionsAndResumeAuction();
+      saveState(true);
       await syncAllStateToFirestore(leagueState);
     }
   } catch (cloudErr) {
     console.error('[Firebase] Failed to hydrate state from Firestore on boot:', cloudErr);
+    applyDisputeResolutionsAndResumeAuction();
+    saveState(true);
   }
 
   // Sincronização automática com a instância em produção (Render)
   try {
     await syncFromProductionState(false);
+    applyDisputeResolutionsAndResumeAuction();
+    saveState(true);
   } catch (syncErr) {
     console.warn('[Production Sync] Sincronização inicial com produção adiada:', syncErr);
+    applyDisputeResolutionsAndResumeAuction();
+    saveState(true);
   }
 
   // Inicia ponte WebSocket em tempo real para sincronização contínua de eventos

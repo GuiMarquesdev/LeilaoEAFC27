@@ -11,39 +11,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distServer = path.resolve(__dirname, 'dist', 'server.cjs');
 
-// Detecta se a execução está ocorrendo sob o runtime tsx (desenvolvimento) ou node nativo (produção)
-const isRunningWithTsx = process.execArgv.some((arg) => arg.includes('tsx'));
-const isDev = isRunningWithTsx || process.env.npm_lifecycle_event === 'dev';
-
 async function main() {
-  // Quando iniciado via 'node server.ts' (produção / build):
-  if (!isDev) {
-    if (!fs.existsSync(distServer)) {
-      try {
-        console.log('[Server Launch] ⚙️ Gerando bundle de produção com esbuild...');
-        const { buildSync } = await import('esbuild');
-        buildSync({
-          entryPoints: [path.resolve(__dirname, 'src/server/app.ts')],
-          bundle: true,
-          platform: 'node',
-          format: 'cjs',
-          packages: 'external',
-          sourcemap: true,
-          outfile: distServer,
-        });
-        console.log('[Server Launch] ✅ Bundle de produção gerado com sucesso.');
-      } catch (err) {
-        console.warn('[Server Launch] ⚠️ Não foi possível gerar bundle automático via esbuild:', err);
-      }
-    }
-
-    if (fs.existsSync(distServer)) {
-      await import(pathToFileURL(distServer).href);
-      return;
-    }
+  if (process.env.NODE_ENV === 'production' && fs.existsSync(distServer)) {
+    await import(pathToFileURL(distServer).href);
+    return;
   }
 
-  // Modo de desenvolvimento interativo com tsx (HMR e middlewares Vite)
+  // Modo de desenvolvimento interativo (TypeScript nativo com tsx)
   await import(pathToFileURL(path.resolve(__dirname, 'src/server/app.ts')).href);
 }
 
