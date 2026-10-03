@@ -7,8 +7,8 @@
       "teamName": "PAULO BOMBA",
       "role": "ADMIN",
       "adminTitle": "Diretor",
-      "budget": 65000000,
-      "spent": 335000000,
+      "budget": 202000000,
+      "spent": 198000000,
       "createdAt": 1789411494821,
       "updatedAt": 1790901451636,
       "passwordHash": "$2b$10$HcpUCr1E3hYk6rhKcFW36Ogxq6eJ9fNy5Pnj4uh91b7IgGEN5L31W"
@@ -20,11 +20,11 @@
       "teamName": "CLARICE DO BAR",
       "role": "ADMIN",
       "adminTitle": "Presidente",
-      "budget": 20000000,
-      "spent": 380000000,
+      "budget": 10000000,
+      "spent": 390000000,
       "createdAt": 1789411494825,
-      "passwordHash": "$2b$10$TftAtx0E5r.3v1ZCovnVhOVU1J0yy8V.xl20V4Z3zbsq7LlDJ5xFS",
-      "updatedAt": 1790767512586
+      "passwordHash": "$2b$10$Xbe2apAcG4irtHdoMmTHweI8SztUGasI2JeyE5/0cLlUo9gR1rQyq",
+      "updatedAt": 1790986375318
     },
     {
       "spent": 280000000,
@@ -40,39 +40,39 @@
     },
     {
       "createdAt": 1790259670059,
-      "spent": 332000000,
+      "spent": 342000000,
       "name": "Lucas campos",
-      "budget": 68000000,
+      "budget": 58000000,
       "role": "PARTICIPANT",
       "id": "user-1790259670059-zxvzd",
-      "updatedAt": 1790782346983,
+      "updatedAt": 1790989029585,
       "email": "lamaralcampos@gmail.com",
       "teamName": "Pau de oculos",
-      "passwordHash": "$2b$10$CvEK1Od4Hc8UuForInCMFOM7cJmcxTDXoz1qha0j96F7OxlxH38UW"
+      "passwordHash": "$2b$10$ZxPVB0Q4ye9dP/0w5kc/k.KamA2pfY0FCfuqN.9xI8UpyQdG0W3Km"
     },
     {
       "createdAt": 1790260795753,
-      "spent": 170000000,
+      "spent": 100000000,
       "name": "Nicolas Oliveira",
       "updatedAt": 1790767513253,
       "teamName": "Arsenal BR11",
       "role": "PARTICIPANT",
       "email": "nicolas.oliveira2936@gmail.com",
-      "budget": 230000000,
+      "budget": 300000000,
       "id": "user-1790260795753-20s8c",
       "passwordHash": "$2b$10$VdFfblPpJAUWOgAXiVmWluLG9p9MG50eYk9urLNXe682uEk9mBh2a"
     },
     {
       "id": "user-1790261315866-noq3i",
-      "budget": 25000000,
+      "budget": 15000000,
       "name": "Dudu",
       "email": "lued07.sampaioguimaraes@gmail.com",
       "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
       "createdAt": 1790261315866,
       "role": "PARTICIPANT",
-      "spent": 375000000,
-      "updatedAt": 1790767513467,
-      "passwordHash": "$2b$10$7LAd4NuWRJ8PjwPXfHjYNe3Fz9PIVicxOJBkpjXWEM8OqbhIlZkdG"
+      "spent": 385000000,
+      "updatedAt": 1790981848927,
+      "passwordHash": "$2b$10$zSepzVfj3BwX7P1sEvyoXuBb6lJfxwQsaVPulZEVS3CCApxP1sRj6"
     },
     {
       "budget": 60000000,
@@ -90,12 +90,12 @@
       "updatedAt": 1790767513863,
       "teamName": "Vitória",
       "createdAt": 1790724401870,
-      "spent": 335000000,
+      "spent": 380000000,
       "name": "Lucas Freitas",
       "passwordHash": "$2b$10$MryOJzjWsTTI170eMnKu6OsyJqwVagmEVWpZ6heuKipsZOvIYLUAG",
       "id": "user-1790724401870-rxt7p",
       "role": "PARTICIPANT",
-      "budget": 65000000,
+      "budget": 20000000,
       "email": "lucasfreitasgeo@hotmail.com"
     }
   ],
@@ -112,12 +112,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "teamName": "Danda do Horácio fc",
-        "userName": "Ryan Madera",
-        "userId": "user-1790704615714-8mpp5",
+        "amount": 40000000,
         "soldAt": 1790767511724,
+        "userName": "Ryan Madera",
         "auctionDay": "ALL",
-        "amount": 40000000
+        "userId": "user-1790704615714-8mpp5",
+        "teamName": "Danda do Horácio fc"
       }
     },
     {
@@ -180,12 +180,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "auctionDay": "ALL",
+        "soldAt": 1790767511724,
         "amount": 25000000,
         "userName": "Nicolas Oliveira",
-        "teamName": "Arsenal BR11",
-        "soldAt": 1790767511724,
         "userId": "user-1790260795753-20s8c",
-        "auctionDay": "ALL"
+        "teamName": "Arsenal BR11"
       }
     },
     {
@@ -201,10 +201,10 @@
       "bidHistory": [],
       "soldTo": {
         "userName": "Guilherme Tourinho",
-        "teamName": "CLARICE DO BAR",
         "auctionDay": "ALL",
-        "amount": 25000000,
         "userId": "user-admin-tourinho",
+        "teamName": "CLARICE DO BAR",
+        "amount": 25000000,
         "soldAt": 1790767511724
       }
     },
@@ -232,12 +232,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "userId": "user-1790260795753-20s8c",
-        "soldAt": 1790767511724,
-        "userName": "Nicolas Oliveira",
         "teamName": "Arsenal BR11",
-        "amount": 20000000
+        "userId": "user-1790260795753-20s8c",
+        "userName": "Nicolas Oliveira",
+        "auctionDay": "ALL",
+        "amount": 20000000,
+        "soldAt": 1790767511724
       }
     },
     {
@@ -276,12 +276,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 15000000,
-        "auctionDay": "ALL",
-        "soldAt": 1790767511725,
+        "userName": "Lucas campos",
         "userId": "user-1790259670059-zxvzd",
+        "auctionDay": "ALL",
         "teamName": "Pau de oculos",
-        "userName": "Lucas campos"
+        "soldAt": 1790767511725,
+        "amount": 15000000
       }
     },
     {
@@ -344,12 +344,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userName": "Guilherme Tourinho",
-        "teamName": "CLARICE DO BAR",
+        "amount": 35000000,
         "soldAt": 1790767511725,
-        "userId": "user-admin-tourinho",
         "auctionDay": "ALL",
-        "amount": 35000000
+        "userName": "Guilherme Tourinho",
+        "userId": "user-admin-tourinho",
+        "teamName": "CLARICE DO BAR"
       }
     },
     {
@@ -376,12 +376,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
+        "amount": 35000000,
+        "soldAt": 1790767511725,
         "userName": "Dudu",
         "auctionDay": "ALL",
-        "soldAt": 1790767511725,
         "userId": "user-1790261315866-noq3i",
-        "amount": 35000000
+        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE"
       }
     },
     {
@@ -421,11 +421,11 @@
       "bidHistory": [],
       "soldTo": {
         "amount": 35000000,
-        "userName": "Guilherme Pereira",
-        "teamName": "PAULO BOMBA",
         "soldAt": 1790767511725,
+        "teamName": "PAULO BOMBA",
+        "auctionDay": "ALL",
         "userId": "user-admin-default",
-        "auctionDay": "ALL"
+        "userName": "Guilherme Pereira"
       }
     },
     {
@@ -440,10 +440,10 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userId": "user-1790704615714-8mpp5",
-        "soldAt": 1790767511725,
         "teamName": "Danda do Horácio fc",
+        "userId": "user-1790704615714-8mpp5",
         "userName": "Ryan Madera",
+        "soldAt": 1790767511725,
         "amount": 20000000,
         "auctionDay": "ALL"
       }
@@ -460,11 +460,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 20000000,
-        "soldAt": 1790767511725,
         "userId": "user-1790261315866-noq3i",
-        "userName": "Dudu",
         "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
+        "soldAt": 1790767511725,
+        "amount": 20000000,
+        "userName": "Dudu",
         "auctionDay": "ALL"
       }
     },
@@ -480,12 +480,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 20000000,
         "auctionDay": "ALL",
-        "teamName": "PAULO BOMBA",
         "userName": "Guilherme Pereira",
-        "userId": "user-admin-default",
-        "soldAt": 1790767511725
+        "amount": 20000000,
+        "soldAt": 1790767511725,
+        "teamName": "PAULO BOMBA",
+        "userId": "user-admin-default"
       }
     },
     {
@@ -500,12 +500,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "userName": "Lucas Freitas",
-        "teamName": "Vitória",
         "soldAt": 1790767511725,
+        "amount": 20000000,
+        "userName": "Lucas Freitas",
         "userId": "user-1790724401870-rxt7p",
-        "amount": 20000000
+        "teamName": "Vitória",
+        "auctionDay": "ALL"
       }
     },
     {
@@ -520,12 +520,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
         "userName": "Guilherme Tourinho",
-        "teamName": "CLARICE DO BAR",
+        "auctionDay": "ALL",
         "soldAt": 1790767511725,
-        "userId": "user-admin-tourinho",
-        "amount": 25000000
+        "amount": 25000000,
+        "teamName": "CLARICE DO BAR",
+        "userId": "user-admin-tourinho"
       }
     },
     {
@@ -540,12 +540,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "teamName": "Danda do Horácio fc",
         "userName": "Ryan Madera",
+        "soldAt": 1790767511725,
         "amount": 15000000,
+        "teamName": "Danda do Horácio fc",
         "auctionDay": "ALL",
-        "userId": "user-1790704615714-8mpp5",
-        "soldAt": 1790767511725
+        "userId": "user-1790704615714-8mpp5"
       }
     },
     {
@@ -608,12 +608,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "soldAt": 1790767511725,
         "userId": "user-1790724401870-rxt7p",
-        "auctionDay": "ALL",
-        "amount": 25000000,
         "userName": "Lucas Freitas",
-        "teamName": "Vitória"
+        "teamName": "Vitória",
+        "amount": 25000000,
+        "auctionDay": "ALL",
+        "soldAt": 1790992254412
       }
     },
     {
@@ -652,12 +652,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userId": "user-1790259670059-zxvzd",
-        "auctionDay": "ALL",
         "soldAt": 1790767511725,
+        "amount": 15000000,
         "teamName": "Pau de oculos",
-        "userName": "Lucas campos",
-        "amount": 15000000
+        "auctionDay": "ALL",
+        "userId": "user-1790259670059-zxvzd",
+        "userName": "Lucas campos"
       }
     },
     {
@@ -684,11 +684,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userId": "user-1790704615714-8mpp5",
-        "soldAt": 1790767511725,
         "amount": 25000000,
-        "auctionDay": "ALL",
+        "soldAt": 1790767511725,
         "teamName": "Danda do Horácio fc",
+        "auctionDay": "ALL",
+        "userId": "user-1790704615714-8mpp5",
         "userName": "Ryan Madera"
       }
     },
@@ -716,11 +716,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 25000000,
         "auctionDay": "ALL",
         "teamName": "Arsenal BR11",
-        "userName": "Nicolas Oliveira",
         "soldAt": 1790767511725,
+        "amount": 25000000,
+        "userName": "Nicolas Oliveira",
         "userId": "user-1790260795753-20s8c"
       }
     },
@@ -772,12 +772,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userId": "user-1790261315866-noq3i",
         "soldAt": 1790767511725,
+        "amount": 15000000,
         "auctionDay": "ALL",
-        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
         "userName": "Dudu",
-        "amount": 15000000
+        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
+        "userId": "user-1790261315866-noq3i"
       }
     },
     {
@@ -792,12 +792,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userId": "user-1790259670059-zxvzd",
+        "teamName": "Pau de oculos",
+        "amount": 15000000,
         "soldAt": 1790767511725,
         "userName": "Lucas campos",
-        "teamName": "Pau de oculos",
         "auctionDay": "ALL",
-        "amount": 15000000
+        "userId": "user-1790259670059-zxvzd"
       }
     },
     {
@@ -813,11 +813,11 @@
       "bidHistory": [],
       "soldTo": {
         "auctionDay": "ALL",
-        "amount": 15000000,
         "userId": "user-1790704615714-8mpp5",
-        "userName": "Ryan Madera",
         "teamName": "Danda do Horácio fc",
-        "soldAt": 1790767511725
+        "soldAt": 1790767511725,
+        "amount": 15000000,
+        "userName": "Ryan Madera"
       }
     },
     {
@@ -832,12 +832,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "amount": 25000000,
-        "teamName": "PAULO BOMBA",
-        "userName": "Guilherme Pereira",
         "userId": "user-admin-default",
-        "soldAt": 1790767511725
+        "auctionDay": "ALL",
+        "userName": "Guilherme Pereira",
+        "soldAt": 1790767511725,
+        "amount": 25000000,
+        "teamName": "PAULO BOMBA"
       }
     },
     {
@@ -924,12 +924,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 20000000,
-        "userName": "Lucas Freitas",
+        "userId": "user-1790724401870-rxt7p",
         "teamName": "Vitória",
         "auctionDay": "ALL",
         "soldAt": 1790767511725,
-        "userId": "user-1790724401870-rxt7p"
+        "amount": 20000000,
+        "userName": "Lucas Freitas"
       }
     },
     {
@@ -945,11 +945,11 @@
       "bidHistory": [],
       "soldTo": {
         "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
-        "userName": "Dudu",
-        "auctionDay": "ALL",
-        "soldAt": 1790767511725,
         "userId": "user-1790261315866-noq3i",
-        "amount": 25000000
+        "userName": "Dudu",
+        "soldAt": 1790767511725,
+        "amount": 25000000,
+        "auctionDay": "ALL"
       }
     },
     {
@@ -976,12 +976,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "teamName": "Pau de oculos",
         "amount": 20000000,
-        "userId": "user-1790259670059-zxvzd",
         "soldAt": 1790767511725,
         "auctionDay": "ALL",
-        "userName": "Lucas campos",
-        "teamName": "Pau de oculos"
+        "userId": "user-1790259670059-zxvzd",
+        "userName": "Lucas campos"
       }
     },
     {
@@ -996,12 +996,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "teamName": "Pau de oculos",
-        "userName": "Lucas campos",
-        "userId": "user-1790259670059-zxvzd",
+        "amount": 20000000,
         "soldAt": 1790767511725,
         "auctionDay": "ALL",
-        "amount": 20000000
+        "teamName": "Pau de oculos",
+        "userId": "user-1790259670059-zxvzd",
+        "userName": "Lucas campos"
       }
     },
     {
@@ -1016,12 +1016,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 15000000,
+        "auctionDay": "ALL",
         "userName": "Ryan Madera",
-        "teamName": "Danda do Horácio fc",
         "soldAt": 1790767511725,
+        "amount": 15000000,
         "userId": "user-1790704615714-8mpp5",
-        "auctionDay": "ALL"
+        "teamName": "Danda do Horácio fc"
       }
     },
     {
@@ -1072,12 +1072,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "soldAt": 1790767511725,
         "amount": 50000000,
         "auctionDay": "ALL",
+        "userName": "Guilherme Pereira",
         "userId": "user-admin-default",
-        "soldAt": 1790767511725,
-        "teamName": "PAULO BOMBA",
-        "userName": "Guilherme Pereira"
+        "teamName": "PAULO BOMBA"
       }
     },
     {
@@ -1140,12 +1140,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
         "soldAt": 1790767511725,
-        "userId": "user-1790259041454-mewkw",
-        "userName": "Matheus",
+        "amount": 30000000,
         "teamName": "ARRASCACETA SC",
-        "amount": 30000000
+        "auctionDay": "ALL",
+        "userId": "user-1790259041454-mewkw",
+        "userName": "Matheus"
       }
     },
     {
@@ -1197,11 +1197,11 @@
       "bidHistory": [],
       "soldTo": {
         "amount": 20000000,
-        "teamName": "Danda do Horácio fc",
-        "userName": "Ryan Madera",
         "auctionDay": "ALL",
         "soldAt": 1790767511725,
-        "userId": "user-1790704615714-8mpp5"
+        "userName": "Ryan Madera",
+        "userId": "user-1790704615714-8mpp5",
+        "teamName": "Danda do Horácio fc"
       }
     },
     {
@@ -1216,12 +1216,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "amount": 20000000,
-        "soldAt": 1790767511725,
         "userId": "user-admin-tourinho",
+        "userName": "Guilherme Tourinho",
+        "auctionDay": "ALL",
         "teamName": "CLARICE DO BAR",
-        "userName": "Guilherme Tourinho"
+        "amount": 20000000,
+        "soldAt": 1790767511725
       }
     },
     {
@@ -1248,12 +1248,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 15000000,
-        "soldAt": 1790767511725,
         "userId": "user-1790259670059-zxvzd",
         "teamName": "Pau de oculos",
-        "userName": "Lucas campos",
-        "auctionDay": "ALL"
+        "auctionDay": "ALL",
+        "amount": 15000000,
+        "soldAt": 1790767511725,
+        "userName": "Lucas campos"
       }
     },
     {
@@ -1268,12 +1268,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "userId": "user-1790724401870-rxt7p",
-        "soldAt": 1790767511725,
         "teamName": "Vitória",
+        "soldAt": 1790767511725,
+        "amount": 15000000,
         "userName": "Lucas Freitas",
-        "amount": 15000000
+        "userId": "user-1790724401870-rxt7p",
+        "auctionDay": "ALL"
       }
     },
     {
@@ -1300,12 +1300,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userName": "Lucas campos",
         "teamName": "Pau de oculos",
         "userId": "user-1790259670059-zxvzd",
+        "userName": "Lucas campos",
+        "amount": 15000000,
         "soldAt": 1790767511725,
-        "auctionDay": "ALL",
-        "amount": 15000000
+        "auctionDay": "ALL"
       }
     },
     {
@@ -1320,12 +1320,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userName": "Guilherme Pereira",
-        "teamName": "PAULO BOMBA",
-        "userId": "user-admin-default",
-        "soldAt": 1790767511725,
         "auctionDay": "ALL",
-        "amount": 15000000
+        "userId": "user-admin-default",
+        "teamName": "PAULO BOMBA",
+        "soldAt": 1790767511725,
+        "amount": 15000000,
+        "userName": "Guilherme Pereira"
       }
     },
     {
@@ -1340,12 +1340,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "teamName": "Pau de oculos",
         "userId": "user-1790259670059-zxvzd",
+        "auctionDay": "ALL",
         "soldAt": 1790767511725,
         "amount": 20000000,
-        "userName": "Lucas campos",
-        "teamName": "Pau de oculos",
-        "auctionDay": "ALL"
+        "userName": "Lucas campos"
       }
     },
     {
@@ -1360,12 +1360,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userName": "Lucas Freitas",
         "teamName": "Vitória",
-        "userId": "user-1790724401870-rxt7p",
-        "soldAt": 1790767511725,
         "auctionDay": "ALL",
-        "amount": 30000000
+        "userId": "user-1790724401870-rxt7p",
+        "userName": "Lucas Freitas",
+        "amount": 30000000,
+        "soldAt": 1790767511725
       }
     },
     {
@@ -1380,12 +1380,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 20000000,
-        "auctionDay": "ALL",
-        "userName": "Guilherme Pereira",
         "teamName": "PAULO BOMBA",
         "userId": "user-admin-default",
-        "soldAt": 1790767511725
+        "auctionDay": "ALL",
+        "userName": "Guilherme Pereira",
+        "soldAt": 1790767511725,
+        "amount": 20000000
       }
     },
     {
@@ -1424,12 +1424,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "teamName": "Pau de oculos",
         "userName": "Lucas campos",
         "userId": "user-1790259670059-zxvzd",
-        "soldAt": 1790767511725,
         "auctionDay": "ALL",
-        "amount": 45000000
+        "teamName": "Pau de oculos",
+        "amount": 45000000,
+        "soldAt": 1790767511725
       }
     },
     {
@@ -1468,12 +1468,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "teamName": "Vitória",
-        "userName": "Lucas Freitas",
         "amount": 45000000,
-        "userId": "user-1790724401870-rxt7p",
         "soldAt": 1790767511725,
-        "auctionDay": "ALL"
+        "userName": "Lucas Freitas",
+        "auctionDay": "ALL",
+        "teamName": "Vitória",
+        "userId": "user-1790724401870-rxt7p"
       }
     },
     {
@@ -1488,12 +1488,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
         "amount": 60000000,
-        "teamName": "CLARICE DO BAR",
-        "userName": "Guilherme Tourinho",
         "soldAt": 1790767511725,
-        "userId": "user-admin-tourinho"
+        "teamName": "CLARICE DO BAR",
+        "auctionDay": "ALL",
+        "userId": "user-admin-tourinho",
+        "userName": "Guilherme Tourinho"
       }
     },
     {
@@ -1520,12 +1520,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "auctionDay": "ALL",
         "amount": 25000000,
-        "userId": "user-1790704615714-8mpp5",
         "soldAt": 1790767511725,
-        "userName": "Ryan Madera",
         "teamName": "Danda do Horácio fc",
-        "auctionDay": "ALL"
+        "userId": "user-1790704615714-8mpp5",
+        "userName": "Ryan Madera"
       }
     },
     {
@@ -1540,12 +1540,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "userId": "user-1790261315866-noq3i",
+        "amount": 30000000,
         "soldAt": 1790767511725,
         "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
-        "userName": "Dudu",
-        "amount": 30000000
+        "userId": "user-1790261315866-noq3i",
+        "auctionDay": "ALL",
+        "userName": "Dudu"
       }
     },
     {
@@ -1584,12 +1584,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "soldAt": 1790767511725,
-        "userId": "user-1790259041454-mewkw",
-        "auctionDay": "ALL",
-        "amount": 25000000,
         "teamName": "ARRASCACETA SC",
-        "userName": "Matheus"
+        "userId": "user-1790259041454-mewkw",
+        "userName": "Matheus",
+        "amount": 25000000,
+        "soldAt": 1790767511725,
+        "auctionDay": "ALL"
       }
     },
     {
@@ -1604,12 +1604,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "userName": "Lucas Freitas",
         "amount": 20000000,
-        "auctionDay": "ALL",
         "soldAt": 1790767511725,
-        "userId": "user-1790724401870-rxt7p",
+        "auctionDay": "ALL",
         "teamName": "Vitória",
-        "userName": "Lucas Freitas"
+        "userId": "user-1790724401870-rxt7p"
       }
     },
     {
@@ -2620,12 +2620,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userId": "user-1790261315866-noq3i",
-        "soldAt": 1790767511725,
+        "auctionDay": "ALL",
         "userName": "Dudu",
+        "userId": "user-1790261315866-noq3i",
         "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
         "amount": 10000000,
-        "auctionDay": "ALL"
+        "soldAt": 1790767511725
       }
     },
     {
@@ -2772,12 +2772,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
+        "auctionDay": "ALL",
         "userName": "Matheus",
-        "teamName": "ARRASCACETA SC",
         "userId": "user-1790259041454-mewkw",
+        "teamName": "ARRASCACETA SC",
         "soldAt": 1790767511725,
-        "auctionDay": "ALL"
+        "amount": 10000000
       }
     },
     {
@@ -2840,12 +2840,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
-        "auctionDay": "ALL",
         "userName": "Matheus",
+        "auctionDay": "ALL",
+        "userId": "user-1790259041454-mewkw",
         "teamName": "ARRASCACETA SC",
-        "soldAt": 1790767511725,
-        "userId": "user-1790259041454-mewkw"
+        "amount": 10000000,
+        "soldAt": 1790767511725
       }
     },
     {
@@ -3016,11 +3016,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
         "teamName": "PAULO BOMBA",
-        "userName": "Guilherme Pereira",
         "auctionDay": "ALL",
         "userId": "user-admin-default",
+        "userName": "Guilherme Pereira",
+        "amount": 10000000,
         "soldAt": 1790767511725
       }
     },
@@ -3397,11 +3397,11 @@
       "bidHistory": [],
       "soldTo": {
         "soldAt": 1790767511725,
+        "teamName": "Vitória",
+        "amount": 10000000,
         "userId": "user-1790724401870-rxt7p",
         "userName": "Lucas Freitas",
-        "teamName": "Vitória",
-        "auctionDay": "ALL",
-        "amount": 10000000
+        "auctionDay": "ALL"
       }
     },
     {
@@ -3448,9 +3448,17 @@
       "nationality": "Internacional",
       "initialPrice": 10000000,
       "currentPrice": 10000000,
-      "status": "AVAILABLE",
+      "status": "SOLD",
       "currentBid": null,
-      "bidHistory": []
+      "bidHistory": [],
+      "soldTo": {
+        "userId": "user-1790724401870-rxt7p",
+        "userName": "Lucas Freitas",
+        "teamName": "Vitória",
+        "amount": 10000000,
+        "auctionDay": "ALL",
+        "soldAt": 1790992254412
+      }
     },
     {
       "id": "p-235",
@@ -3465,11 +3473,11 @@
       "bidHistory": [],
       "soldTo": {
         "userId": "user-1790261315866-noq3i",
-        "soldAt": 1790767511725,
-        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
         "userName": "Dudu",
+        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
+        "amount": 10000000,
         "auctionDay": "ALL",
-        "amount": 10000000
+        "soldAt": 1790992254412
       }
     },
     {
@@ -3748,11 +3756,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userId": "user-admin-default",
-        "soldAt": 1790767511725,
         "teamName": "PAULO BOMBA",
-        "userName": "Guilherme Pereira",
         "auctionDay": "ALL",
+        "userId": "user-admin-default",
+        "userName": "Guilherme Pereira",
+        "soldAt": 1790767511725,
         "amount": 10000000
       }
     },
@@ -3840,12 +3848,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "teamName": "CLARICE DO BAR",
+        "userId": "user-admin-tourinho",
         "userName": "Guilherme Tourinho",
+        "teamName": "CLARICE DO BAR",
         "amount": 10000000,
         "auctionDay": "ALL",
-        "userId": "user-admin-tourinho",
-        "soldAt": 1790767511725
+        "soldAt": 1790992254412
       }
     },
     {
@@ -3908,12 +3916,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
-        "teamName": "Pau de oculos",
-        "userName": "Lucas campos",
-        "auctionDay": "ALL",
         "userId": "user-1790259670059-zxvzd",
-        "soldAt": 1790767511725
+        "userName": "Lucas campos",
+        "teamName": "Pau de oculos",
+        "amount": 10000000,
+        "auctionDay": "ALL",
+        "soldAt": 1790992254396
       }
     },
     {
@@ -3977,10 +3985,10 @@
       "bidHistory": [],
       "soldTo": {
         "teamName": "Pau de oculos",
-        "userName": "Lucas campos",
-        "auctionDay": "ALL",
-        "soldAt": 1790767511725,
         "userId": "user-1790259670059-zxvzd",
+        "auctionDay": "ALL",
+        "userName": "Lucas campos",
+        "soldAt": 1790767511725,
         "amount": 10000000
       }
     },
@@ -4032,12 +4040,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "amount": 10000000,
-        "userName": "Nicolas Oliveira",
         "teamName": "Arsenal BR11",
+        "amount": 10000000,
+        "soldAt": 1790767511725,
         "userId": "user-1790260795753-20s8c",
-        "soldAt": 1790767511725
+        "auctionDay": "ALL",
+        "userName": "Nicolas Oliveira"
       }
     },
     {
@@ -4052,12 +4060,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "teamName": "Pau de oculos",
         "userName": "Lucas campos",
-        "userId": "user-1790259670059-zxvzd",
         "soldAt": 1790767511725,
+        "amount": 10000000,
+        "userId": "user-1790259670059-zxvzd",
         "auctionDay": "ALL",
-        "amount": 10000000
+        "teamName": "Pau de oculos"
       }
     },
     {
@@ -4288,12 +4296,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "userName": "Guilherme Pereira",
-        "teamName": "PAULO BOMBA",
-        "soldAt": 1790767511725,
         "userId": "user-admin-default",
-        "amount": 10000000
+        "userName": "Guilherme Pereira",
+        "soldAt": 1790767511725,
+        "amount": 10000000,
+        "teamName": "PAULO BOMBA",
+        "auctionDay": "ALL"
       }
     },
     {
@@ -4380,11 +4388,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
-        "auctionDay": "ALL",
-        "userName": "Guilherme Pereira",
-        "teamName": "PAULO BOMBA",
         "userId": "user-admin-default",
+        "teamName": "PAULO BOMBA",
+        "userName": "Guilherme Pereira",
+        "auctionDay": "ALL",
+        "amount": 10000000,
         "soldAt": 1790767511725
       }
     },
@@ -4521,11 +4529,11 @@
       "bidHistory": [],
       "soldTo": {
         "teamName": "ARRASCACETA SC",
-        "userName": "Matheus",
-        "soldAt": 1790767511725,
-        "userId": "user-1790259041454-mewkw",
         "auctionDay": "ALL",
-        "amount": 10000000
+        "userId": "user-1790259041454-mewkw",
+        "amount": 10000000,
+        "soldAt": 1790767511725,
+        "userName": "Matheus"
       }
     },
     {
@@ -4540,11 +4548,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userName": "Lucas campos",
         "teamName": "Pau de oculos",
-        "userId": "user-1790259670059-zxvzd",
-        "soldAt": 1790767511725,
         "auctionDay": "ALL",
+        "userId": "user-1790259670059-zxvzd",
+        "userName": "Lucas campos",
+        "soldAt": 1790767511725,
         "amount": 10000000
       }
     },
@@ -4764,12 +4772,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
+        "amount": 10000000,
+        "soldAt": 1790767511725,
         "auctionDay": "ALL",
         "userId": "user-1790261315866-noq3i",
-        "soldAt": 1790767511725,
-        "userName": "Dudu",
-        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
-        "amount": 10000000
+        "userName": "Dudu"
       }
     },
     {
@@ -4916,11 +4924,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
         "userId": "user-admin-tourinho",
-        "soldAt": 1790767511725,
-        "auctionDay": "ALL",
         "userName": "Guilherme Tourinho",
+        "soldAt": 1790767511725,
+        "amount": 10000000,
+        "auctionDay": "ALL",
         "teamName": "CLARICE DO BAR"
       }
     },
@@ -5848,12 +5856,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "userId": "user-1790261315866-noq3i",
-        "soldAt": 1790767511725,
-        "amount": 10000000,
         "userName": "Dudu",
-        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE"
+        "userId": "user-1790261315866-noq3i",
+        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
+        "auctionDay": "ALL",
+        "soldAt": 1790767511725,
+        "amount": 10000000
       }
     },
     {
@@ -5905,11 +5913,11 @@
       "bidHistory": [],
       "soldTo": {
         "auctionDay": "ALL",
-        "amount": 10000000,
+        "userId": "user-1790259041454-mewkw",
         "userName": "Matheus",
         "teamName": "ARRASCACETA SC",
-        "soldAt": 1790767511725,
-        "userId": "user-1790259041454-mewkw"
+        "amount": 10000000,
+        "soldAt": 1790767511725
       }
     },
     {
@@ -5936,12 +5944,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
-        "userName": "Nicolas Oliveira",
         "teamName": "Arsenal BR11",
+        "userId": "user-1790260795753-20s8c",
+        "userName": "Nicolas Oliveira",
         "auctionDay": "ALL",
-        "soldAt": 1790767511725,
-        "userId": "user-1790260795753-20s8c"
+        "amount": 10000000,
+        "soldAt": 1790767511725
       }
     },
     {
@@ -6172,12 +6180,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "soldAt": 1790767511725,
         "userId": "user-1790260795753-20s8c",
-        "amount": 10000000,
         "teamName": "Arsenal BR11",
-        "userName": "Nicolas Oliveira"
+        "soldAt": 1790767511725,
+        "amount": 10000000,
+        "userName": "Nicolas Oliveira",
+        "auctionDay": "ALL"
       }
     },
     {
@@ -6240,12 +6248,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userId": "user-1790261315866-noq3i",
-        "soldAt": 1790767511725,
-        "auctionDay": "ALL",
-        "userName": "Dudu",
         "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
-        "amount": 10000000
+        "userId": "user-1790261315866-noq3i",
+        "userName": "Dudu",
+        "amount": 10000000,
+        "soldAt": 1790767511725,
+        "auctionDay": "ALL"
       }
     },
     {
@@ -6260,12 +6268,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "soldAt": 1790767511725,
-        "userId": "user-admin-tourinho",
-        "teamName": "CLARICE DO BAR",
-        "userName": "Guilherme Tourinho",
         "auctionDay": "ALL",
-        "amount": 10000000
+        "teamName": "CLARICE DO BAR",
+        "userId": "user-admin-tourinho",
+        "soldAt": 1790767511725,
+        "amount": 10000000,
+        "userName": "Guilherme Tourinho"
       }
     },
     {
@@ -6292,11 +6300,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
-        "auctionDay": "ALL",
-        "soldAt": 1790767511725,
         "userId": "user-1790259041454-mewkw",
         "userName": "Matheus",
+        "amount": 10000000,
+        "soldAt": 1790767511725,
+        "auctionDay": "ALL",
         "teamName": "ARRASCACETA SC"
       }
     },
@@ -6636,12 +6644,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userName": "Nicolas Oliveira",
-        "soldAt": 1790767511725,
+        "auctionDay": "ALL",
         "userId": "user-1790260795753-20s8c",
         "teamName": "Arsenal BR11",
-        "auctionDay": "ALL",
-        "amount": 10000000
+        "soldAt": 1790767511725,
+        "amount": 10000000,
+        "userName": "Nicolas Oliveira"
       }
     },
     {
@@ -6932,11 +6940,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "soldAt": 1790767511725,
-        "userId": "user-1790260795753-20s8c",
-        "auctionDay": "ALL",
-        "userName": "Nicolas Oliveira",
         "teamName": "Arsenal BR11",
+        "auctionDay": "ALL",
+        "userId": "user-1790260795753-20s8c",
+        "userName": "Nicolas Oliveira",
+        "soldAt": 1790767511725,
         "amount": 10000000
       }
     },
@@ -7096,10 +7104,10 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
         "userName": "Matheus",
-        "teamName": "ARRASCACETA SC",
+        "amount": 10000000,
         "soldAt": 1790767511725,
+        "teamName": "ARRASCACETA SC",
         "userId": "user-1790259041454-mewkw",
         "auctionDay": "ALL"
       }
@@ -7116,12 +7124,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
         "teamName": "Pau de oculos",
-        "userName": "Lucas campos",
-        "auctionDay": "ALL",
         "userId": "user-1790259670059-zxvzd",
-        "soldAt": 1790767511725
+        "userName": "Lucas campos",
+        "amount": 10000000,
+        "soldAt": 1790767511725,
+        "auctionDay": "ALL"
       }
     },
     {
@@ -7184,12 +7192,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "userName": "Nicolas Oliveira",
+        "auctionDay": "ALL",
+        "amount": 10000000,
         "soldAt": 1790767511725,
         "teamName": "Arsenal BR11",
-        "userName": "Nicolas Oliveira",
-        "userId": "user-1790260795753-20s8c",
-        "auctionDay": "ALL",
-        "amount": 10000000
+        "userId": "user-1790260795753-20s8c"
       }
     },
     {
@@ -7312,12 +7320,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "amount": 10000000,
-        "userName": "Matheus",
-        "teamName": "ARRASCACETA SC",
         "userId": "user-1790259041454-mewkw",
-        "soldAt": 1790767511725
+        "teamName": "ARRASCACETA SC",
+        "userName": "Matheus",
+        "auctionDay": "ALL",
+        "soldAt": 1790767511725,
+        "amount": 10000000
       }
     },
     {
@@ -7572,12 +7580,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userName": "Guilherme Tourinho",
+        "userId": "user-admin-tourinho",
         "teamName": "CLARICE DO BAR",
         "amount": 10000000,
-        "auctionDay": "ALL",
         "soldAt": 1790767511725,
-        "userId": "user-admin-tourinho"
+        "userName": "Guilherme Tourinho",
+        "auctionDay": "ALL"
       }
     },
     {
@@ -7592,12 +7600,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "soldAt": 1790767511725,
         "userId": "user-admin-default",
         "userName": "Guilherme Pereira",
-        "teamName": "PAULO BOMBA",
         "auctionDay": "ALL",
-        "amount": 10000000
+        "soldAt": 1790767511725,
+        "amount": 10000000,
+        "teamName": "PAULO BOMBA"
       }
     },
     {
@@ -7672,12 +7680,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "soldAt": 1790767511725,
-        "userId": "user-admin-tourinho",
-        "teamName": "CLARICE DO BAR",
         "userName": "Guilherme Tourinho",
+        "amount": 10000000,
+        "soldAt": 1790767511725,
+        "teamName": "CLARICE DO BAR",
         "auctionDay": "ALL",
-        "amount": 10000000
+        "userId": "user-admin-tourinho"
       }
     },
     {
@@ -7760,9 +7768,17 @@
       "nationality": "Internacional",
       "initialPrice": 10000000,
       "currentPrice": 10000000,
-      "status": "AVAILABLE",
+      "status": "SOLD",
       "currentBid": null,
-      "bidHistory": []
+      "bidHistory": [],
+      "soldTo": {
+        "userId": "user-1790724401870-rxt7p",
+        "userName": "Lucas Freitas",
+        "teamName": "Vitória",
+        "amount": 10000000,
+        "auctionDay": "ALL",
+        "soldAt": 1790992254412
+      }
     },
     {
       "id": "p-575",
@@ -8052,12 +8068,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userName": "Guilherme Pereira",
         "teamName": "PAULO BOMBA",
+        "userId": "user-admin-default",
+        "userName": "Guilherme Pereira",
         "auctionDay": "ALL",
-        "amount": 10000000,
         "soldAt": 1790767511725,
-        "userId": "user-admin-default"
+        "amount": 10000000
       }
     },
     {
@@ -8097,11 +8113,11 @@
       "bidHistory": [],
       "soldTo": {
         "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
-        "userName": "Dudu",
-        "userId": "user-1790261315866-noq3i",
-        "soldAt": 1790767511725,
         "auctionDay": "ALL",
-        "amount": 10000000
+        "amount": 10000000,
+        "soldAt": 1790767511725,
+        "userName": "Dudu",
+        "userId": "user-1790261315866-noq3i"
       }
     },
     {
@@ -8164,12 +8180,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "soldAt": 1790767511725,
+        "teamName": "Vitória",
         "userId": "user-1790724401870-rxt7p",
         "userName": "Lucas Freitas",
-        "teamName": "Vitória",
         "auctionDay": "ALL",
-        "amount": 10000000
+        "amount": 10000000,
+        "soldAt": 1790767511725
       }
     },
     {
@@ -8208,12 +8224,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "soldAt": 1790767511725,
         "userId": "user-admin-default",
         "userName": "Guilherme Pereira",
-        "teamName": "PAULO BOMBA",
         "auctionDay": "ALL",
-        "amount": 10000000
+        "teamName": "PAULO BOMBA",
+        "amount": 10000000,
+        "soldAt": 1790767511725
       }
     },
     {
@@ -8300,12 +8316,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userId": "user-admin-tourinho",
-        "soldAt": 1790767511725,
-        "auctionDay": "ALL",
-        "teamName": "CLARICE DO BAR",
         "userName": "Guilherme Tourinho",
-        "amount": 10000000
+        "soldAt": 1790767511725,
+        "amount": 10000000,
+        "teamName": "CLARICE DO BAR",
+        "auctionDay": "ALL",
+        "userId": "user-admin-tourinho"
       }
     },
     {
@@ -8548,12 +8564,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "amount": 10000000,
-        "soldAt": 1790767511725,
         "userId": "user-1790259670059-zxvzd",
+        "userName": "Lucas campos",
+        "soldAt": 1790767511725,
+        "amount": 10000000,
         "teamName": "Pau de oculos",
-        "userName": "Lucas campos"
+        "auctionDay": "ALL"
       }
     },
     {
@@ -8796,11 +8812,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
-        "auctionDay": "ALL",
-        "userName": "Lucas campos",
         "teamName": "Pau de oculos",
         "userId": "user-1790259670059-zxvzd",
+        "auctionDay": "ALL",
+        "userName": "Lucas campos",
+        "amount": 10000000,
         "soldAt": 1790767511725
       }
     },
@@ -8840,12 +8856,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "soldAt": 1790767511725,
-        "userId": "user-admin-tourinho",
-        "teamName": "CLARICE DO BAR",
         "userName": "Guilherme Tourinho",
-        "amount": 10000000
+        "auctionDay": "ALL",
+        "userId": "user-admin-tourinho",
+        "soldAt": 1790767511725,
+        "amount": 10000000,
+        "teamName": "CLARICE DO BAR"
       }
     },
     {
@@ -8860,12 +8876,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "userId": "user-1790261315866-noq3i",
-        "soldAt": 1790767511725,
-        "auctionDay": "ALL",
-        "userName": "Dudu",
         "amount": 10000000,
-        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE"
+        "soldAt": 1790767511725,
+        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
+        "auctionDay": "ALL",
+        "userId": "user-1790261315866-noq3i",
+        "userName": "Dudu"
       }
     },
     {
@@ -8904,12 +8920,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "soldAt": 1790767511725,
-        "userId": "user-admin-default",
-        "auctionDay": "ALL",
-        "amount": 10000000,
         "teamName": "PAULO BOMBA",
-        "userName": "Guilherme Pereira"
+        "userId": "user-admin-default",
+        "userName": "Guilherme Pereira",
+        "amount": 10000000,
+        "soldAt": 1790767511725,
+        "auctionDay": "ALL"
       }
     },
     {
@@ -9068,11 +9084,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
-        "userName": "Matheus",
         "teamName": "ARRASCACETA SC",
         "soldAt": 1790767511725,
+        "amount": 10000000,
         "userId": "user-1790259041454-mewkw",
+        "userName": "Matheus",
         "auctionDay": "ALL"
       }
     },
@@ -9124,12 +9140,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
         "amount": 10000000,
         "soldAt": 1790767511725,
+        "userName": "Lucas Freitas",
+        "auctionDay": "ALL",
         "userId": "user-1790724401870-rxt7p",
-        "teamName": "Vitória",
-        "userName": "Lucas Freitas"
+        "teamName": "Vitória"
       }
     },
     {
@@ -9372,12 +9388,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
-        "auctionDay": "ALL",
         "userId": "user-admin-default",
-        "soldAt": 1790767511725,
         "teamName": "PAULO BOMBA",
-        "userName": "Guilherme Pereira"
+        "auctionDay": "ALL",
+        "userName": "Guilherme Pereira",
+        "amount": 10000000,
+        "soldAt": 1790767511725
       }
     },
     {
@@ -9512,12 +9528,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
-        "teamName": "CLARICE DO BAR",
         "userName": "Guilherme Tourinho",
-        "userId": "user-admin-tourinho",
+        "auctionDay": "ALL",
+        "amount": 10000000,
         "soldAt": 1790767511725,
-        "auctionDay": "ALL"
+        "teamName": "CLARICE DO BAR",
+        "userId": "user-admin-tourinho"
       }
     },
     {
@@ -9568,12 +9584,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "soldAt": 1790767511725,
-        "userId": "user-1790260795753-20s8c",
-        "userName": "Nicolas Oliveira",
         "teamName": "Arsenal BR11",
+        "soldAt": 1790767511725,
+        "amount": 10000000,
         "auctionDay": "ALL",
-        "amount": 10000000
+        "userName": "Nicolas Oliveira",
+        "userId": "user-1790260795753-20s8c"
       }
     },
     {
@@ -9673,11 +9689,11 @@
       "bidHistory": [],
       "soldTo": {
         "amount": 10000000,
-        "auctionDay": "ALL",
+        "soldAt": 1790767511725,
         "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
-        "userName": "Dudu",
         "userId": "user-1790261315866-noq3i",
-        "soldAt": 1790767511725
+        "auctionDay": "ALL",
+        "userName": "Dudu"
       }
     },
     {
@@ -10004,12 +10020,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "userId": "user-admin-tourinho",
         "userName": "Guilherme Tourinho",
-        "teamName": "CLARICE DO BAR",
+        "soldAt": 1790767511725,
         "amount": 10000000,
         "auctionDay": "ALL",
-        "soldAt": 1790767511725,
-        "userId": "user-admin-tourinho"
+        "teamName": "CLARICE DO BAR"
       }
     },
     {
@@ -10144,12 +10160,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "soldAt": 1790767511725,
+        "teamName": "Arsenal BR11",
         "userId": "user-1790260795753-20s8c",
         "userName": "Nicolas Oliveira",
-        "teamName": "Arsenal BR11",
-        "amount": 10000000
+        "soldAt": 1790767511725,
+        "amount": 10000000,
+        "auctionDay": "ALL"
       }
     },
     {
@@ -10284,12 +10300,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "userId": "user-1790724401870-rxt7p",
+        "teamName": "Vitória",
+        "soldAt": 1790767511725,
         "amount": 10000000,
         "userName": "Lucas Freitas",
-        "userId": "user-1790724401870-rxt7p",
-        "soldAt": 1790767511725,
-        "auctionDay": "ALL",
-        "teamName": "Vitória"
+        "auctionDay": "ALL"
       }
     },
     {
@@ -10352,11 +10368,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "teamName": "Arsenal BR11",
         "userName": "Nicolas Oliveira",
-        "auctionDay": "ALL",
-        "soldAt": 1790767511725,
         "userId": "user-1790260795753-20s8c",
+        "auctionDay": "ALL",
+        "teamName": "Arsenal BR11",
+        "soldAt": 1790767511725,
         "amount": 10000000
       }
     },
@@ -10468,11 +10484,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "teamName": "Pau de oculos",
         "userId": "user-1790259670059-zxvzd",
-        "soldAt": 1790767511725,
         "auctionDay": "ALL",
         "userName": "Lucas campos",
-        "teamName": "Pau de oculos",
+        "soldAt": 1790767511725,
         "amount": 10000000
       }
     },
@@ -11016,12 +11032,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
         "soldAt": 1790767511725,
-        "userId": "user-1790260795753-20s8c",
-        "teamName": "Arsenal BR11",
+        "amount": 10000000,
         "userName": "Nicolas Oliveira",
-        "auctionDay": "ALL"
+        "auctionDay": "ALL",
+        "userId": "user-1790260795753-20s8c",
+        "teamName": "Arsenal BR11"
       }
     },
     {
@@ -11349,12 +11365,12 @@
       "bidHistory": [],
       "timerRemaining": 0,
       "soldTo": {
-        "auctionDay": "ALL",
         "userId": "user-admin-default",
-        "soldAt": 1790878407325,
         "teamName": "PAULO BOMBA",
+        "auctionDay": "ALL",
         "userName": "Guilherme Pereira",
-        "amount": 10000000
+        "amount": 10000000,
+        "soldAt": 1790878407325
       }
     },
     {
@@ -11477,12 +11493,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "auctionDay": "ALL",
         "userName": "Dudu",
+        "userId": "user-1790261315866-noq3i",
         "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
         "amount": 10000000,
-        "auctionDay": "ALL",
-        "soldAt": 1790767511725,
-        "userId": "user-1790261315866-noq3i"
+        "soldAt": 1790767511725
       }
     },
     {
@@ -11677,12 +11693,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "soldAt": 1790767511725,
-        "userId": "user-admin-tourinho",
-        "auctionDay": "ALL",
-        "teamName": "CLARICE DO BAR",
         "userName": "Guilherme Tourinho",
-        "amount": 10000000
+        "soldAt": 1790767511725,
+        "amount": 10000000,
+        "auctionDay": "ALL",
+        "userId": "user-admin-tourinho",
+        "teamName": "CLARICE DO BAR"
       }
     },
     {
@@ -12165,12 +12181,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
-        "userName": "Dudu",
         "auctionDay": "ALL",
-        "userId": "user-1790261315866-noq3i",
+        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
         "soldAt": 1790767511725,
-        "amount": 10000000
+        "amount": 10000000,
+        "userName": "Dudu",
+        "userId": "user-1790261315866-noq3i"
       }
     },
     {
@@ -12413,11 +12429,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "auctionDay": "ALL",
-        "amount": 10000000,
         "userName": "Matheus",
-        "teamName": "ARRASCACETA SC",
         "soldAt": 1790767511725,
+        "amount": 10000000,
+        "auctionDay": "ALL",
+        "teamName": "ARRASCACETA SC",
         "userId": "user-1790259041454-mewkw"
       }
     },
@@ -12769,12 +12785,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
-        "auctionDay": "ALL",
-        "userId": "user-1790259670059-zxvzd",
         "soldAt": 1790767511725,
+        "amount": 10000000,
         "teamName": "Pau de oculos",
-        "userName": "Lucas campos"
+        "auctionDay": "ALL",
+        "userName": "Lucas campos",
+        "userId": "user-1790259670059-zxvzd"
       }
     },
     {
@@ -12921,12 +12937,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "amount": 10000000,
-        "auctionDay": "ALL",
         "userId": "user-1790261315866-noq3i",
-        "soldAt": 1790767511725,
+        "auctionDay": "ALL",
         "userName": "Dudu",
-        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE"
+        "teamName": "DONA NORMA NETOS FUTEBOL CLUBE",
+        "amount": 10000000,
+        "soldAt": 1790767511725
       }
     },
     {
@@ -13217,12 +13233,12 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
+        "soldAt": 1790767511725,
         "amount": 10000000,
         "userName": "Matheus",
-        "teamName": "ARRASCACETA SC",
-        "auctionDay": "ALL",
         "userId": "user-1790259041454-mewkw",
-        "soldAt": 1790767511725
+        "auctionDay": "ALL",
+        "teamName": "ARRASCACETA SC"
       }
     },
     {
@@ -13263,10 +13279,10 @@
       "soldTo": {
         "userId": "user-admin-tourinho",
         "teamName": "CLARICE DO BAR",
-        "userName": "Guilherme Tourinho",
-        "soldAt": 1790767511725,
         "amount": 10000000,
-        "auctionDay": "ALL"
+        "soldAt": 1790767511725,
+        "auctionDay": "ALL",
+        "userName": "Guilherme Tourinho"
       }
     },
     {
@@ -15332,7 +15348,7 @@
     {
       "id": "p-1180",
       "name": "K. Adeyemi",
-      "position": "PD",
+      "position": "MD",
       "club": "EAFC Elite",
       "nationality": "Internacional",
       "initialPrice": 10000000,
@@ -15341,11 +15357,11 @@
       "currentBid": null,
       "bidHistory": [],
       "soldTo": {
-        "soldAt": 1790767511725,
         "userId": "user-1790259041454-mewkw",
-        "auctionDay": "ALL",
-        "amount": 10000000,
         "userName": "Matheus",
+        "auctionDay": "ALL",
+        "soldAt": 1790767511725,
+        "amount": 10000000,
         "teamName": "ARRASCACETA SC"
       }
     },
@@ -18444,101 +18460,82 @@
     }
   ],
   "auction": {
-    "status": "ENDED",
+    "status": "NOT_STARTED",
     "currentPlayer": null,
     "currentBid": null,
     "bidHistory": [],
-    "timerRemaining": 0,
+    "timerRemaining": 1800,
     "nominationTurnUserId": "user-admin-tourinho",
     "nominationTimerRemaining": 45,
     "isFreeNominationMode": true,
     "minimumBidIncrement": 1000000,
     "auctionDay": "ALL",
     "anonymousBidding": true,
-    "lastUpdated": 1790901481083,
+    "lastUpdated": 1790989642345,
     "nominationQueue": [],
     "auctionType": "PHASED",
-    "currentPhase": "GOLEIROS",
-    "defaultDurationSeconds": 5400
+    "currentPhase": "ATACANTES",
+    "defaultDurationSeconds": 1800
   },
   "squads": {
     "user-admin-default": {
-      "benchPlayerIds": [
-        "p-199",
-        "p-598",
-        "p-299",
-        "p-306",
-        "p-79",
-        "p-700",
-        "p-1100",
-        "extra-1790723130748-9bh8",
-        "p-1111",
-        "extra-1790722389318-xxrd",
-        "p-1368",
-        "p-1185"
-      ],
-      "updatedAt": 1790877806974,
+      "updatedAt": 1790939644653,
       "userId": "user-admin-default",
+      "benchPlayerIds": [
+        "p-47",
+        "p-199",
+        "p-306",
+        "p-598",
+        "p-663",
+        "p-700",
+        "p-858",
+        "p-1100",
+        "p-1111",
+        "p-1185",
+        "p-1368"
+      ],
       "starterSlots": {
-        "zag-1": "p-663",
-        "zag-2": "p-22",
-        "gol": "p-258",
         "ld": "p-561",
-        "ata-2": "p-129",
         "vol": "p-82",
-        "zag-3": "p-25",
-        "ata-1": "p-141",
+        "zag-1": "p-299",
+        "le": "p-609",
         "mc-1": "p-63",
-        "mc-2": "p-47",
-        "le": "p-609"
+        "mc-2": "p-79",
+        "gol": "p-258",
+        "zag-2": "p-22",
+        "ata-1": "p-141",
+        "ata-2": "p-129",
+        "zag-3": "p-25"
       },
       "formationId": "5-3-2"
     },
     "user-admin-tourinho": {
       "formationId": "4-2-3-1",
-      "updatedAt": 1790767512703,
-      "userId": "user-admin-tourinho",
-      "starterSlots": {
-        "vol-e": "p-73",
-        "zag-e": "p-17",
-        "gol": "p-7",
-        "vol-d": "p-884",
-        "le": "p-616",
-        "ld": "p-567",
-        "pd": "p-121",
-        "zag-d": "p-27"
-      },
       "benchPlayerIds": [
         "p-560",
         "p-265",
         "p-348",
         "p-456",
         "p-659",
-        "p-89",
         "p-711",
         "p-750",
-        "p-1012",
-        "p-125",
-        "p-139",
-        "p-1136",
-        "p-1103",
-        "p-117"
-      ]
+        "p-1012"
+      ],
+      "updatedAt": 1790989218406,
+      "userId": "user-admin-tourinho",
+      "starterSlots": {
+        "zag-e": "p-17",
+        "mei": "p-89",
+        "gol": "p-7",
+        "vol-e": "p-73",
+        "le": "p-616",
+        "pd": null,
+        "vol-d": "p-884",
+        "zag-d": "p-27",
+        "ld": "p-567"
+      }
     },
     "user-1790268292035-6driw": {
-      "starterSlots": {
-        "le": "p-676",
-        "zag-d": "p-19",
-        "mc-d": "p-82",
-        "zag-e": "p-24",
-        "ld": "p-539",
-        "mc-e": "p-868",
-        "gol": "p-7",
-        "me": "p-108",
-        "ata-d": "p-130",
-        "ata-e": "p-132",
-        "md": "p-114"
-      },
       "benchPlayerIds": [
         "p-152",
         "p-336",
@@ -18553,70 +18550,85 @@
         "p-135",
         "p-118"
       ],
-      "updatedAt": 1790314251599,
       "userId": "user-1790268292035-6driw",
-      "formationId": "4-4-2"
+      "starterSlots": {
+        "ata-d": "p-130",
+        "ld": "p-539",
+        "zag-d": "p-19",
+        "zag-e": "p-24",
+        "ata-e": "p-132",
+        "md": "p-114",
+        "mc-d": "p-82",
+        "me": "p-108",
+        "mc-e": "p-868",
+        "gol": "p-7",
+        "le": "p-676"
+      },
+      "formationId": "4-4-2",
+      "updatedAt": 1790314251599
     },
     "user-1790259041454-mewkw": {
-      "starterSlots": {
-        "vol-e": "p-68",
-        "le": "p-676",
-        "pe": "p-1067",
-        "mei": "p-95",
-        "vol-d": "p-944",
-        "gol": "p-185",
-        "zag-e": "p-458",
-        "ata": "p-121",
-        "pd": "p-1180",
-        "ld": "p-539",
-        "zag-d": "p-429"
-      },
-      "updatedAt": 1790767512920,
-      "formationId": "4-2-3-1",
-      "userId": "user-1790259041454-mewkw",
       "benchPlayerIds": [
         "p-180",
         "p-523",
         "p-317",
         "p-1139",
         "p-1009"
-      ]
+      ],
+      "formationId": "4-2-3-1",
+      "starterSlots": {
+        "ld": "p-539",
+        "vol-e": "p-68",
+        "pd": "p-1180",
+        "zag-e": "p-458",
+        "zag-d": "p-429",
+        "le": "p-676",
+        "pe": "p-1067",
+        "gol": "p-185",
+        "mei": "p-95",
+        "vol-d": "p-944",
+        "ata": "p-121"
+      },
+      "userId": "user-1790259041454-mewkw",
+      "updatedAt": 1790767512920
     },
     "user-1790259670059-zxvzd": {
+      "formationId": "4-4-2",
+      "updatedAt": 1790989336460,
+      "userId": "user-1790259670059-zxvzd",
+      "starterSlots": {
+        "md": "p-85",
+        "ata-d": "p-123",
+        "ala-e": null,
+        "mei": null,
+        "mc-e": "p-1050",
+        "ata-e": "p-127",
+        "zag-e": "p-280",
+        "ld": "p-45",
+        "vol-d": "p-786",
+        "gol": "p-270",
+        "zag-d": "p-318",
+        "me": "p-58",
+        "zag-c": "p-275",
+        "le": "p-636",
+        "pd": null,
+        "mc-d": "p-80",
+        "vol": null,
+        "vol-e": "p-57",
+        "ala-d": null
+      },
       "benchPlayerIds": [
         "p-36",
-        "p-275",
         "p-524",
         "p-12",
         "p-656",
         "p-75",
         "p-78",
-        "p-786",
         "p-973",
-        "p-1050"
-      ],
-      "formationId": "4-4-2",
-      "starterSlots": {
-        "ld": "p-45",
-        "ata-e": "p-127",
-        "ata-d": "p-123",
-        "vol": null,
-        "me": "p-58",
-        "mc-e": "p-80",
-        "md": "p-85",
-        "le": "p-636",
-        "zag-e": "p-280",
-        "mc-d": "p-57",
-        "gol": "p-270",
-        "zag-d": "p-318"
-      },
-      "userId": "user-1790259670059-zxvzd",
-      "updatedAt": 1790782439170
+        "p-270"
+      ]
     },
     "user-1790260795753-20s8c": {
-      "starterSlots": {},
-      "userId": "user-1790260795753-20s8c",
-      "updatedAt": 1790767513359,
       "benchPlayerIds": [
         "p-6",
         "p-9",
@@ -18632,25 +18644,14 @@
         "p-777",
         "p-831"
       ],
+      "updatedAt": 1790767513359,
+      "userId": "user-1790260795753-20s8c",
+      "starterSlots": {},
       "formationId": "4-3-3"
     },
     "user-1790261315866-noq3i": {
-      "updatedAt": 1790772902605,
-      "starterSlots": {
-        "mc-d": "p-143",
-        "le": "p-660",
-        "gol": "p-235",
-        "ata-e": "p-130",
-        "ata-d": "p-132",
-        "zag-d": "p-19",
-        "ld": "p-44",
-        "me": "p-108",
-        "zag-e": "p-24",
-        "mc-e": "p-55",
-        "md": "p-114"
-      },
-      "formationId": "4-4-2",
       "userId": "user-1790261315866-noq3i",
+      "updatedAt": 1790988433292,
       "benchPlayerIds": [
         "p-168",
         "p-455",
@@ -18660,60 +18661,72 @@
         "p-924",
         "p-985",
         "p-723",
-        "p-135",
-        "p-118",
         "p-92",
-        "p-868"
-      ]
+        "p-118",
+        "p-135",
+        "p-143"
+      ],
+      "starterSlots": {
+        "le": "p-660",
+        "me": "p-108",
+        "zag-d": "p-19",
+        "mc-e": "p-55",
+        "mc-d": "p-868",
+        "ata-d": "p-132",
+        "md": "p-114",
+        "gol": "p-235",
+        "ld": "p-44",
+        "ata-e": "p-130",
+        "zag-e": "p-24"
+      },
+      "formationId": "4-4-2"
     },
     "user-1790704615714-8mpp5": {
-      "formationId": "4-3-3",
       "starterSlots": {
         "zag-e": "p-28",
         "pd": "p-119",
-        "ld": "p-46",
         "ata": "p-122",
-        "zag-d": "p-23",
+        "ld": "p-46",
         "gol": "p-1",
-        "mc-e": "p-91",
         "mc-d": "p-72",
         "vol": "p-59",
         "pe": "p-103",
+        "mc-e": "p-91",
+        "zag-d": "p-23",
         "le": "p-38"
       },
+      "updatedAt": 1790770040787,
+      "formationId": "4-3-3",
       "benchPlayerIds": [
         "p-111"
       ],
-      "userId": "user-1790704615714-8mpp5",
-      "updatedAt": 1790770040787
+      "userId": "user-1790704615714-8mpp5"
     },
     "user-1790724401870-rxt7p": {
+      "updatedAt": 1790987518688,
       "formationId": "4-3-3",
-      "updatedAt": 1790767513944,
+      "starterSlots": {
+        "zag-e": "p-26",
+        "vol": "p-772",
+        "ld": "p-680",
+        "pd": "p-115",
+        "le": "p-606",
+        "pe": "p-1104",
+        "gol": "p-230",
+        "mc-d": "p-88",
+        "zag-d": "p-33",
+        "mc-e": "p-81",
+        "ata": null
+      },
       "userId": "user-1790724401870-rxt7p",
       "benchPlayerIds": [
-        "p-1313",
-        "p-1290",
-        "p-110",
-        "p-105",
         "p-96",
-        "p-88",
         "p-76",
-        "p-772"
-      ],
-      "starterSlots": {
-        "pd": "p-115",
-        "vol": "p-884",
-        "ld": "p-680",
-        "mc-d": "p-54",
-        "mc-e": "p-81",
-        "ata": "p-130",
-        "zag-d": "p-33",
-        "pe": "p-1104",
-        "le": "p-606",
-        "zag-e": "p-26",
-        "gol": "p-230"
-      }
+        "p-54",
+        "p-33",
+        "p-574",
+        "p-234"
+      ]
     }
   },
   "defaultBudget": 400000000,
@@ -18935,7 +18948,8 @@
       "p-1316",
       "p-1327",
       "p-1377",
-      "extra-1790263620330-cewj"
+      "extra-1790263620330-cewj",
+      "p-123"
     ],
     "user-1790261315866-noq3i": [
       "p-130",
