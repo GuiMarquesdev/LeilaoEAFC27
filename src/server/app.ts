@@ -3010,11 +3010,60 @@ async function startServer() {
     res.json({ success: true, user: target });
   });
 
-  app.post('/api/admin/user/budget', (req: Request, res: Response) => {
+  app.post('/api/admin/user/budget', async (req: Request, res: Response) => {
     if (!checkAdmin(req, res)) return;
-    res.status(400).json({
-      success: false,
-      error: 'Regulamento da Khedira League: O orçamento inicial de € 400.000.000 é fixo e inegociável para todos os clubes. Não são permitidos ajustes manuais nem transferências de saldo.'
+    const { targetUserId, budget, spent } = req.body;
+    const target = leagueState.users.find((u) => u.id === targetUserId);
+    if (!target) {
+      res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+      return;
+    }
+
+    let newBudget = Number(budget);
+    if (isNaN(newBudget)) {
+      res.status(400).json({ success: false, error: 'Valor de saldo/orçamento inválido.' });
+      return;
+    }
+    // If sent as millions (e.g. 150), convert to 150_000_000
+    if (newBudget > 0 && newBudget < 1000) {
+      newBudget = newBudget * 1000000;
+    }
+
+    target.budget = Math.round(newBudget);
+
+    if (spent !== undefined && !isNaN(Number(spent))) {
+      let newSpent = Number(spent);
+      if (newSpent > 0 && newSpent < 1000) newSpent = newSpent * 1000000;
+      target.spent = Math.round(newSpent);
+    } else {
+      const owned = leagueState.players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === target.id);
+      const realSpent = owned.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+      target.spent = realSpent;
+    }
+
+    target.updatedAt = Date.now();
+
+    saveState(true);
+    broadcastState();
+    await syncUserToFirestore(target);
+
+    const adminId = req.headers['x-user-id'] as string;
+    const adminUser = leagueState.users.find((u) => u.id === adminId);
+    const adminLabel = adminUser ? adminUser.name : 'A Diretoria';
+
+    broadcast({
+      type: 'CHAT_NOTIFICATION',
+      data: {
+        message: `💼 ${adminLabel} atualizou o saldo do clube ${target.teamName} (${target.name}) para € ${(target.budget / 1000000).toFixed(0)}M!`,
+        timestamp: Date.now(),
+        type: 'alert'
+      }
+    });
+
+    res.json({
+      success: true,
+      user: target,
+      message: `Orçamento de ${target.teamName} atualizado para € ${(target.budget / 1000000).toFixed(0)}M!`
     });
   });
 

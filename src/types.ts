@@ -62,6 +62,7 @@ export interface UserProfile {
   passwordHash?: string;
   authProvider?: 'gmail' | 'google' | 'password' | string;
   createdAt: number;
+  updatedAt?: number;
 }
 
 export interface NominationQueueItem {

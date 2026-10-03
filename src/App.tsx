@@ -1249,7 +1249,22 @@ export default function App() {
         body: JSON.stringify({ targetUserId, budget }),
       });
       const data = await res.json();
-      return Boolean(data.success);
+      if (data.success) {
+        addNotification(data.message || 'Orçamento atualizado com sucesso!', 'success');
+        if (data.user) {
+          setLeagueState((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              users: prev.users.map((u) => (u.id === targetUserId ? { ...u, ...data.user, budget: data.user.budget } : u)),
+            };
+          });
+        }
+        await fetchState();
+        return true;
+      }
+      addNotification(data.error || 'Falha ao atualizar orçamento', 'alert');
+      return false;
     } catch (err) {
       console.error('Admin update budget error:', err);
       return false;
