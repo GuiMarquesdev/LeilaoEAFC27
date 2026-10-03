@@ -4,7 +4,7 @@ import {
   RotateCcw, Trash2, UserCog, AlertTriangle, Check, Gavel, Crown, Square,
   Calendar, Lock, Unlock, FileText, Wallet, CheckCircle2, RefreshCw,
   ListOrdered, ChevronRight, Clock, Timer, Sliders, Edit3, Star,
-  Users, ChevronDown, ChevronUp
+  Users, ChevronDown, ChevronUp, Loader2
 } from 'lucide-react';
 import { Player, UserProfile, AuctionState, PlayerPosition, AuctionType, AuctionPhase, ResetPhaseTarget } from '../types';
 import { formatCurrency, getPositionBadge, getDayLabel, getUserRoleBadge, formatAuctionTimer, AUCTION_PHASES, getPlayerAuctionPhase } from '../utils/formatters';
@@ -40,6 +40,7 @@ interface AdminModalProps {
   onAdminResetUser: (targetUserId: string) => Promise<boolean>;
   onAdminResetLeague: () => Promise<boolean>;
   onAdminResetPhase?: (phase: ResetPhaseTarget) => Promise<{ success: boolean; message?: string; releasedCount?: number; refundedTotal?: number } | boolean>;
+  onAdminReplicateFromDocument?: (params: { rawText?: string; transfers?: any[]; skipAttackers?: boolean }) => Promise<{ success: boolean; message: string; appliedCount?: number; skippedAttackersCount?: number; skippedAttackers?: any[]; applied?: any[]; unmatched?: string[]; users?: any[] }>;
   onAdminSyncProduction?: () => Promise<{ success: boolean; message: string }>;
   watchlists?: { [userId: string]: string[] };
 }
@@ -62,6 +63,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   onAdminResetUser,
   onAdminResetLeague,
   onAdminResetPhase,
+  onAdminReplicateFromDocument,
   onAdminSyncProduction,
   watchlists,
   initialTab,
@@ -139,6 +141,41 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   // Phase Reset confirmation state & handlers
   const [phaseResetConfirm, setPhaseResetConfirm] = useState<ResetPhaseTarget | null>(null);
   const [isResettingPhase, setIsResettingPhase] = useState(false);
+
+  // Document Replication State & Handler
+  const [docRawText, setDocRawText] = useState('');
+  const [docSkipAttackers, setDocSkipAttackers] = useState(true);
+  const [isReplicatingDoc, setIsReplicatingDoc] = useState(false);
+  const [docReplicateResult, setDocReplicateResult] = useState<{
+    success: boolean;
+    message: string;
+    appliedCount?: number;
+    skippedAttackersCount?: number;
+    skippedAttackers?: any[];
+    applied?: any[];
+    unmatched?: string[];
+    users?: any[];
+  } | null>(null);
+
+  const handleReplicateDoc = async () => {
+    if (!onAdminReplicateFromDocument || !docRawText.trim()) return;
+    setIsReplicatingDoc(true);
+    setDocReplicateResult(null);
+    try {
+      const res = await onAdminReplicateFromDocument({
+        rawText: docRawText,
+        skipAttackers: docSkipAttackers
+      });
+      setDocReplicateResult(res);
+    } catch (err: any) {
+      setDocReplicateResult({
+        success: false,
+        message: err?.message || 'Falha ao processar documento'
+      });
+    } finally {
+      setIsReplicatingDoc(false);
+    }
+  };
 
   // Sold players grouped by Phase & Sectors
   const soldPlayersPhase1 = players.filter((p) => p.status === 'SOLD' && p.soldTo && getPlayerAuctionPhase(p) === 1);
@@ -2076,6 +2113,139 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     <span>Refazer Defesa Completa ({soldPlayersPhase1.length} atletas • {formatCurrency(totalRefundPhase1, true)})</span>
                   </button>
                 </div>
+              </div>
+
+              {/* CARD DE REPLICAR ELENCOS VIA DOCUMENTO / PLANILHA */}
+              <div className="p-6 bg-white rounded-2xl shadow-xs border border-indigo-200 space-y-4">
+                <div className="flex items-start justify-between flex-wrap gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-indigo-600 flex items-center gap-1.5">
+                      <FileText className="w-4 h-4" />
+                      Sincronização por Documento / Planilha
+                    </span>
+                    <h3 className="text-lg font-black text-slate-900">
+                      Replicar Transferências do Documento Oficial
+                    </h3>
+                    <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+                      Cole as linhas do documento ou planilha de transferências. O sistema limpará os elencos anteriores e recriará as contratações com os valores exatos, recalculando os orçamentos de todos os participantes (€ 400M - investido).
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl text-xs text-indigo-900 space-y-1">
+                  <span className="font-bold block">💡 Formatos aceitos (uma transferência por linha):</span>
+                  <p className="text-[11px] text-indigo-800">
+                    • Copiar/colar direto do Excel ou Google Sheets: <code className="bg-white/80 px-1 py-0.5 rounded font-mono">Jogador [TAB] Time [TAB] Valor</code><br />
+                    • Texto separado por hífen: <code className="bg-white/80 px-1 py-0.5 rounded font-mono">Virgil van Dijk - CLARICE DO BAR - 35M</code><br />
+                    • CSV ou ponto-e-vírgula: <code className="bg-white/80 px-1 py-0.5 rounded font-mono">Federico Valverde; PAULO BOMBA; 50M</code>
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <textarea
+                    rows={6}
+                    value={docRawText}
+                    onChange={(e) => setDocRawText(e.target.value)}
+                    placeholder="Cole aqui o texto ou as colunas do documento/planilha..."
+                    className="w-full p-3.5 text-xs font-mono bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none resize-y transition-all text-slate-900 placeholder:text-slate-400"
+                  />
+
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={docSkipAttackers}
+                        onChange={(e) => setDocSkipAttackers(e.target.checked)}
+                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                      />
+                      <span>Ignorar jogadores de ataque (manter no mercado para a rodada dos atacantes)</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={handleReplicateDoc}
+                      disabled={isReplicatingDoc || !docRawText.trim()}
+                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer ml-auto"
+                    >
+                      {isReplicatingDoc ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Replicando Transferências...</span>
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4" />
+                          <span>Replicar e Recalcular Orçamentos</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {docReplicateResult && (
+                  <div
+                    className={`p-4 rounded-xl border text-xs space-y-3 animate-fade-in ${
+                      docReplicateResult.success
+                        ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                        : 'bg-rose-50 border-rose-200 text-rose-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-bold">
+                      {docReplicateResult.success ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                      )}
+                      <span>{docReplicateResult.message}</span>
+                    </div>
+
+                    {docReplicateResult.success && (
+                      <div className="space-y-2 pt-2 border-t border-emerald-200/60">
+                        <div className="flex flex-wrap gap-2 text-[11px]">
+                          <span className="px-2.5 py-1 bg-emerald-200 text-emerald-900 rounded-lg font-bold">
+                            ✅ {docReplicateResult.appliedCount || 0} transferências efetuadas
+                          </span>
+                          <span className="px-2.5 py-1 bg-amber-200 text-amber-900 rounded-lg font-bold">
+                            ⚽ {docReplicateResult.skippedAttackersCount || 0} atacantes mantidos no mercado
+                          </span>
+                        </div>
+
+                        {docReplicateResult.users && docReplicateResult.users.length > 0 && (
+                          <div className="mt-2 bg-white/80 rounded-lg p-2.5 border border-emerald-100">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
+                              Recálculo Oficial dos Clubes:
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                              {docReplicateResult.users.map((u: any) => (
+                                <div key={u.id} className="p-2 bg-white rounded border border-slate-200 text-[11px]">
+                                  <div className="font-extrabold text-slate-900 truncate">{u.team}</div>
+                                  <div className="text-[10px] text-slate-500 truncate">{u.name}</div>
+                                  <div className="mt-1 flex justify-between text-[10px]">
+                                    <span className="text-slate-500">Gasto:</span>
+                                    <span className="font-bold text-rose-600">€ {(u.spent / 1000000).toFixed(0)}M</span>
+                                  </div>
+                                  <div className="flex justify-between text-[10px]">
+                                    <span className="text-slate-500">Saldo:</span>
+                                    <span className="font-bold text-emerald-600">€ {(u.budget / 1000000).toFixed(0)}M</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {docReplicateResult.unmatched && docReplicateResult.unmatched.length > 0 && (
+                          <div className="p-2 bg-amber-50 rounded border border-amber-200 text-[10px] text-amber-900 space-y-0.5">
+                            <span className="font-bold block">⚠️ Itens com divergência de nome:</span>
+                            {docReplicateResult.unmatched.map((msg, i) => (
+                              <div key={i}>• {msg}</div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* CARD PRINCIPAL DE RESET */}

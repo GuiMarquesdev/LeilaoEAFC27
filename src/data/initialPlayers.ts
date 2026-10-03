@@ -14350,6 +14350,16 @@ export const INITIAL_PLAYERS: Player[] = [
     "initialPrice": 10000000,
     "currentPrice": 10000000,
     "status": "AVAILABLE"
+  },
+  {
+    "id": "p-richard-rios",
+    "name": "Richard Ríos",
+    "position": "MC",
+    "club": "Palmeiras",
+    "nationality": "Colômbia",
+    "initialPrice": 10000000,
+    "currentPrice": 10000000,
+    "status": "AVAILABLE"
   }
 ];
 

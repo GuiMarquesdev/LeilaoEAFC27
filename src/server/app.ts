@@ -328,9 +328,9 @@ try {
       };
     });
 
-    // Retain any manual extra players added via admin if any
+    // Retain any manual extra players or sold players not in INITIAL_PLAYERS
     (leagueState.players || []).forEach((p) => {
-      if (p.isManualExtra && !updatedPlayers.some((up) => up.id === p.id || up.name.toLowerCase().trim() === p.name.toLowerCase().trim())) {
+      if ((p.isManualExtra || p.soldTo) && !updatedPlayers.some((up) => up.id === p.id || up.name.toLowerCase().trim() === p.name.toLowerCase().trim())) {
         updatedPlayers.push(p);
       }
     });
@@ -458,17 +458,10 @@ function applyDisputeResolutionsAndResumeAuction() {
     pbUser.spent = 123000000;
   }
 
-  // Retoma o progresso do leilão em andamento na fase de Meio Campo
-  leagueState.auction.status = 'ACTIVE';
-  leagueState.auction.currentPhase = 'MEIO_CAMPO';
-  leagueState.auction.auctionType = 'PHASED';
-  if (!leagueState.auction.timerRemaining || leagueState.auction.timerRemaining <= 0) {
-    leagueState.auction.timerRemaining = leagueState.auction.defaultDurationSeconds || 300;
-  }
-  leagueState.auction.lastUpdated = Date.now();
+  // Dispute resolutions applied to master DB
 }
 
-applyDisputeResolutionsAndResumeAuction();
+// applyDisputeResolutionsAndResumeAuction();
 
 let cloudSyncTimer: NodeJS.Timeout | null = null;
 function debouncedCloudSync() {
@@ -696,22 +689,36 @@ function startProductionWebSocketBridge() {
               const incomingAuction = msg.data.auction;
 
               if (incomingAuction) {
+                const isBidForCurrentAuctionPlayer = Boolean(
+                  incomingBid &&
+                  incomingAuction.currentPlayer &&
+                  incomingBid.playerId === incomingAuction.currentPlayer.id
+                );
                 leagueState.auction = {
                   ...leagueState.auction,
                   ...incomingAuction,
-                  currentBid: incomingBid || leagueState.auction.currentBid,
+                  currentBid: isBidForCurrentAuctionPlayer ? incomingBid : leagueState.auction.currentBid,
                   lastUpdated: Date.now()
                 };
               }
               if (incomingPlayer) {
                 const pIdx = leagueState.players.findIndex((p) => p.id === incomingPlayer.id);
                 if (pIdx >= 0) {
+                  const isBidForThisPlayer = Boolean(incomingBid && incomingBid.playerId === incomingPlayer.id);
+                  const validCurrentBid = isBidForThisPlayer
+                    ? incomingBid
+                    : (incomingPlayer.currentBid && incomingPlayer.currentBid.playerId === incomingPlayer.id
+                      ? incomingPlayer.currentBid
+                      : (leagueState.players[pIdx].currentBid && leagueState.players[pIdx].currentBid?.playerId === incomingPlayer.id
+                        ? leagueState.players[pIdx].currentBid
+                        : null));
+
                   leagueState.players[pIdx] = {
                     ...leagueState.players[pIdx],
                     ...incomingPlayer,
                     status: 'IN_AUCTION',
-                    currentPrice: incomingBid?.amount || incomingPlayer.currentPrice,
-                    currentBid: incomingBid || incomingPlayer.currentBid
+                    currentPrice: isBidForThisPlayer ? incomingBid.amount : (validCurrentBid?.amount || incomingPlayer.currentPrice),
+                    currentBid: validCurrentBid
                   };
                 }
               }
@@ -789,38 +796,64 @@ function advanceNominationTurn() {
   broadcastState();
 }
 
-// Obter a proposta mais alta (a última válida) registrada para um atleta
+// Obter a proposta mais alta (a última válida) registrada exclusivamente para este atleta
 function getHighestBidForPlayer(player: Player): Bid | null {
-  let highest: Bid | null = null;
-  if (player.currentBid && (player.currentBid.playerId === player.id || player.currentBid.playerName === player.name)) {
-    highest = player.currentBid;
+  if (!player) return null;
+
+  const validBids: Bid[] = [];
+
+  // 1. Direct currentBid on player (must strictly belong to this player)
+  if (player.currentBid && (player.currentBid.playerId === player.id || (!player.currentBid.playerId && player.currentBid.playerName === player.name))) {
+    if (typeof player.currentBid.amount === 'number' && player.currentBid.amount > 0 && player.currentBid.userId) {
+      validBids.push(player.currentBid);
+    }
   }
 
-  if (player.bidHistory && player.bidHistory.length > 0) {
+  // 2. Player's own bidHistory (must strictly belong to this player)
+  if (Array.isArray(player.bidHistory) && player.bidHistory.length > 0) {
     for (const b of player.bidHistory) {
-      if (b && (b.playerId === player.id || b.playerName === player.name) && typeof b.amount === 'number' && (!highest || b.amount > highest.amount)) {
-        highest = b;
+      if (b && (b.playerId === player.id || (!b.playerId && b.playerName === player.name)) && typeof b.amount === 'number' && b.amount > 0 && b.userId) {
+        validBids.push(b);
       }
     }
   }
 
-  if (leagueState.auction.currentPlayer?.id === player.id && leagueState.auction.currentBid) {
-    if (!highest || leagueState.auction.currentBid.amount > highest.amount) {
-      highest = leagueState.auction.currentBid;
+  // 3. Global auction currentBid ONLY if it strictly belongs to this player
+  if (leagueState.auction.currentBid && (leagueState.auction.currentBid.playerId === player.id || (!leagueState.auction.currentBid.playerId && leagueState.auction.currentBid.playerName === player.name))) {
+    if (typeof leagueState.auction.currentBid.amount === 'number' && leagueState.auction.currentBid.amount > 0 && leagueState.auction.currentBid.userId) {
+      validBids.push(leagueState.auction.currentBid);
     }
   }
 
-  if (leagueState.auction.bidHistory && leagueState.auction.bidHistory.length > 0) {
+  // 4. Global auction bidHistory for this specific player
+  if (Array.isArray(leagueState.auction.bidHistory) && leagueState.auction.bidHistory.length > 0) {
     for (const b of leagueState.auction.bidHistory) {
-      if (b && (b.playerId === player.id || b.playerName === player.name) && typeof b.amount === 'number') {
-        if (!highest || b.amount > highest.amount) {
-          highest = b;
-        }
+      if (b && (b.playerId === player.id || (!b.playerId && b.playerName === player.name)) && typeof b.amount === 'number' && b.amount > 0 && b.userId) {
+        validBids.push(b);
       }
     }
   }
 
-  return highest;
+  if (validBids.length === 0) return null;
+
+  // Deduplicate bids by key
+  const uniqueBids = new Map<string, Bid>();
+  for (const b of validBids) {
+    const key = b.id || `${b.userId}-${b.amount}-${b.timestamp}`;
+    if (!uniqueBids.has(key)) {
+      uniqueBids.set(key, b);
+    }
+  }
+
+  // Sort: highest amount first; if equal amount, newest timestamp wins (latest bid)
+  const sorted = Array.from(uniqueBids.values()).sort((a, b) => {
+    if (b.amount !== a.amount) {
+      return b.amount - a.amount;
+    }
+    return (b.timestamp || 0) - (a.timestamp || 0);
+  });
+
+  return sorted[0] || null;
 }
 
 // Bater o martelo oficialmente: o usuário com o maior lance contrata o jogador, vai para seu clube e elenco
@@ -2170,22 +2203,9 @@ async function startServer() {
     // Regulamento Oficial: Sem divisão de fases (ATAQUE, MEIO e DEFESA juntos)
     leagueState.auction.auctionDay = 'ALL';
 
-    // Calculate true current highest bid for this player
-    let currentHighest = player.currentBid?.amount || 0;
-    if (player.bidHistory && player.bidHistory.length > 0) {
-      for (const b of player.bidHistory) {
-        if (b && typeof b.amount === 'number' && b.amount > currentHighest) {
-          currentHighest = b.amount;
-        }
-      }
-    }
-    if (leagueState.auction.bidHistory && leagueState.auction.bidHistory.length > 0) {
-      for (const b of leagueState.auction.bidHistory) {
-        if (b && (b.playerId === player.id || b.playerName === player.name) && typeof b.amount === 'number' && b.amount > currentHighest) {
-          currentHighest = b.amount;
-        }
-      }
-    }
+    // Calculate true current highest bid strictly for this player
+    const existingTopBid = getHighestBidForPlayer(player);
+    let currentHighest = existingTopBid?.amount || 0;
     if (player.currentPrice && player.currentPrice > currentHighest) {
       currentHighest = player.currentPrice;
     }
@@ -3426,7 +3446,7 @@ async function startServer() {
         executeResetMarketAndSquads(adminUser);
         break;
       case 'RESET_PHASE':
-        executeResetPhase(Number(value) as 1 | 2 | 3, adminUser);
+        executeResetPhase(value as string | number, adminUser);
         break;
     }
 
@@ -3441,7 +3461,7 @@ async function startServer() {
     targetAuctionPhase?: AuctionPhase;
   } {
     const t = String(target).toUpperCase().trim();
-    if (t === 'ATACANTES' || t === 'ATAQUE' || t === 'ATK' || t === '3') {
+    if (t === 'ATACANTES' || t === 'ATAQUE' || t === 'ATK' || t === '3' || t === '4') {
       return {
         positions: ['ATA', 'PD', 'PE', 'SA'],
         phaseName: 'Etapa dos Atacantes (Centroavantes e Pontas)',
@@ -3587,8 +3607,16 @@ async function startServer() {
 
     leagueState.auction.lastUpdated = Date.now();
 
-    // 5. Salvar e transmitir
-    saveState();
+    // 5. Garantir que saldos e gastos de todos os clubes estejam 100% exatos com base no elenco real
+    leagueState.users.forEach((u) => {
+      const owned = leagueState.players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === u.id);
+      const realSpent = owned.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+      u.spent = realSpent;
+      u.budget = DEFAULT_BUDGET - realSpent;
+    });
+
+    // 6. Salvar e transmitir
+    saveState(true);
     broadcastState();
 
     const formattedRefund = `€ ${(refundedTotal / 1000000).toFixed(1)}M`;
@@ -3719,6 +3747,225 @@ async function startServer() {
     });
   });
 
+  // 10c. Admin: Replicar transferências de documento/planilha
+  app.post('/api/admin/replicate-from-document', async (req: Request, res: Response) => {
+    if (!checkAdmin(req, res)) return;
+    const adminId = req.headers['x-user-id'] as string;
+    const adminUser = leagueState.users.find((u) => u.id === adminId);
+    const { rawText, transfers, skipAttackers = true } = req.body;
+
+    const atkPositions = ['ATA', 'PD', 'PE', 'SA'];
+    const norm = (s: string) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+    interface ParsedItem {
+      playerName: string;
+      targetUserOrTeam: string;
+      amount: number;
+    }
+    const itemsToProcess: ParsedItem[] = [];
+
+    if (Array.isArray(transfers) && transfers.length > 0) {
+      for (const t of transfers) {
+        if (t.playerName && (t.targetUserOrTeam || t.teamName || t.userName || t.userId)) {
+          let amt = Number(t.amount);
+          if (isNaN(amt) || amt <= 0) amt = 10000000;
+          if (amt < 1000) amt = amt * 1000000;
+          itemsToProcess.push({
+            playerName: String(t.playerName).trim(),
+            targetUserOrTeam: String(t.targetUserOrTeam || t.teamName || t.userName || t.userId).trim(),
+            amount: amt
+          });
+        }
+      }
+    } else if (typeof rawText === 'string' && rawText.trim()) {
+      const lines = rawText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        if (/^(jogador|atleta|player|nome|club|time|valor|posicao)/i.test(line) && line.includes(';')) continue;
+        let parts = line.split('\t');
+        if (parts.length < 2) parts = line.split(';');
+        if (parts.length < 2) parts = line.split('|');
+        if (parts.length < 2) parts = line.split(/ - | – | — /);
+        if (parts.length < 2) parts = line.split(',');
+
+        if (parts.length >= 2) {
+          const pName = parts[0].trim().replace(/^[-*•\d.]+\s*/, '');
+          const teamOrUser = parts[1].trim();
+          const rawAmt = parts[2] ? parts[2].trim() : '10M';
+          const cleanAmt = rawAmt.replace(/[€$R\s]/gi, '').replace(/\.000\.000/g, 'M').replace(/\.000/g, 'k');
+          let amt = 10000000;
+          const matchM = cleanAmt.match(/(\d+([.,]\d+)?)\s*m/i);
+          if (matchM) {
+            amt = Math.round(parseFloat(matchM[1].replace(',', '.')) * 1000000);
+          } else {
+            const num = parseFloat(cleanAmt.replace(/[^\d.,]/g, '').replace(',', '.'));
+            if (!isNaN(num)) {
+              if (num < 1000) amt = Math.round(num * 1000000);
+              else amt = Math.round(num);
+            }
+          }
+          itemsToProcess.push({
+            playerName: pName,
+            targetUserOrTeam: teamOrUser,
+            amount: amt
+          });
+        }
+      }
+    }
+
+    if (itemsToProcess.length === 0) {
+      res.status(400).json({ success: false, error: 'Nenhuma transferência válida encontrada no documento/texto enviado.' });
+      return;
+    }
+
+    // Zerar todos os elencos e devolver jogadores para o mercado
+    leagueState.players.forEach((p) => {
+      p.status = 'AVAILABLE';
+      p.soldTo = undefined;
+      p.nominatedBy = undefined;
+      p.currentPrice = p.initialPrice;
+      p.currentBid = null;
+      p.bidHistory = [];
+      p.timerRemaining = undefined;
+      p.auctionExpiresAt = undefined;
+    });
+
+    leagueState.users.forEach((u) => {
+      u.budget = DEFAULT_BUDGET;
+      u.spent = 0;
+      leagueState.squads[u.id] = {
+        userId: u.id,
+        formationId: '4-3-3',
+        starterSlots: {},
+        benchPlayerIds: []
+      };
+    });
+
+    const applied: Array<{ player: string; team: string; amount: number; position: string }> = [];
+    const skippedAttackers: Array<{ player: string; position: string; target: string }> = [];
+    const unmatched: string[] = [];
+
+    const findPlayer = (name: string) => {
+      const n = norm(name);
+      return (
+        leagueState.players.find((p) => norm(p.name) === n) ||
+        leagueState.players.find((p) => norm(p.name).includes(n) || n.includes(norm(p.name)))
+      );
+    };
+
+    const findUser = (str: string) => {
+      const n = norm(str);
+      return (
+        leagueState.users.find((u) => u.id === str) ||
+        leagueState.users.find((u) => norm(u.teamName) === n || norm(u.name) === n) ||
+        leagueState.users.find((u) => norm(u.teamName).includes(n) || norm(u.name).includes(n) || n.includes(norm(u.teamName)) || n.includes(norm(u.name)))
+      );
+    };
+
+    const assignSlot = (userId: string, playerId: string, pos: string) => {
+      const sq = leagueState.squads[userId];
+      if (!sq) return;
+      const s = sq.starterSlots;
+      if (pos === 'GOL' && !s.gol) s.gol = playerId;
+      else if (pos === 'ZAG' && !s.zag_1) s.zag_1 = playerId;
+      else if (pos === 'ZAG' && !s.zag_2) s.zag_2 = playerId;
+      else if (pos === 'LE' && !s.le) s.le = playerId;
+      else if (pos === 'LD' && !s.ld) s.ld = playerId;
+      else if (pos === 'VOL' && !s.vol) s.vol = playerId;
+      else if ((pos === 'MC' || pos === 'MEI') && !s.mc_1) s.mc_1 = playerId;
+      else if ((pos === 'MC' || pos === 'MEI') && !s.mc_2) s.mc_2 = playerId;
+      else if ((pos === 'MC' || pos === 'MEI') && !s.mei_1) s.mei_1 = playerId;
+      else if ((pos === 'ATA' || pos === 'SA') && !s.ata) s.ata = playerId;
+      else if (pos === 'PE' && !s.pe) s.pe = playerId;
+      else if (pos === 'PD' && !s.pd) s.pd = playerId;
+      else {
+        if (!sq.benchPlayerIds.includes(playerId)) sq.benchPlayerIds.push(playerId);
+      }
+    };
+
+    for (const item of itemsToProcess) {
+      const player = findPlayer(item.playerName);
+      if (!player) {
+        unmatched.push(`Jogador não encontrado: "${item.playerName}"`);
+        continue;
+      }
+      if (skipAttackers && atkPositions.includes(player.position)) {
+        skippedAttackers.push({ player: player.name, position: player.position, target: item.targetUserOrTeam });
+        continue;
+      }
+      const user = findUser(item.targetUserOrTeam);
+      if (!user) {
+        unmatched.push(`Clube/Usuário não encontrado para "${item.playerName}": "${item.targetUserOrTeam}"`);
+        continue;
+      }
+
+      player.status = 'SOLD';
+      player.currentPrice = item.amount;
+      player.soldTo = {
+        userId: user.id,
+        userName: user.name,
+        teamName: user.teamName,
+        amount: item.amount,
+        soldAt: Date.now(),
+        auctionDay: 'ALL'
+      };
+      const b: Bid = {
+        id: `bid-${player.id}-doc`,
+        playerId: player.id,
+        playerName: player.name,
+        userId: user.id,
+        userName: user.name,
+        teamName: user.teamName,
+        userEmail: user.email,
+        amount: item.amount,
+        timestamp: Date.now(),
+        isAnonymous: true
+      };
+      player.currentBid = b;
+      player.bidHistory = [b];
+
+      assignSlot(user.id, player.id, player.position);
+      applied.push({ player: player.name, team: user.teamName, amount: item.amount, position: player.position });
+    }
+
+    // Recalcular saldo e gastos de todos os usuários
+    leagueState.users.forEach((u) => {
+      const owned = leagueState.players.filter((p) => p.status === 'SOLD' && p.soldTo?.userId === u.id);
+      const spent = owned.reduce((sum, p) => sum + (p.soldTo?.amount || 0), 0);
+      u.spent = spent;
+      u.budget = DEFAULT_BUDGET - spent;
+    });
+
+    leagueState.auction.currentPhase = 'ATACANTES';
+    leagueState.auction.lastUpdated = Date.now();
+
+    saveState(true);
+    broadcastState();
+    await syncAllStateToFirestore(leagueState);
+
+    const adminLabel = adminUser ? `${adminUser.name}` : 'A Diretoria';
+    broadcast({
+      type: 'CHAT_NOTIFICATION',
+      data: {
+        message: `📋 ${adminLabel} sincronizou os elencos a partir do documento oficial! ${applied.length} contratações foram replicadas e os orçamentos foram recalculados. A etapa dos Atacantes permanece disponível para o leilão!`,
+        timestamp: Date.now(),
+        type: 'alert'
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `Transferências replicadas com sucesso! ${applied.length} jogadores transferidos. ${skippedAttackers.length} atacantes mantidos no mercado para a próxima etapa.`,
+      appliedCount: applied.length,
+      skippedAttackersCount: skippedAttackers.length,
+      skippedAttackers,
+      applied,
+      unmatched,
+      auction: leagueState.auction,
+      players: leagueState.players,
+      users: leagueState.users
+    });
+  });
+
   // API 404 fallback - never serve HTML for /api requests
   app.use('/api', (_req: Request, res: Response) => {
     res.status(404).json({ success: false, error: 'Endpoint da API não encontrado' });
@@ -3739,94 +3986,38 @@ async function startServer() {
     });
   }
 
-  // Hydrate persistent state from Cloud Firestore (prevents loss on Cloud Run container resets)
+  // Sincronização com Cloud Firestore
   try {
-    const cloudData = await loadStateFromFirestore(leagueState);
-    if (cloudData) {
-      // 1. Merge users
-      if (cloudData.users && cloudData.users.length > 0) {
-        cloudData.users.forEach((cu) => {
-          const idx = leagueState.users.findIndex(
-            (u) => u.id === cu.id || u.email.toLowerCase() === cu.email.toLowerCase()
-          );
-          if (idx >= 0) {
-            leagueState.users[idx] = { ...leagueState.users[idx], ...cu };
-          } else {
-            leagueState.users.push(cu);
-          }
-        });
-        console.log(`[Firebase] Restored ${cloudData.users.length} users from Firestore.`);
+    const hasLocalData = leagueState.players && leagueState.players.length > 0 && leagueState.users && leagueState.users.length > 0;
+    if (!hasLocalData) {
+      const cloudData = await loadStateFromFirestore(leagueState);
+      if (cloudData) {
+        if (cloudData.users && cloudData.users.length > 0) leagueState.users = cloudData.users;
+        if (cloudData.squads && Object.keys(cloudData.squads).length > 0) leagueState.squads = cloudData.squads;
+        if (cloudData.auction) leagueState.auction = cloudData.auction;
+        if (cloudData.players && cloudData.players.length > 0) leagueState.players = cloudData.players;
+        if (cloudData.watchlists) leagueState.watchlists = cloudData.watchlists;
+        console.log(`[Firebase] Hydrated state from Cloud Firestore.`);
+        saveState(false);
       }
-
-      // 2. Merge squads
-      if (cloudData.squads && Object.keys(cloudData.squads).length > 0) {
-        Object.entries(cloudData.squads).forEach(([uid, squad]) => {
-          leagueState.squads[uid] = squad;
-        });
-        console.log(`[Firebase] Restored squads for ${Object.keys(cloudData.squads).length} clubs.`);
-      }
-
-      // 3. Merge auction state
-      if (cloudData.auction) {
-        leagueState.auction = {
-          ...leagueState.auction,
-          ...cloudData.auction,
-        };
-      }
-
-      // 4. Merge players / sold statuses
-      if (cloudData.players && cloudData.players.length > 0) {
-        cloudData.players.forEach((cp) => {
-          const idx = leagueState.players.findIndex((p) => p.id === cp.id);
-          if (idx >= 0) {
-            leagueState.players[idx] = { ...leagueState.players[idx], ...cp };
-          } else {
-            leagueState.players.push(cp);
-          }
-        });
-        console.log(`[Firebase] Restored ${cloudData.players.length} modified players from Firestore.`);
-      }
-
-      // 5. Merge watchlists
-      if (cloudData.watchlists && Object.keys(cloudData.watchlists).length > 0) {
-        if (!leagueState.watchlists) leagueState.watchlists = {};
-        Object.entries(cloudData.watchlists).forEach(([uid, pIds]) => {
-          if (Array.isArray(pIds) && pIds.length > 0) {
-            const existing = leagueState.watchlists[uid] || [];
-            leagueState.watchlists[uid] = Array.from(new Set([...existing, ...pIds]));
-          }
-        });
-        console.log(`[Firebase] Restored watchlists for ${Object.keys(cloudData.watchlists).length} users from Firestore.`);
-      }
-
-      applyDisputeResolutionsAndResumeAuction();
-      saveState(true);
-      await syncAllStateToFirestore(leagueState);
     } else {
-      console.log('[Firebase] Initial run or empty cloud DB: seeding master state to Cloud Firestore...');
-      applyDisputeResolutionsAndResumeAuction();
-      saveState(true);
+      // Local state is authoritative: sync to Cloud Firestore
+      console.log(`[Firebase] Local state authoritative (${leagueState.users.length} users, ${leagueState.players.length} players). Updating Cloud Firestore...`);
       await syncAllStateToFirestore(leagueState);
     }
   } catch (cloudErr) {
-    console.error('[Firebase] Failed to hydrate state from Firestore on boot:', cloudErr);
-    applyDisputeResolutionsAndResumeAuction();
-    saveState(true);
+    console.error('[Firebase] Firestore sync error on boot:', cloudErr);
   }
 
-  // Sincronização automática com a instância em produção (Render)
-  try {
-    await syncFromProductionState(false);
-    applyDisputeResolutionsAndResumeAuction();
-    saveState(true);
-  } catch (syncErr) {
-    console.warn('[Production Sync] Sincronização inicial com produção adiada:', syncErr);
-    applyDisputeResolutionsAndResumeAuction();
-    saveState(true);
+  // Se o banco local estiver vazio, permite sincronização com produção
+  if (!leagueState.players || leagueState.players.length === 0) {
+    try {
+      await syncFromProductionState(false);
+      saveState(true);
+    } catch (syncErr) {
+      console.warn('[Production Sync] Sincronização inicial com produção adiada:', syncErr);
+    }
   }
-
-  // Inicia ponte WebSocket em tempo real para sincronização contínua de eventos
-  startProductionWebSocketBridge();
 
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Khedira League Server running on http://0.0.0.0:${PORT}`);

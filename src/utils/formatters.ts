@@ -5,29 +5,33 @@ export function getPlayerActiveBid(player: Player | null | undefined, auction?: 
 
   const candidates: Bid[] = [];
 
-  // 1. Direct currentBid on player
-  if (player.currentBid && typeof player.currentBid.amount === 'number' && player.currentBid.amount > 0) {
-    candidates.push(player.currentBid);
+  // 1. Direct currentBid on player (must belong to this player)
+  if (player.currentBid && (player.currentBid.playerId === player.id || (!player.currentBid.playerId && player.currentBid.playerName === player.name))) {
+    if (typeof player.currentBid.amount === 'number' && player.currentBid.amount > 0 && player.currentBid.userId) {
+      candidates.push(player.currentBid);
+    }
   }
 
-  // 2. Global auction currentBid if player matches currentPlayer
-  if (auction?.currentPlayer?.id === player.id && auction.currentBid && typeof auction.currentBid.amount === 'number' && auction.currentBid.amount > 0) {
-    candidates.push(auction.currentBid);
+  // 2. Global auction currentBid ONLY if it strictly belongs to this player
+  if (auction?.currentBid && (auction.currentBid.playerId === player.id || (!auction.currentBid.playerId && auction.currentBid.playerName === player.name))) {
+    if (typeof auction.currentBid.amount === 'number' && auction.currentBid.amount > 0 && auction.currentBid.userId) {
+      candidates.push(auction.currentBid);
+    }
   }
 
   // 3. Player's own bidHistory
-  if (player.bidHistory && player.bidHistory.length > 0) {
+  if (Array.isArray(player.bidHistory) && player.bidHistory.length > 0) {
     for (const b of player.bidHistory) {
-      if (b && typeof b.amount === 'number' && b.amount > 0) {
+      if (b && (b.playerId === player.id || (!b.playerId && b.playerName === player.name)) && typeof b.amount === 'number' && b.amount > 0 && b.userId) {
         candidates.push(b);
       }
     }
   }
 
   // 4. Global auction.bidHistory for this specific player
-  if (auction?.bidHistory && auction.bidHistory.length > 0) {
+  if (Array.isArray(auction?.bidHistory) && auction.bidHistory.length > 0) {
     for (const b of auction.bidHistory) {
-      if (b && (b.playerId === player.id || (b.playerName && b.playerName === player.name)) && typeof b.amount === 'number' && b.amount > 0) {
+      if (b && (b.playerId === player.id || (!b.playerId && b.playerName === player.name)) && typeof b.amount === 'number' && b.amount > 0 && b.userId) {
         candidates.push(b);
       }
     }
@@ -35,15 +39,24 @@ export function getPlayerActiveBid(player: Player | null | undefined, auction?: 
 
   if (candidates.length === 0) return null;
 
+  // Deduplicate candidates
+  const uniqueBids = new Map<string, Bid>();
+  for (const b of candidates) {
+    const key = b.id || `${b.userId}-${b.amount}-${b.timestamp}`;
+    if (!uniqueBids.has(key)) {
+      uniqueBids.set(key, b);
+    }
+  }
+
   // Pick candidate with highest amount; if tie, newest timestamp
-  candidates.sort((a, b) => {
+  const sorted = Array.from(uniqueBids.values()).sort((a, b) => {
     if (b.amount !== a.amount) {
       return b.amount - a.amount;
     }
     return (b.timestamp || 0) - (a.timestamp || 0);
   });
 
-  return candidates[0];
+  return sorted[0] || null;
 }
 
 export function getPlayerEffectivePrice(player: Player | null | undefined, auction?: AuctionState | null): number {

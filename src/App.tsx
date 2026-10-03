@@ -285,15 +285,22 @@ export default function App() {
 
                 const updatedPlayers = prev.players.map((p) => {
                   if (incomingPlayer && p.id === incomingPlayer.id) {
+                    const isBidForThis = Boolean(incomingBid && incomingBid.playerId === p.id);
+                    const validCurrentBid = isBidForThis
+                      ? incomingBid
+                      : (incomingPlayer.currentBid && incomingPlayer.currentBid.playerId === p.id
+                        ? incomingPlayer.currentBid
+                        : (p.currentBid && p.currentBid.playerId === p.id ? p.currentBid : null));
+
                     return {
                       ...p,
                       ...incomingPlayer,
                       status: 'IN_AUCTION' as const,
-                      currentPrice: incomingBid?.amount || incomingPlayer.currentPrice || p.currentPrice,
-                      currentBid: incomingBid || incomingPlayer.currentBid || p.currentBid,
+                      currentPrice: isBidForThis ? incomingBid.amount : (validCurrentBid?.amount || incomingPlayer.currentPrice || p.currentPrice),
+                      currentBid: validCurrentBid,
                       timerRemaining: incomingPlayer.timerRemaining ?? p.timerRemaining,
                       auctionExpiresAt: incomingPlayer.auctionExpiresAt ?? p.auctionExpiresAt,
-                      bidHistory: incomingBid
+                      bidHistory: isBidForThis
                         ? [incomingBid, ...(p.bidHistory || []).filter((b) => b.id !== incomingBid.id)]
                         : (incomingPlayer.bidHistory || p.bidHistory)
                     };
@@ -311,6 +318,10 @@ export default function App() {
                 });
 
                 const mergedAuction = incomingAuction || prev.auction;
+                const isBidForCurrentAuction = Boolean(
+                  incomingBid &&
+                  (incomingBid.playerId === incomingPlayer?.id || incomingBid.playerId === mergedAuction?.currentPlayer?.id)
+                );
                 const updatedBidHistory = incomingBid
                   ? [incomingBid, ...(mergedAuction?.bidHistory || []).filter((b) => b.id !== incomingBid.id)]
                   : (mergedAuction?.bidHistory || []);
@@ -320,7 +331,7 @@ export default function App() {
                   auction: {
                     ...mergedAuction,
                     bidHistory: updatedBidHistory,
-                    currentBid: incomingBid || mergedAuction?.currentBid,
+                    currentBid: isBidForCurrentAuction ? incomingBid : mergedAuction?.currentBid,
                     currentPlayer: incomingPlayer || mergedAuction?.currentPlayer
                   },
                   players: updatedPlayers
@@ -737,12 +748,19 @@ export default function App() {
 
             const updatedPlayers = prev.players.map((p) => {
               if (updatedPlayer && p.id === updatedPlayer.id) {
+                const isBidForThis = Boolean(newBid && newBid.playerId === p.id);
+                const validCurrentBid = isBidForThis
+                  ? newBid
+                  : (updatedPlayer.currentBid && updatedPlayer.currentBid.playerId === p.id
+                    ? updatedPlayer.currentBid
+                    : (p.currentBid && p.currentBid.playerId === p.id ? p.currentBid : null));
+
                 return {
                   ...p,
                   ...updatedPlayer,
-                  currentPrice: newBid?.amount || updatedPlayer.currentPrice || p.currentPrice,
-                  currentBid: newBid || updatedPlayer.currentBid || p.currentBid,
-                  bidHistory: newBid
+                  currentPrice: isBidForThis ? newBid.amount : (validCurrentBid?.amount || updatedPlayer.currentPrice || p.currentPrice),
+                  currentBid: validCurrentBid,
+                  bidHistory: isBidForThis
                     ? [newBid, ...(updatedPlayer.bidHistory || p.bidHistory || []).filter(b => b.id !== newBid.id)]
                     : (updatedPlayer.bidHistory || p.bidHistory)
                 };
@@ -759,6 +777,10 @@ export default function App() {
               return p;
             });
 
+            const isBidForCurrentAuction = Boolean(
+              newBid &&
+              (newBid.playerId === updatedPlayer?.id || newBid.playerId === updatedAuction?.currentPlayer?.id)
+            );
             const mergedBidHistory = newBid
               ? [newBid, ...(updatedAuction?.bidHistory || []).filter((b: Bid) => b.id !== newBid.id)]
               : (updatedAuction?.bidHistory || []);
@@ -768,7 +790,7 @@ export default function App() {
               auction: {
                 ...updatedAuction,
                 bidHistory: mergedBidHistory,
-                currentBid: newBid || updatedAuction?.currentBid,
+                currentBid: isBidForCurrentAuction ? newBid : updatedAuction?.currentBid,
                 currentPlayer: updatedPlayer || updatedAuction?.currentPlayer
               },
               players: updatedPlayers
@@ -1330,6 +1352,29 @@ export default function App() {
     }
   };
 
+  const handleAdminReplicateFromDocument = async (params: { rawText?: string; transfers?: any[]; skipAttackers?: boolean }): Promise<{ success: boolean; message: string; appliedCount?: number; skippedAttackersCount?: number; skippedAttackers?: any[]; applied?: any[]; unmatched?: string[]; users?: any[] }> => {
+    if (!currentUser || currentUser.role !== 'ADMIN') {
+      return { success: false, message: 'Apenas administradores podem replicar transferências.' };
+    }
+    try {
+      const res = await fetch(apiUrl('/api/admin/replicate-from-document'), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify(params),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addNotification(data.message || 'Transferências replicadas com sucesso!', 'alert');
+        await fetchState();
+      }
+      return data;
+    } catch (err: any) {
+      console.error('Admin replicate from document error:', err);
+      return { success: false, message: err?.message || 'Falha de conexão com o servidor' };
+    }
+  };
+
   const handleAdminSyncProduction = async (): Promise<{ success: boolean; message: string }> => {
     if (!currentUser || currentUser.role !== 'ADMIN') {
       return { success: false, message: 'Apenas administradores podem disparar sincronização com produção.' };
@@ -1603,6 +1648,7 @@ export default function App() {
         onAdminResetUser={handleAdminResetUser}
         onAdminResetLeague={handleAdminResetLeague}
         onAdminResetPhase={handleAdminResetPhase}
+        onAdminReplicateFromDocument={handleAdminReplicateFromDocument}
         onAdminSyncProduction={handleAdminSyncProduction}
         watchlists={leagueState?.watchlists}
       />
